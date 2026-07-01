@@ -41,7 +41,7 @@ export function TodaySlots({
 
   return (
     <>
-      <div className="mb-4 flex gap-3">
+      <div className="mb-4 flex flex-col gap-2">
         {slots.map((s) => (
           <PrioritySlot
             key={s.slot}

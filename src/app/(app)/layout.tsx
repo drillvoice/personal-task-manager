@@ -1,5 +1,5 @@
 import { AppFrame } from "@/components/app-frame";
-import { BottomNav } from "@/components/bottom-nav";
+import { TopNav } from "@/components/bottom-nav";
 
 export default function AppLayout({
   children,
@@ -8,8 +8,8 @@ export default function AppLayout({
 }) {
   return (
     <AppFrame>
-      <main className="flex-1">{children}</main>
-      <BottomNav />
+      <TopNav />
+      <main className="flex-1 pt-[52px]">{children}</main>
     </AppFrame>
   );
 }

@@ -22,7 +22,7 @@ export default async function TodayPage() {
   ).toUpperCase();
 
   return (
-    <div className="p-4 pb-24">
+    <div className="p-4">
       <header className="mb-6">
         <p
           className="font-mono mb-1 text-[11px]"

@@ -11,11 +11,11 @@ const items = [
   { href: "/review", label: "Review", Icon: RefreshCw },
 ] as const;
 
-export function BottomNav() {
+export function TopNav() {
   const pathname = usePathname();
   return (
     <nav
-      className="sticky bottom-0 left-0 right-0 flex items-center justify-around border-t py-3"
+      className="fixed top-0 left-0 right-0 z-50 flex items-center justify-around border-b py-3"
       style={{
         background: "var(--color-paper-raised)",
         borderColor: "var(--color-line)",

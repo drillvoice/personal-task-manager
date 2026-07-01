@@ -25,11 +25,11 @@ export function PrioritySlot({
       <button
         type="button"
         onClick={onOpenPicker}
-        className="flex min-h-[110px] min-w-[140px] flex-1 flex-col items-center justify-center gap-2 rounded-[4px] p-4"
+        className="flex w-full items-center gap-3 rounded-[4px] px-4 py-3"
         style={{ border: "1.5px dashed var(--color-line)" }}
       >
         <span
-          className="font-display text-2xl font-bold"
+          className="font-display text-2xl font-bold w-6 shrink-0"
           style={{ color: "var(--color-line)" }}
         >
           {number}
@@ -46,7 +46,7 @@ export function PrioritySlot({
 
   return (
     <div
-      className="flex min-h-[110px] min-w-[140px] flex-1 flex-col justify-between rounded-[4px] p-4"
+      className="flex w-full items-center gap-3 rounded-[4px] px-4 py-3"
       style={{
         background: "var(--color-paper-raised)",
         borderColor: "var(--color-accent)",
@@ -54,28 +54,26 @@ export function PrioritySlot({
         borderStyle: "solid",
       }}
     >
-      <div className="flex items-start justify-between">
-        <span
-          className="font-display text-2xl font-bold"
-          style={{ color: "var(--color-accent)" }}
-        >
-          {number}
-        </span>
-        <button
-          type="button"
-          onClick={() =>
-            startTransition(async () => {
-              await removeFromTodayPlan(task.id);
-            })
-          }
-          disabled={pending}
-          aria-label={`Remove slot ${number}`}
-          style={{ color: "var(--color-ink-soft)" }}
-        >
-          <X size={14} />
-        </button>
-      </div>
-      <span className="text-[14px] font-medium leading-tight">{task.title}</span>
+      <span
+        className="font-display text-2xl font-bold w-6 shrink-0"
+        style={{ color: "var(--color-accent)" }}
+      >
+        {number}
+      </span>
+      <span className="flex-1 text-[14px] font-medium leading-tight">{task.title}</span>
+      <button
+        type="button"
+        onClick={() =>
+          startTransition(async () => {
+            await removeFromTodayPlan(task.id);
+          })
+        }
+        disabled={pending}
+        aria-label={`Remove slot ${number}`}
+        style={{ color: "var(--color-ink-soft)" }}
+      >
+        <X size={14} />
+      </button>
     </div>
   );
 }
