@@ -166,6 +166,7 @@ export function TasksView({ projects }: { projects: TasksViewProject[] }) {
               project={p}
               visibleTasks={p.tasks}
               defaultOpen={p.status === "active" || p.id === null}
+              projects={projectOptions}
             />
           ))}
         </>
@@ -193,6 +194,7 @@ export function TasksView({ projects }: { projects: TasksViewProject[] }) {
                 project={p}
                 visibleTasks={matched}
                 defaultOpen
+                projects={projectOptions}
               />
             ));
           })()}
@@ -225,6 +227,7 @@ export function TasksView({ projects }: { projects: TasksViewProject[] }) {
                 task={t}
                 tags={t.tags.map((tg) => ({ name: tg.name }))}
                 showProject
+                projects={projectOptions}
               />
             ));
           })()}

@@ -16,20 +16,23 @@ const createSchema = z.object({
 export async function createProject(input: {
   name: string;
   status: "active" | "someday_maybe";
-}): Promise<{ ok: true } | { ok: false; error: string }> {
+}): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
   const userId = await requireUserId();
   const parsed = createSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid" };
   }
-  await db.insert(projects).values({
-    userId,
-    name: parsed.data.name,
-    status: parsed.data.status,
-  });
+  const [row] = await db
+    .insert(projects)
+    .values({
+      userId,
+      name: parsed.data.name,
+      status: parsed.data.status,
+    })
+    .returning({ id: projects.id });
   revalidatePath("/projects");
   revalidatePath("/tasks");
-  return { ok: true };
+  return { ok: true, id: row.id };
 }
 
 const noteSchema = z.object({

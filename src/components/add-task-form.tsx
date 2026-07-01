@@ -2,8 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { createTask } from "@/app/(app)/tasks/actions";
-
-type ProjectOption = { id: string | null; name: string };
+import { ProjectDropdown } from "@/components/project-dropdown";
+import type { ProjectOption } from "@/components/project-dropdown";
 
 export function AddTaskForm({
   projects,
@@ -72,25 +72,11 @@ export function AddTaskForm({
         }}
       />
       <div className="mb-3 grid grid-cols-2 gap-2">
-        <select
+        <ProjectDropdown
+          projects={projects}
           value={projectId}
-          onChange={(e) => setProjectId(e.target.value)}
-          className="border p-2 text-[13px] outline-none"
-          style={{
-            background: "transparent",
-            borderColor: "var(--color-line)",
-            color: "var(--color-ink)",
-          }}
-        >
-          <option value="">Inbox (no project)</option>
-          {projects
-            .filter((p) => p.id !== null)
-            .map((p) => (
-              <option key={p.id} value={p.id ?? ""}>
-                {p.name}
-              </option>
-            ))}
-        </select>
+          onChange={setProjectId}
+        />
         <input
           type="date"
           value={dueDate}
