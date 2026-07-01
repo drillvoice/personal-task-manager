@@ -53,7 +53,11 @@ export function TodaySlots({
           <PrioritySlot
             key={s.slot}
             number={s.slot}
-            task={s.task ? { id: s.task.id, title: s.task.title } : null}
+            task={
+              s.task
+                ? { id: s.task.id, title: s.task.title, done: s.task.status === "done" }
+                : null
+            }
             onOpenPicker={openPicker}
           />
         ))}

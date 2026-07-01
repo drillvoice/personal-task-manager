@@ -1,12 +1,13 @@
 "use client";
 
 import { useTransition } from "react";
-import { Plus, X } from "lucide-react";
-import { removeFromTodayPlan } from "@/app/(app)/today/actions";
+import { Check, Plus, X } from "lucide-react";
+import { removeFromTodayPlan, setTaskDone } from "@/app/(app)/today/actions";
 
 type Task = {
   id: string;
   title: string;
+  done: boolean;
 };
 
 export function PrioritySlot({
@@ -44,23 +45,51 @@ export function PrioritySlot({
     );
   }
 
+  const { done } = task;
+
   return (
     <div
       className="flex w-full items-center gap-3 rounded-[4px] px-4 py-3"
       style={{
         background: "var(--color-paper-raised)",
-        borderColor: "var(--color-accent)",
+        borderColor: done ? "var(--color-teal)" : "var(--color-accent)",
         borderWidth: 1.5,
         borderStyle: "solid",
       }}
     >
       <span
         className="font-display text-2xl font-bold w-6 shrink-0"
-        style={{ color: "var(--color-accent)" }}
+        style={{ color: done ? "var(--color-teal)" : "var(--color-accent)" }}
       >
         {number}
       </span>
-      <span className="flex-1 text-[14px] font-medium leading-tight">{task.title}</span>
+      <button
+        type="button"
+        onClick={() =>
+          startTransition(async () => {
+            await setTaskDone(task.id, !done);
+          })
+        }
+        disabled={pending}
+        aria-pressed={done}
+        aria-label={done ? "Mark task incomplete" : "Mark task complete"}
+        className="flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded-[4px] border-[1.5px]"
+        style={{
+          background: done ? "var(--color-teal)" : "transparent",
+          borderColor: done ? "var(--color-teal)" : "var(--color-ink-soft)",
+        }}
+      >
+        {done && <Check size={12} color="var(--color-paper-raised)" strokeWidth={3} />}
+      </button>
+      <span
+        className="flex-1 text-[14px] font-medium leading-tight"
+        style={{
+          color: done ? "var(--color-ink-soft)" : "var(--color-ink)",
+          textDecoration: done ? "line-through" : "none",
+        }}
+      >
+        {task.title}
+      </span>
       <button
         type="button"
         onClick={() =>
