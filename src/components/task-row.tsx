@@ -85,8 +85,10 @@ function EditTaskForm({
           if (e.key === "Escape") onDone();
         }}
       />
-      <div className="mb-2 grid grid-cols-2 gap-2">
-        <ProjectDropdown projects={projects} value={projectId} onChange={setProjectId} />
+      <div className="mb-2 flex flex-wrap gap-2">
+        <div className="min-w-[160px] flex-1">
+          <ProjectDropdown projects={projects} value={projectId} onChange={setProjectId} />
+        </div>
         <input
           type="date"
           value={dueDate}
@@ -96,9 +98,10 @@ function EditTaskForm({
             background: "transparent",
             borderColor: "var(--color-line)",
             color: "var(--color-ink)",
+            width: "160px",
           }}
         />
-        <div className="col-span-2 flex gap-1">
+        <div className="flex gap-1">
           {([1, 2, 3] as const).map((p) => {
             const active = priority === p;
             return (
@@ -106,7 +109,7 @@ function EditTaskForm({
                 key={p}
                 type="button"
                 onClick={() => setPriority(p)}
-                className="font-mono flex-1 border px-2.5 py-1.5 text-[11px] font-semibold"
+                className="font-mono border px-2.5 py-1.5 text-[11px] font-semibold"
                 style={{
                   borderColor: active ? `var(--color-p${p})` : "var(--color-line)",
                   background: active ? `var(--color-p${p})` : "transparent",
