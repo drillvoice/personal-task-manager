@@ -11,8 +11,15 @@ export default function manifest(): MetadataRoute.Manifest {
     orientation: "portrait",
     background_color: "#eeeee7",
     theme_color: "#eeeee7",
-    // Icons intentionally empty in v1 — see initial-setup.md §6 for how to
-    // generate 192/512/maskable PNGs and drop them into public/icons/.
-    icons: [],
+    icons: [
+      { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+      {
+        src: "/icons/icon-maskable-512.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "maskable",
+      },
+    ],
   };
 }

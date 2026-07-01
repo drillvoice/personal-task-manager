@@ -39,15 +39,19 @@ spec's §8 recommendation.
 2. Create a new project. Region: pick the one closest to Vercel's default
    (`us-east-1` is a safe default for most people; if you know you'll be
    deploying to Sydney, pick `ap-southeast-2`).
-3. Postgres version: **17** (default).
-4. When Neon offers to name the default branch, keep it `main`.
-5. In the Neon dashboard, note two things:
+3. Postgres version: **whatever the default is** (18 as of writing). Any modern
+   version works — Drizzle and postgres.js don't care.
+4. If Neon offers to enable **Neon Auth**, leave it **off**. That's their
+   own auth product; we're doing auth in-app via Auth.js + Resend, so a
+   parallel Neon Auth user store would be dead weight.
+5. When Neon offers to name the default branch, keep it `main`.
+6. In the Neon dashboard, note two things:
    - **Connection string** for the `main` (production) branch — you'll paste
      this into Vercel later. Use the **pooled** connection string
      (`...-pooler.<region>.neon.tech`). It's tagged in the dashboard.
    - Create a second branch called `dev` from `main`. Copy its pooled
      connection string for your local `.env.local`.
-6. In `Settings → General`, enable **Point-in-time restore** (Neon does this
+7. In `Settings → General`, enable **Point-in-time restore** (Neon does this
    for you on Free but keep the retention at the default 7 days — extend if
    you want more).
 
@@ -98,7 +102,7 @@ Production and the dev Neon branch string for Preview/Development.
 |---|---|---|
 | `DATABASE_URL` | Neon Postgres pooled connection string | Neon dashboard → the pooled URL for `main` (prod) or `dev` (local) |
 | `AUTH_SECRET` | Session cookie signing key | Generate: `openssl rand -base64 32` |
-| `AUTH_URL` | Base URL Auth.js redirects back to | Local: `http://localhost:3000`. Prod: Vercel auto-detects, you can leave it unset |
+| `AUTH_URL` | Base URL Auth.js redirects back to | **Local only** — set to `http://localhost:3000` in `.env.local`. **Do not set in Vercel Production or Preview** — Auth.js auto-detects from `VERCEL_URL`. Setting `http://localhost:3000` in prod will send every magic-link redirect to your laptop |
 | `AUTH_RESEND_KEY` | Resend API key | Resend dashboard → API Keys |
 | `AUTH_EMAIL_FROM` | From address on the magic-link email | e.g. `Task Manager <no-reply@yourname.com>` |
 | `ALLOWED_EMAIL` | The single email that's allowed to sign in | Your email address (case-insensitive) |
