@@ -1,0 +1,81 @@
+import {
+  addDays,
+  addWeeks,
+  formatISO,
+  isSameDay,
+  startOfDay,
+  startOfWeek,
+} from "date-fns";
+import { formatInTimeZone, toZonedTime } from "date-fns-tz";
+
+export const APP_TZ = "Australia/Sydney";
+
+export function nowInTz(now: Date = new Date()): Date {
+  return toZonedTime(now, APP_TZ);
+}
+
+export function todayIso(now: Date = new Date()): string {
+  return formatInTimeZone(now, APP_TZ, "yyyy-MM-dd");
+}
+
+/**
+ * Monday-anchored week bucket for the given moment. Returns `yyyy-MM-dd` of the
+ * Monday that week belongs to, in the app timezone. Used to key
+ * `weekly_reviews` and `project_weekly_notes`.
+ */
+export function weekStartIso(now: Date = new Date()): string {
+  const zoned = toZonedTime(now, APP_TZ);
+  const monday = startOfWeek(startOfDay(zoned), { weekStartsOn: 1 });
+  return formatISO(monday, { representation: "date" });
+}
+
+export function weekStartFromIso(dateIso: string): string {
+  return weekStartIso(new Date(`${dateIso}T00:00:00`));
+}
+
+/**
+ * Rolling window of the last N Monday-anchored week starts, oldest → newest.
+ */
+export function recentWeekStarts(count: number, now: Date = new Date()): string[] {
+  const currentMonday = startOfWeek(startOfDay(toZonedTime(now, APP_TZ)), {
+    weekStartsOn: 1,
+  });
+  const out: string[] = [];
+  for (let i = count - 1; i >= 0; i--) {
+    out.push(formatISO(addWeeks(currentMonday, -i), { representation: "date" }));
+  }
+  return out;
+}
+
+/** "9 Jun" style label for the history table columns. */
+export function weekLabel(weekStartIsoDate: string): string {
+  return formatInTimeZone(new Date(`${weekStartIsoDate}T00:00:00`), APP_TZ, "d MMM");
+}
+
+export function isToday(dateIso: string, now: Date = new Date()): boolean {
+  const target = new Date(`${dateIso}T00:00:00`);
+  return isSameDay(toZonedTime(target, APP_TZ), toZonedTime(now, APP_TZ));
+}
+
+export function isOverdue(dateIso: string, now: Date = new Date()): boolean {
+  const today = new Date(`${todayIso(now)}T00:00:00`);
+  const target = new Date(`${dateIso}T00:00:00`);
+  return target < today;
+}
+
+/**
+ * "Today" / "Tomorrow" / "Fri" / "15 Jul" for a due_date, matching the
+ * mockup's compact metadata style.
+ */
+export function dueLabel(dateIso: string, now: Date = new Date()): string {
+  const target = new Date(`${dateIso}T00:00:00`);
+  const zonedTarget = toZonedTime(target, APP_TZ);
+  const zonedNow = toZonedTime(now, APP_TZ);
+  if (isSameDay(zonedTarget, zonedNow)) return "Today";
+  if (isSameDay(zonedTarget, addDays(zonedNow, 1))) return "Tomorrow";
+  const inSevenDays = addDays(zonedNow, 7);
+  if (zonedTarget > zonedNow && zonedTarget <= inSevenDays) {
+    return formatInTimeZone(target, APP_TZ, "EEE");
+  }
+  return formatInTimeZone(target, APP_TZ, "d MMM");
+}

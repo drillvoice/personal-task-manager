@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+@theme {
+  --color-paper: #eeeee7;
+  --color-paper-raised: #f8f8f2;
+  --color-ink: #1c1e1b;
+  --color-ink-soft: #6e6c61;
+  --color-line: #d6d5c8;
+  --color-accent: #e15a2b;
+  --color-accent-soft: #f7dcc9;
+  --color-teal: #2e5f5c;
+  --color-teal-soft: #dce7e3;
+  --color-danger: #9b3b3b;
+  --color-p1: #b23a2e;
+  --color-p1-soft: #f6dad4;
+  --color-p2: #b8791e;
+  --color-p2-soft: #f3e3c6;
+  --color-p3: #2e6b52;
+  --color-p3-soft: #d9eae1;
+
+  --font-display: var(--font-space-grotesk), ui-sans-serif, sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+
+  --radius-card: 4px;
+}
+
+html,
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Signature scrollbar to match the mockup's ledger feel. */
+.gtd-scrollbar::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+.gtd-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--color-line);
+  border-radius: 4px;
+}
+
+/* Sticky-cell history table borders. */
+.gtd-history-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.gtd-history-table th,
+.gtd-history-table td {
+  border-bottom: 1px solid var(--color-line);
+  border-right: 1px solid var(--color-line);
+}
+
+/* History-cell clamp-to-expand. */
+.gtd-hcell {
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  cursor: pointer;
+}
+.gtd-hcell.expanded {
+  -webkit-line-clamp: unset;
+}
