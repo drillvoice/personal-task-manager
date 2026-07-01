@@ -20,6 +20,27 @@ data, so correctness matters.
   through `src/lib/time.ts`** and stay anchored to `Australia/Sydney`
 - vitest for the handful of tests we do keep
 
+## Communication
+
+**Terse is not always good.** For deployment, env-var, or third-party
+provider setup, brevity has repeatedly cost Joel time — instructions get
+skimmed, subtle constraints get missed, and he ends up redeploying twice.
+
+Concrete rules:
+- **Call out cross-value constraints as their own paragraph**, not as one
+  bullet in a list of "verify these are set." Example: `ALLOWED_EMAIL` must
+  match the email address associated with the Resend account when using the
+  `onboarding@resend.dev` sandbox sender — that's a *constraint between two
+  variables*, and it needs its own callout, not a bullet.
+- **Front-load prerequisites.** If a fix depends on X being true, state X
+  before the fix, not after it.
+- **Prefer one complete explanation over a series of short follow-ups.**
+  If the diagnosis involves 3+ potential causes or subtle env-var
+  interactions, spend the paragraph. A round-trip conversation costs more
+  than a longer message.
+- This applies to setup and ops work specifically. For code review,
+  code changes, and coding-question answers, terse is still fine.
+
 ## Standing rules
 
 **Run `pnpm typecheck` before considering any task done.** TypeScript is the

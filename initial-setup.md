@@ -63,14 +63,27 @@ spec's §8 recommendation.
 
 ## §3 · Set up Resend for magic-link email
 
-1. Sign up at <https://resend.com>.
-2. Add a domain you own (e.g. `yourname.com`) and add the DNS records Resend
-   shows you (SPF, DKIM, DMARC). If you don't have a domain, Resend gives you
-   `onboarding@resend.dev` for dev, but you'll want a real one before prod.
-3. Create an API key: `API Keys → Create API Key`, name it something like
-   `task-manager-prod`. Copy the value — you'll only see it once. Save
-   somewhere temporary until you paste it into Vercel.
-4. Decide your "from" address, e.g. `Task Manager <no-reply@yourname.com>`.
+1. Sign up at <https://resend.com>. Use the same email address you'll want to
+   sign in as — it becomes your `ALLOWED_EMAIL`.
+2. Create an API key: `API Keys → Create API Key`, name it something like
+   `task-manager`. Copy the value — you'll only see it once. Save somewhere
+   temporary until you paste it into Vercel.
+3. **Decide your "from" address.** Two options:
+   - **Easy path (recommended for first deploy):** use Resend's shared
+     sender `onboarding@resend.dev` — no DNS, no domain verification. The
+     catch is Resend will only *send to* the email address on your Resend
+     account, which is fine for a single-user app. Set
+     `AUTH_EMAIL_FROM="Task Manager <onboarding@resend.dev>"` and you're
+     done.
+   - **Own-domain path (optional, do this later):** in Resend, `Domains → Add
+     Domain`, enter e.g. `yourname.com`, then add the SPF, DKIM, and DMARC
+     DNS records Resend shows you at your registrar. Wait for the domain to
+     say "Verified" (usually a few minutes). Set `AUTH_EMAIL_FROM="Task
+     Manager <no-reply@yourname.com>"`.
+
+**Do not skip step 3.** If `AUTH_EMAIL_FROM` is unset or points at an
+unverified domain, Resend returns 403 and Auth.js surfaces it as a generic
+"server error" on the sign-in page.
 
 > Cost: Resend Free tier = 3,000 emails/mo, plenty for magic-link auth on a
 > single user.
@@ -184,9 +197,18 @@ data. It refuses to run against production (`NODE_ENV=production`).
    still be there next week.
 
 If any of the above fails:
-- **Login email doesn't arrive** — check the Resend dashboard "Logs" tab;
-  domain probably isn't verified yet.
+- **"Server error" on the sign-in button** — check Vercel logs
+  (Deployments → click the failing one → Functions → the failed request).
+  Most common cause: `AUTH_EMAIL_FROM` unset, or its domain not verified in
+  Resend. Fastest fix: set it to `Task Manager <onboarding@resend.dev>` per
+  §3 easy path.
+- **Login email doesn't arrive but no error** — check the Resend dashboard
+  "Logs" tab. If you're using `onboarding@resend.dev`, remember it can only
+  send to the address on your Resend account.
+- **Magic link redirects you to `localhost:3000`** — `AUTH_URL` is set on
+  Vercel Production. Delete it there (see §5); Auth.js will auto-detect
+  from `VERCEL_URL`.
 - **App crashes on any page** — check Vercel's function logs; usually
-  `DATABASE_URL` is wrong.
+  `DATABASE_URL` is wrong or points at the unpooled endpoint.
 - **"Task not found" or auth loops** — confirm `ALLOWED_EMAIL` matches
   what you're signing in with, case-insensitive.
