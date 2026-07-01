@@ -5,6 +5,19 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 
 ## [Unreleased]
 
+### Fixed
+- Middleware timeouts on the magic-link callback route
+  (`MIDDLEWARE_INVOCATION_TIMEOUT`). Root cause: Auth.js v5 middleware with
+  `session: { strategy: "database" }` was calling the Drizzle adapter on every
+  request, which uses `postgres.js` — that doesn't run on Vercel's edge
+  runtime, so the DB call hung and hit the 25s middleware timeout. Fix
+  splits the Auth.js config: an edge-safe `src/lib/auth.config.ts` used by
+  middleware (no adapter, no postgres.js), and the full config in
+  `src/lib/auth.ts` that adds the adapter and Resend provider. Also
+  switched to JWT session strategy so middleware validates the auth cookie
+  in-place, and excluded `/api/*` from the middleware matcher so the auth
+  handler never runs through it.
+
 ### Added
 - Initial scaffold: Next.js 16 App Router + TypeScript strict + Tailwind v4
   with the mockup's `@theme` tokens (paper / ink / accent / teal / P1–3),
