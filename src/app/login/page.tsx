@@ -16,7 +16,7 @@ function messageForError(code: string | undefined): string | null {
     case "AccessDenied":
       return "That GitHub account isn't allowed to sign in here.";
     case "OAuthAccountNotLinked":
-      return "This GitHub account is linked to a different email than expected.";
+      return "A user record already exists for this email but has no GitHub link. This shouldn't happen with allowDangerousEmailAccountLinking enabled — check src/lib/auth.ts.";
     case "Configuration":
       return "Server auth configuration is missing an env var.";
     default:

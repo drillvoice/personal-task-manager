@@ -27,6 +27,20 @@ export const {
     GitHub({
       clientId: process.env.AUTH_GITHUB_ID,
       clientSecret: process.env.AUTH_GITHUB_SECRET,
+      /*
+       * Auth.js's default OAuth behaviour refuses to link a fresh OAuth
+       * sign-in to an existing user with the same email — that's an
+       * anti-takeover protection for multi-user apps (attacker signs up
+       * for OAuth with your email, silently gets access to your account).
+       *
+       * For this single-user app with an ALLOWED_EMAIL allowlist, the
+       * threat is null: only Joel's email is ever accepted through any
+       * provider. Enabling this flag lets a fresh GitHub sign-in take
+       * over an existing user row created by an earlier auth attempt
+       * (originally the Resend magic-link that half-completed and left
+       * an orphan `user` row with no linked `account`).
+       */
+      allowDangerousEmailAccountLinking: true,
     }),
   ],
 });

@@ -5,6 +5,18 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 
 ## [Unreleased]
 
+### Fixed
+- `OAuthAccountNotLinked` on the first GitHub sign-in. An earlier
+  magic-link attempt had created an orphan `user` row (email set, no
+  linked `account` record). Auth.js refuses to auto-link by default
+  because in a multi-user app that would be an OAuth-takeover vector,
+  but for a single-user app gated by `ALLOWED_EMAIL` the threat is
+  null. Enabled `allowDangerousEmailAccountLinking: true` on the GitHub
+  provider so a fresh sign-in reuses the existing user row. Also
+  rewrote the misleading error-message copy on the login page — the old
+  wording ("linked to a different email than expected") sent Joel to
+  double-check env vars for something that was not an env-var problem.
+
 ### Changed
 - Auth provider swapped from Resend magic-link to GitHub OAuth. For a
   single-user personal app the email path had too many moving parts
