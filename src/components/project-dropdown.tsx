@@ -121,7 +121,7 @@ export function ProjectDropdown({
             onClick={() => setOpen(false)}
           />
           <div
-            className="absolute left-0 right-0 top-full z-20 mt-0.5 overflow-hidden rounded-[4px] border"
+            className="gtd-scrollbar absolute top-full right-0 left-0 z-30 mt-0.5 max-h-[320px] overflow-y-auto rounded-[4px] border"
             style={{
               background: "var(--color-paper-raised)",
               borderColor: "var(--color-line)",

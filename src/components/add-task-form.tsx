@@ -71,24 +71,26 @@ export function AddTaskForm({
           }
         }}
       />
-      <div className="mb-3 grid grid-cols-2 gap-2">
-        <ProjectDropdown
-          projects={projects}
-          value={projectId}
-          onChange={setProjectId}
-        />
+      <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-[minmax(220px,1fr)_160px_auto] sm:items-start">
+        <div className="min-w-0">
+          <ProjectDropdown
+            projects={projects}
+            value={projectId}
+            onChange={setProjectId}
+          />
+        </div>
         <input
           type="date"
           value={dueDate}
           onChange={(e) => setDueDate(e.target.value)}
-          className="border p-2 text-[13px] outline-none"
+          className="w-full border p-2 text-[13px] outline-none sm:w-[160px]"
           style={{
             background: "transparent",
             borderColor: "var(--color-line)",
             color: "var(--color-ink)",
           }}
         />
-        <div className="col-span-2 flex items-center gap-1">
+        <div className="grid grid-cols-3 items-center gap-1 sm:flex">
           {[1, 2, 3].map((p) => {
             const active = priority === p;
             return (
@@ -96,7 +98,7 @@ export function AddTaskForm({
                 key={p}
                 type="button"
                 onClick={() => setPriority(p as 1 | 2 | 3)}
-                className="font-mono flex-1 border px-2.5 py-2 text-[11px] font-semibold"
+                className="font-mono border px-2.5 py-2 text-[11px] font-semibold"
                 style={{
                   borderColor: active ? `var(--color-p${p})` : "var(--color-line)",
                   background: active ? `var(--color-p${p})` : "transparent",

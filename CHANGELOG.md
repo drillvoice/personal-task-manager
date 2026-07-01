@@ -6,6 +6,15 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 ## [Unreleased]
 
 ### Changed
+- Tasks view now uses the wider desktop app frame, and the top navigation
+  sits on a compact centred rail instead of spacing items across the full
+  browser width.
+
+### Fixed
+- Project dropdowns in task add/edit forms are no longer clipped by the
+  project card, and long project lists scroll inside the menu.
+
+### Changed
 - Projects history table: cells are now editable in-place. Each cell is a
   textarea that autosaves on blur (via the existing `upsertWeeklyNote`
   action), replacing the old click-to-expand-only behaviour that had no

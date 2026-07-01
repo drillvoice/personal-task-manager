@@ -85,23 +85,26 @@ function EditTaskForm({
           if (e.key === "Escape") onDone();
         }}
       />
-      <div className="mb-2 flex flex-wrap gap-2">
-        <div className="min-w-[160px] flex-1">
-          <ProjectDropdown projects={projects} value={projectId} onChange={setProjectId} />
+      <div className="mb-2 grid grid-cols-1 gap-2 sm:grid-cols-[minmax(220px,1fr)_160px_auto] sm:items-start">
+        <div className="min-w-0">
+          <ProjectDropdown
+            projects={projects}
+            value={projectId}
+            onChange={setProjectId}
+          />
         </div>
         <input
           type="date"
           value={dueDate}
           onChange={(e) => setDueDate(e.target.value)}
-          className="border p-2 text-[13px] outline-none"
+          className="w-full border p-2 text-[13px] outline-none sm:w-[160px]"
           style={{
             background: "transparent",
             borderColor: "var(--color-line)",
             color: "var(--color-ink)",
-            width: "160px",
           }}
         />
-        <div className="flex gap-1">
+        <div className="grid grid-cols-3 gap-1 sm:flex">
           {([1, 2, 3] as const).map((p) => {
             const active = priority === p;
             return (

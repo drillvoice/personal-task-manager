@@ -24,7 +24,7 @@ export function ProjectCard({
 
   return (
     <div
-      className="mb-2 overflow-hidden rounded-[4px] border"
+      className="mb-2 rounded-[4px] border"
       style={{
         background: "var(--color-paper-raised)",
         borderColor: "var(--color-line)",
