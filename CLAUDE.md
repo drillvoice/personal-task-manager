@@ -22,6 +22,37 @@ data, so correctness matters.
   through `src/lib/time.ts`** and stay anchored to `Australia/Sydney`
 - vitest for the handful of tests we do keep
 
+## Auth architecture — non-obvious constraints
+
+Read this before editing `src/lib/auth.ts`, `src/lib/auth.config.ts`, or
+`middleware.ts`. These are baked-in constraints, not preferences — each
+represents a bug we already hit.
+
+- **Split-config is required, not optional.** `src/lib/auth.config.ts` must
+  stay edge-safe (no Drizzle adapter, no postgres.js import path).
+  `middleware.ts` imports it directly and constructs a minimal NextAuth
+  instance. Importing the full `src/lib/auth.ts` from middleware causes
+  `MIDDLEWARE_INVOCATION_TIMEOUT` on Vercel because postgres.js can't run on
+  the edge runtime.
+- **JWT session strategy needs explicit id mapping.** The `jwt` + `session`
+  callbacks in `auth.config.ts` thread `user.id` through the token onto
+  `session.user.id`. Auth.js v5 does NOT do this automatically for JWT
+  sessions — remove those callbacks and `requireUserId()` will start looping
+  with middleware after a fresh sign-in.
+- **`allowDangerousEmailAccountLinking: true` on the GitHub provider is
+  deliberate.** The "danger" only applies to multi-user apps (attacker
+  signs up for OAuth with your email → auto-linked to your account). We're
+  gated by an `ALLOWED_EMAIL` allowlist, so any OAuth account with that
+  email is legitimately Joel. Removing this flag will strand the app in
+  `OAuthAccountNotLinked` whenever a fresh sign-in meets an existing user
+  row (e.g. after a schema reset or another provider swap).
+- **`/api/*` is excluded from the middleware matcher on purpose.** The
+  Auth.js callback route must not run through our redirect logic. Server
+  actions handle their own session checks via `requireUserId()`.
+- **`AUTH_URL` must never be set on Vercel Production/Preview.** Leave it
+  unset and Auth.js reads `VERCEL_URL`. Setting it explicitly to something
+  static will misdirect every OAuth callback.
+
 ## Communication
 
 **Terse is not always good.** For deployment, env-var, or third-party
