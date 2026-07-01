@@ -23,25 +23,25 @@ export type TasksViewTask = {
 };
 
 export async function loadTasksData(userId: string) {
-  const projectRows = await db
-    .select()
-    .from(projects)
-    .where(eq(projects.userId, userId))
-    .orderBy(asc(projects.name));
-
-  const taskRows = await db
-    .select({ task: tasks, projectName: projects.name })
-    .from(tasks)
-    .leftJoin(projects, eq(tasks.projectId, projects.id))
-    .where(eq(tasks.userId, userId))
-    .orderBy(asc(tasks.sortOrder), asc(tasks.createdAt));
-
-  const tagRows = await db
-    .select({ taskId: taskTags.taskId, name: tags.name, color: tags.color })
-    .from(taskTags)
-    .innerJoin(tags, eq(taskTags.tagId, tags.id))
-    .innerJoin(tasks, eq(taskTags.taskId, tasks.id))
-    .where(eq(tasks.userId, userId));
+  const [projectRows, taskRows, tagRows] = await Promise.all([
+    db
+      .select()
+      .from(projects)
+      .where(eq(projects.userId, userId))
+      .orderBy(asc(projects.name)),
+    db
+      .select({ task: tasks, projectName: projects.name })
+      .from(tasks)
+      .leftJoin(projects, eq(tasks.projectId, projects.id))
+      .where(eq(tasks.userId, userId))
+      .orderBy(asc(tasks.sortOrder), asc(tasks.createdAt)),
+    db
+      .select({ taskId: taskTags.taskId, name: tags.name, color: tags.color })
+      .from(taskTags)
+      .innerJoin(tags, eq(taskTags.tagId, tags.id))
+      .innerJoin(tasks, eq(taskTags.taskId, tasks.id))
+      .where(eq(tasks.userId, userId)),
+  ]);
 
   const tagsByTask = new Map<string, { name: string; color: string }[]>();
   for (const t of tagRows) {

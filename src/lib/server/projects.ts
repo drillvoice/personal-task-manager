@@ -1,5 +1,5 @@
 import "server-only";
-import { asc, eq, inArray } from "drizzle-orm";
+import { asc, eq, getTableColumns } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { projectWeeklyNotes, projects } from "@/lib/db/schema";
 import { weekLabel, weekStartIso } from "@/lib/time";
@@ -25,19 +25,18 @@ export type ProjectsTableData = {
 export async function loadProjectsTable(
   userId: string,
 ): Promise<ProjectsTableData> {
-  const projectRows = await db
-    .select()
-    .from(projects)
-    .where(eq(projects.userId, userId))
-    .orderBy(asc(projects.name));
-
-  const projectIds = projectRows.map((p) => p.id);
-  const notes = projectIds.length
-    ? await db
-        .select()
-        .from(projectWeeklyNotes)
-        .where(inArray(projectWeeklyNotes.projectId, projectIds))
-    : [];
+  const [projectRows, notes] = await Promise.all([
+    db
+      .select()
+      .from(projects)
+      .where(eq(projects.userId, userId))
+      .orderBy(asc(projects.name)),
+    db
+      .select(getTableColumns(projectWeeklyNotes))
+      .from(projectWeeklyNotes)
+      .innerJoin(projects, eq(projectWeeklyNotes.projectId, projects.id))
+      .where(eq(projects.userId, userId)),
+  ]);
 
   const currentWeek = weekStartIso();
   const populatedWeeks = new Set<string>([currentWeek]);
