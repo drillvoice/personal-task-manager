@@ -2,7 +2,7 @@ import "server-only";
 import { asc, eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { projectWeeklyNotes, projects } from "@/lib/db/schema";
-import { recentWeekStarts, weekLabel } from "@/lib/time";
+import { weekLabel, weekStartIso } from "@/lib/time";
 
 export type ProjectsTableRow = {
   id: string;
@@ -16,11 +16,15 @@ export type ProjectsTableData = {
   rows: ProjectsTableRow[];
 };
 
+/**
+ * Columns are only weeks where *some* project has a non-empty note, plus
+ * the current week (always shown so there's a place to write today's
+ * update). This keeps a fresh account from showing 12 empty pre-history
+ * columns.
+ */
 export async function loadProjectsTable(
   userId: string,
-  weekCount = 12,
 ): Promise<ProjectsTableData> {
-  const weekStarts = recentWeekStarts(weekCount);
   const projectRows = await db
     .select()
     .from(projects)
@@ -34,6 +38,13 @@ export async function loadProjectsTable(
         .from(projectWeeklyNotes)
         .where(inArray(projectWeeklyNotes.projectId, projectIds))
     : [];
+
+  const currentWeek = weekStartIso();
+  const populatedWeeks = new Set<string>([currentWeek]);
+  for (const n of notes) {
+    if (n.note.trim()) populatedWeeks.add(n.weekStartDate);
+  }
+  const weekStarts = Array.from(populatedWeeks).sort();
 
   const notesByProject = new Map<string, Map<string, string>>();
   for (const n of notes) {
@@ -54,7 +65,6 @@ export async function loadProjectsTable(
     };
   });
 
-  const currentWeek = weekStarts[weekStarts.length - 1];
   return {
     weeks: weekStarts.map((w) => ({
       start: w,

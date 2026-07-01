@@ -1,15 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { Plus } from "lucide-react";
 import { AddProjectForm } from "@/components/add-project-form";
+import { upsertWeeklyNote } from "@/app/(app)/projects/actions";
 import type { ProjectsTableData } from "@/lib/server/projects";
 
 export function ProjectsTable({ data }: { data: ProjectsTableData }) {
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [showAdd, setShowAdd] = useState(false);
-
-  const toggle = (k: string) => setExpanded((e) => ({ ...e, [k]: !e[k] }));
 
   return (
     <div className="p-6">
@@ -31,8 +29,8 @@ export function ProjectsTable({ data }: { data: ProjectsTableData }) {
         className="mb-4 text-[13px]"
         style={{ color: "var(--color-ink-soft)" }}
       >
-        Scroll right for a project&rsquo;s history over time. Scroll down for a
-        snapshot of everything, one week. Click a cell to expand it.{" "}
+        Click a cell to write the week&rsquo;s update — it saves when you
+        click away. Columns fill in as you add notes across weeks.{" "}
         <span className="font-mono">
           (Desktop-oriented view — not optimised for mobile.)
         </span>
@@ -50,7 +48,7 @@ export function ProjectsTable({ data }: { data: ProjectsTableData }) {
         style={{
           background: "var(--color-paper-raised)",
           borderColor: "var(--color-line)",
-          maxHeight: 480,
+          maxHeight: 560,
         }}
       >
         <table className="gtd-history-table w-full text-[13px]">
@@ -76,7 +74,7 @@ export function ProjectsTable({ data }: { data: ProjectsTableData }) {
                     color: w.isCurrent
                       ? "var(--color-accent)"
                       : "var(--color-ink-soft)",
-                    minWidth: 200,
+                    minWidth: 220,
                   }}
                 >
                   {w.label}
@@ -100,42 +98,111 @@ export function ProjectsTable({ data }: { data: ProjectsTableData }) {
             {data.rows.map((row) => (
               <tr key={row.id}>
                 <td
-                  className="font-display sticky left-0 z-10 px-3 py-2.5 text-[13px] font-semibold"
+                  className="font-display sticky left-0 z-10 px-3 py-2.5 align-top text-[13px] font-semibold"
                   style={{ background: "var(--color-paper-raised)" }}
                 >
                   {row.name}
                 </td>
-                {data.weeks.map((w) => {
-                  const key = `${row.id}-${w.start}`;
-                  const note = row.notesByWeek[w.start] || "—";
-                  return (
-                    <td
-                      key={key}
-                      onClick={() => toggle(key)}
-                      className="px-3 py-2.5 align-top"
-                      style={{
-                        background: w.isCurrent
-                          ? "var(--color-accent-soft)"
-                          : "transparent",
-                        color:
-                          note === "—"
-                            ? "var(--color-ink-soft)"
-                            : "var(--color-ink)",
-                      }}
-                    >
-                      <span
-                        className={`gtd-hcell ${expanded[key] ? "expanded" : ""}`}
-                      >
-                        {note}
-                      </span>
-                    </td>
-                  );
-                })}
+                {data.weeks.map((w) => (
+                  <NoteCell
+                    key={`${row.id}-${w.start}`}
+                    projectId={row.id}
+                    weekStart={w.start}
+                    initialNote={row.notesByWeek[w.start] ?? ""}
+                    isCurrent={w.isCurrent}
+                  />
+                ))}
               </tr>
             ))}
           </tbody>
         </table>
       </div>
     </div>
+  );
+}
+
+function NoteCell({
+  projectId,
+  weekStart,
+  initialNote,
+  isCurrent,
+}: {
+  projectId: string;
+  weekStart: string;
+  initialNote: string;
+  isCurrent: boolean;
+}) {
+  const [value, setValue] = useState(initialNote);
+  const [saved, setSaved] = useState<string>(initialNote);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  const save = () => {
+    if (value === saved) return;
+    startTransition(async () => {
+      const res = await upsertWeeklyNote({
+        projectId,
+        weekStartDate: weekStart,
+        note: value,
+      });
+      if (res.ok) {
+        setSaved(value);
+        setError(null);
+      } else {
+        setError(res.error);
+      }
+    });
+  };
+
+  return (
+    <td
+      className="px-2 py-1.5 align-top"
+      style={{
+        background: isCurrent ? "var(--color-accent-soft)" : "transparent",
+        minWidth: 220,
+      }}
+    >
+      <textarea
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={save}
+        rows={3}
+        placeholder={isCurrent ? "Write this week's update…" : "—"}
+        className="w-full resize-y bg-transparent p-1.5 text-[13px] outline-none"
+        style={{
+          border: "1px solid transparent",
+          color:
+            value.trim() === "" && !isCurrent
+              ? "var(--color-ink-soft)"
+              : "var(--color-ink)",
+          minHeight: 60,
+        }}
+        onFocus={(e) => {
+          e.currentTarget.style.border = "1px solid var(--color-line)";
+        }}
+        onBlurCapture={(e) => {
+          e.currentTarget.style.border = "1px solid transparent";
+        }}
+      />
+      {error ? (
+        <p
+          className="font-mono px-1.5 text-[10px]"
+          style={{ color: "var(--color-danger)" }}
+        >
+          {error}
+        </p>
+      ) : (
+        <p
+          className="font-mono px-1.5 text-[10px]"
+          style={{
+            color: "var(--color-ink-soft)",
+            opacity: pending ? 1 : 0,
+            transition: "opacity 150ms",
+          }}
+        >
+          {pending ? "saving…" : " "}
+        </p>
+      )}
+    </td>
   );
 }

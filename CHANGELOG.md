@@ -5,6 +5,17 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 
 ## [Unreleased]
 
+### Changed
+- Projects history table: cells are now editable in-place. Each cell is a
+  textarea that autosaves on blur (via the existing `upsertWeeklyNote`
+  action), replacing the old click-to-expand-only behaviour that had no
+  edit affordance at all.
+- Projects history table columns are no longer a fixed 12-week rolling
+  window. They now show only weeks where some project has a non-empty
+  note, plus the current week (always). A fresh account starts with just
+  one column and grows as notes accumulate — instead of showing 11 empty
+  pre-history columns for a brand-new project.
+
 ### Fixed
 - `OAuthAccountNotLinked` on the first GitHub sign-in. An earlier
   magic-link attempt had created an orphan `user` row (email set, no
