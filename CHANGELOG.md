@@ -6,6 +6,16 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 ## [Unreleased]
 
 ### Changed
+- First-load performance: database queries now run over Neon's HTTP driver
+  (`drizzle-orm/neon-http`) instead of a TCP postgres.js pool, removing the
+  connection handshake on serverless cold starts. Local CLI scripts
+  (`db:migrate`, `db:seed`) still use postgres.js.
+- Every app route now streams a skeleton shell (`loading.tsx`) immediately
+  while data loads, instead of blocking the whole page on the database.
+- Today page now loads its plan slots and also-due list in two parallel
+  queries instead of a 3–4 query waterfall.
+
+### Changed
 - Tasks view now uses the wider desktop app frame, and the top navigation
   sits on a compact centred rail instead of spacing items across the full
   browser width.

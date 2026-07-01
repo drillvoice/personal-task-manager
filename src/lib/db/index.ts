@@ -1,40 +1,25 @@
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+import { drizzle } from "drizzle-orm/neon-http";
+import { neon } from "@neondatabase/serverless";
 import * as schema from "./schema";
 
-type PgClient = ReturnType<typeof postgres>;
-
-function makeDb(client: PgClient) {
-  return drizzle(client, { schema });
+/*
+ * Queries run over Neon's HTTP endpoint (one fetch per statement) instead of
+ * a TCP postgres.js pool — no TLS/connection handshake on serverless cold
+ * starts. Interactive transactions are not supported over HTTP; nothing in
+ * the app uses db.transaction. CLI scripts (src/db/migrate.ts, seed.ts) keep
+ * postgres.js since they run locally over TCP.
+ */
+function makeDb() {
+  return drizzle(neon(getDatabaseUrl()), { schema });
 }
 
 type Db = ReturnType<typeof makeDb>;
 
 const globalForDb = globalThis as unknown as {
-  __pgClient?: PgClient;
   __db?: Db;
 };
 
-let productionPgClient: PgClient | undefined;
 let productionDb: Db | undefined;
-
-function getPostgresClient(): PgClient {
-  if (process.env.NODE_ENV === "production") {
-    productionPgClient ??= postgres(getDatabaseUrl(), {
-      max: 10,
-      idle_timeout: 20,
-      prepare: false,
-    });
-    return productionPgClient;
-  }
-
-  globalForDb.__pgClient ??= postgres(getDatabaseUrl(), {
-    max: 10,
-    idle_timeout: 20,
-    prepare: false,
-  });
-  return globalForDb.__pgClient;
-}
 
 function getDatabaseUrl() {
   return process.env.DATABASE_URL ?? "postgres://placeholder@localhost/none";
@@ -42,11 +27,11 @@ function getDatabaseUrl() {
 
 export function getDb(): Db {
   if (process.env.NODE_ENV === "production") {
-    productionDb ??= makeDb(getPostgresClient());
+    productionDb ??= makeDb();
     return productionDb;
   }
 
-  globalForDb.__db ??= makeDb(getPostgresClient());
+  globalForDb.__db ??= makeDb();
   return globalForDb.__db;
 }
 

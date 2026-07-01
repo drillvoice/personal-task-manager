@@ -3,6 +3,7 @@ import { and, asc, eq, inArray, lte, ne, not } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   dailyPlanItems,
+  dailyPlans,
   projects,
   tasks,
   weeklyPriorities,
@@ -50,49 +51,61 @@ function toTask(
 
 export async function loadTodayData(userId: string): Promise<TodayData> {
   const dateIso = todayIso();
-  const planId = await ensureDailyPlan(userId, dateIso);
 
-  const slotsRaw = await db
-    .select({
-      sortOrder: dailyPlanItems.sortOrder,
-      task: tasks,
-      projectName: projects.name,
-    })
-    .from(dailyPlanItems)
-    .innerJoin(tasks, eq(dailyPlanItems.taskId, tasks.id))
-    .leftJoin(projects, eq(tasks.projectId, projects.id))
-    .where(eq(dailyPlanItems.dailyPlanId, planId))
-    .orderBy(asc(dailyPlanItems.sortOrder));
+  // Plan + slot tasks come back in one joined query, and the also-due list
+  // excludes in-plan tasks in JS rather than SQL, so both queries can run in
+  // parallel — this page renders on every app open, so roundtrips matter.
+  const [planRows, alsoDueRows] = await Promise.all([
+    db
+      .select({
+        planId: dailyPlans.id,
+        task: tasks,
+        projectName: projects.name,
+      })
+      .from(dailyPlans)
+      .leftJoin(dailyPlanItems, eq(dailyPlanItems.dailyPlanId, dailyPlans.id))
+      .leftJoin(tasks, eq(dailyPlanItems.taskId, tasks.id))
+      .leftJoin(projects, eq(tasks.projectId, projects.id))
+      .where(and(eq(dailyPlans.userId, userId), eq(dailyPlans.date, dateIso)))
+      .orderBy(asc(dailyPlanItems.sortOrder)),
+    db
+      .select({ task: tasks, projectName: projects.name })
+      .from(tasks)
+      .leftJoin(projects, eq(tasks.projectId, projects.id))
+      .where(
+        and(
+          eq(tasks.userId, userId),
+          ne(tasks.status, "done"),
+          lte(tasks.dueDate, dateIso),
+        ),
+      )
+      .orderBy(asc(tasks.dueDate), asc(tasks.priority)),
+  ]);
+
+  const planId =
+    planRows[0]?.planId ?? (await ensureDailyPlan(userId, dateIso));
+
+  const slotTasks = planRows.flatMap((r) =>
+    r.task ? [{ task: r.task, projectName: r.projectName }] : [],
+  );
 
   const slots: TodaySlot[] = [1, 2, 3].map((n) => {
-    const row = slotsRaw[n - 1];
+    const row = slotTasks[n - 1];
     return {
       slot: n as 1 | 2 | 3,
       task: row ? toTask(row.task, row.projectName ?? null) : null,
     };
   });
 
-  const inPlanIds = slotsRaw.map((r) => r.task.id);
-
-  const alsoDueRows = await db
-    .select({ task: tasks, projectName: projects.name })
-    .from(tasks)
-    .leftJoin(projects, eq(tasks.projectId, projects.id))
-    .where(
-      and(
-        eq(tasks.userId, userId),
-        ne(tasks.status, "done"),
-        lte(tasks.dueDate, dateIso),
-        inPlanIds.length ? not(inArray(tasks.id, inPlanIds)) : undefined,
-      ),
-    )
-    .orderBy(asc(tasks.dueDate), asc(tasks.priority));
+  const inPlanIds = new Set(slotTasks.map((r) => r.task.id));
 
   return {
     planId,
     dateIso,
     slots,
-    alsoDue: alsoDueRows.map((r) => toTask(r.task, r.projectName ?? null)),
+    alsoDue: alsoDueRows
+      .filter((r) => !inPlanIds.has(r.task.id))
+      .map((r) => toTask(r.task, r.projectName ?? null)),
   };
 }
 
