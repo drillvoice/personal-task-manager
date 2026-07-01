@@ -6,6 +6,17 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 ## [Unreleased]
 
 ### Fixed
+- Post-sign-in `ERR_TOO_MANY_REDIRECTS`. Cause: Auth.js v5 with JWT session
+  strategy doesn't auto-populate `session.user.id` — `requireUserId()` bounced
+  to /login, middleware saw a valid cookie and bounced back to /today, forever.
+  Fix: explicit `jwt` and `session` callbacks in `src/lib/auth.config.ts` that
+  copy `user.id` through the token, plus a belt-and-braces `session.user.id`
+  check on the login page's server-side redirect.
+- No visual feedback when clicking "Send magic link". Extracted the login form
+  into `src/components/login-form.tsx`, a client component with explicit
+  idle → sending → sent | error states. The server action now calls `signIn`
+  with `redirect: false` so we can render a proper "Check your email"
+  confirmation with the actual sent-to address and a "wrong email?" reset.
 - Middleware timeouts on the magic-link callback route
   (`MIDDLEWARE_INVOCATION_TIMEOUT`). Root cause: Auth.js v5 middleware with
   `session: { strategy: "database" }` was calling the Drizzle adapter on every
