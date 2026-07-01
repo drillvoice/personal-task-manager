@@ -48,35 +48,37 @@ export async function loadReviewData(userId: string): Promise<ReviewData> {
   const weekStart = weekStartIso();
   const reviewId = await ensureWeeklyReview(userId, weekStart);
 
-  const [review] = await db
-    .select()
-    .from(weeklyReviews)
-    .where(eq(weeklyReviews.id, reviewId));
-
-  const priorReviews = await db
-    .select({
-      weekStartDate: weeklyReviews.weekStartDate,
-      completedAt: weeklyReviews.completedAt,
-    })
-    .from(weeklyReviews)
-    .where(eq(weeklyReviews.userId, userId))
-    .orderBy(desc(weeklyReviews.weekStartDate));
+  const [reviewRows, priorReviews, projectRows, taskRows, priorityRows] =
+    await Promise.all([
+      db.select().from(weeklyReviews).where(eq(weeklyReviews.id, reviewId)),
+      db
+        .select({
+          weekStartDate: weeklyReviews.weekStartDate,
+          completedAt: weeklyReviews.completedAt,
+        })
+        .from(weeklyReviews)
+        .where(eq(weeklyReviews.userId, userId))
+        .orderBy(desc(weeklyReviews.weekStartDate)),
+      db
+        .select()
+        .from(projects)
+        .where(and(eq(projects.userId, userId), eq(projects.status, "active")))
+        .orderBy(asc(projects.name)),
+      db
+        .select({ task: tasks, projectName: projects.name })
+        .from(tasks)
+        .leftJoin(projects, eq(tasks.projectId, projects.id))
+        .where(and(eq(tasks.userId, userId), ne(tasks.status, "done")))
+        .orderBy(asc(tasks.priority)),
+      db
+        .select({ taskId: weeklyPriorities.taskId })
+        .from(weeklyPriorities)
+        .where(eq(weeklyPriorities.weeklyReviewId, reviewId)),
+    ]);
+  const [review] = reviewRows;
 
   const streak = computeStreak(priorReviews, weekStart);
   const last = lastCompletedReview(priorReviews);
-
-  const projectRows = await db
-    .select()
-    .from(projects)
-    .where(and(eq(projects.userId, userId), eq(projects.status, "active")))
-    .orderBy(asc(projects.name));
-
-  const taskRows = await db
-    .select({ task: tasks, projectName: projects.name })
-    .from(tasks)
-    .leftJoin(projects, eq(tasks.projectId, projects.id))
-    .where(and(eq(tasks.userId, userId), ne(tasks.status, "done")))
-    .orderBy(asc(tasks.priority));
 
   const tasksByProject = new Map<string, ReviewTask[]>();
   const actionable: ReviewTask[] = [];
@@ -97,11 +99,6 @@ export async function loadReviewData(userId: string): Promise<ReviewData> {
     }
     actionable.push(t);
   }
-
-  const priorityRows = await db
-    .select({ taskId: weeklyPriorities.taskId })
-    .from(weeklyPriorities)
-    .where(eq(weeklyPriorities.weeklyReviewId, reviewId));
 
   return {
     review: {

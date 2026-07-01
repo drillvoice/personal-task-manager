@@ -2,26 +2,60 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "./schema";
 
-/**
- * postgres.js is created with the DATABASE_URL if set, otherwise a placeholder
- * string. Real connections don't open until the first query, so `next build`'s
- * page-data collection step doesn't crash when env vars aren't wired up yet
- * (e.g. preview deployments before Vercel env is set). Runtime queries will
- * fail loudly if DATABASE_URL is missing — which is the desired behaviour.
- */
-const url = process.env.DATABASE_URL ?? "postgres://placeholder@localhost/none";
+type PgClient = ReturnType<typeof postgres>;
 
-const globalForDb = globalThis as unknown as {
-  __pgClient?: ReturnType<typeof postgres>;
-};
-
-const client =
-  globalForDb.__pgClient ??
-  postgres(url, { max: 10, idle_timeout: 20, prepare: false });
-
-if (process.env.NODE_ENV !== "production") {
-  globalForDb.__pgClient = client;
+function makeDb(client: PgClient) {
+  return drizzle(client, { schema });
 }
 
-export const db = drizzle(client, { schema });
+type Db = ReturnType<typeof makeDb>;
+
+const globalForDb = globalThis as unknown as {
+  __pgClient?: PgClient;
+  __db?: Db;
+};
+
+let productionPgClient: PgClient | undefined;
+let productionDb: Db | undefined;
+
+function getPostgresClient(): PgClient {
+  if (process.env.NODE_ENV === "production") {
+    productionPgClient ??= postgres(getDatabaseUrl(), {
+      max: 10,
+      idle_timeout: 20,
+      prepare: false,
+    });
+    return productionPgClient;
+  }
+
+  globalForDb.__pgClient ??= postgres(getDatabaseUrl(), {
+    max: 10,
+    idle_timeout: 20,
+    prepare: false,
+  });
+  return globalForDb.__pgClient;
+}
+
+function getDatabaseUrl() {
+  return process.env.DATABASE_URL ?? "postgres://placeholder@localhost/none";
+}
+
+export function getDb(): Db {
+  if (process.env.NODE_ENV === "production") {
+    productionDb ??= makeDb(getPostgresClient());
+    return productionDb;
+  }
+
+  globalForDb.__db ??= makeDb(getPostgresClient());
+  return globalForDb.__db;
+}
+
+export const db = new Proxy({} as Db, {
+  get(_target, prop) {
+    const database = getDb();
+    const value = Reflect.get(database, prop, database);
+    return typeof value === "function" ? value.bind(database) : value;
+  },
+});
+
 export { schema };

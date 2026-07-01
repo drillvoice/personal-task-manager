@@ -65,28 +65,20 @@ export async function upsertWeeklyNote(input: {
 
   const week = weekStartFromIso(parsed.data.weekStartDate);
 
-  const [existing] = await db
-    .select()
-    .from(projectWeeklyNotes)
-    .where(
-      and(
-        eq(projectWeeklyNotes.projectId, parsed.data.projectId),
-        eq(projectWeeklyNotes.weekStartDate, week),
-      ),
-    );
-
-  if (existing) {
-    await db
-      .update(projectWeeklyNotes)
-      .set({ note: parsed.data.note, updatedAt: new Date() })
-      .where(eq(projectWeeklyNotes.id, existing.id));
-  } else {
-    await db.insert(projectWeeklyNotes).values({
+  await db
+    .insert(projectWeeklyNotes)
+    .values({
       projectId: parsed.data.projectId,
       weekStartDate: week,
       note: parsed.data.note,
+    })
+    .onConflictDoUpdate({
+      target: [
+        projectWeeklyNotes.projectId,
+        projectWeeklyNotes.weekStartDate,
+      ],
+      set: { note: parsed.data.note, updatedAt: new Date() },
     });
-  }
 
   revalidatePath("/projects");
   revalidatePath("/review");

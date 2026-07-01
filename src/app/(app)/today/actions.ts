@@ -1,15 +1,15 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { dailyPlanItems, tasks } from "@/lib/db/schema";
+import { PRIORITY_TASK_CAP, dailyPlanItems, tasks } from "@/lib/db/schema";
 import { requireUserId } from "@/lib/server/session";
 import {
   PriorityCapExceededError,
-  assertDailyRoomForOne,
   ensureDailyPlan,
 } from "@/lib/server/priority-cap";
+import { loadEligibleForPlan } from "@/lib/server/today";
 import { todayIso } from "@/lib/time";
 
 async function assertOwnsTask(userId: string, taskId: string) {
@@ -26,34 +26,32 @@ export async function addToTodayPlan(taskId: string): Promise<
   const userId = await requireUserId();
   await assertOwnsTask(userId, taskId);
   const planId = await ensureDailyPlan(userId, todayIso());
-  try {
-    await assertDailyRoomForOne(planId);
-  } catch (err) {
-    if (err instanceof PriorityCapExceededError) {
-      return { ok: false, error: err.message };
-    }
-    throw err;
-  }
-  const existing = await db
-    .select({ id: dailyPlanItems.id })
+  const [existing] = await db
+    .select({ value: count() })
     .from(dailyPlanItems)
-    .where(
-      and(
-        eq(dailyPlanItems.dailyPlanId, planId),
-        eq(dailyPlanItems.taskId, taskId),
-      ),
-    );
-  if (existing.length === 0) {
-    const count = await db
-      .select({ id: dailyPlanItems.id })
-      .from(dailyPlanItems)
-      .where(eq(dailyPlanItems.dailyPlanId, planId));
-    await db
-      .insert(dailyPlanItems)
-      .values({ dailyPlanId: planId, taskId, sortOrder: count.length });
+    .where(eq(dailyPlanItems.dailyPlanId, planId));
+  if (existing.value >= PRIORITY_TASK_CAP) {
+    return { ok: false, error: new PriorityCapExceededError("daily").message };
   }
+  await db
+    .insert(dailyPlanItems)
+    .values({ dailyPlanId: planId, taskId, sortOrder: existing.value })
+    .onConflictDoNothing();
   revalidatePath("/today");
   return { ok: true };
+}
+
+export async function loadEligibleForTodayPlan() {
+  const userId = await requireUserId();
+  const planId = await ensureDailyPlan(userId, todayIso());
+  const planned = await db
+    .select({ taskId: dailyPlanItems.taskId })
+    .from(dailyPlanItems)
+    .where(eq(dailyPlanItems.dailyPlanId, planId));
+  return loadEligibleForPlan(
+    userId,
+    planned.map((item) => item.taskId),
+  );
 }
 
 export async function removeFromTodayPlan(taskId: string) {
@@ -73,18 +71,16 @@ export async function removeFromTodayPlan(taskId: string) {
 
 export async function setTaskDone(taskId: string, done: boolean) {
   const userId = await requireUserId();
-  await assertOwnsTask(userId, taskId);
-  if (done) {
-    await db
-      .update(tasks)
-      .set({ status: "done", completedAt: new Date() })
-      .where(eq(tasks.id, taskId));
-  } else {
-    await db
-      .update(tasks)
-      .set({ status: "next_action", completedAt: null })
-      .where(eq(tasks.id, taskId));
-  }
+  const [updated] = await db
+    .update(tasks)
+    .set(
+      done
+        ? { status: "done", completedAt: new Date() }
+        : { status: "next_action", completedAt: null },
+    )
+    .where(and(eq(tasks.id, taskId), eq(tasks.userId, userId)))
+    .returning({ id: tasks.id });
+  if (!updated) throw new Error("Task not found");
   revalidatePath("/today");
   revalidatePath("/tasks");
 }

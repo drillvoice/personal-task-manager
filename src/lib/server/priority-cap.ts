@@ -1,5 +1,5 @@
 import "server-only";
-import { and, eq } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   PRIORITY_TASK_CAP,
@@ -26,21 +26,21 @@ export class PriorityCapExceededError extends Error {
 }
 
 export async function assertDailyRoomForOne(planId: string): Promise<void> {
-  const existing = await db
-    .select({ id: dailyPlanItems.id })
+  const [existing] = await db
+    .select({ value: count() })
     .from(dailyPlanItems)
     .where(eq(dailyPlanItems.dailyPlanId, planId));
-  if (existing.length >= PRIORITY_TASK_CAP) {
+  if (existing.value >= PRIORITY_TASK_CAP) {
     throw new PriorityCapExceededError("daily");
   }
 }
 
 export async function assertWeeklyRoomForOne(reviewId: string): Promise<void> {
-  const existing = await db
-    .select({ id: weeklyPriorities.id })
+  const [existing] = await db
+    .select({ value: count() })
     .from(weeklyPriorities)
     .where(eq(weeklyPriorities.weeklyReviewId, reviewId));
-  if (existing.length >= WEEKLY_PRIORITY_CAP) {
+  if (existing.value >= WEEKLY_PRIORITY_CAP) {
     throw new PriorityCapExceededError("weekly");
   }
 }

@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import { Plus } from "lucide-react";
-import { AddTaskForm } from "@/components/add-task-form";
 import { ProjectCard } from "@/components/project-card";
 import { TaskRow } from "@/components/task-row";
 import {
@@ -15,6 +15,10 @@ import type { TasksViewProject, TasksViewTask } from "@/lib/server/tasks";
 
 type Mode = "by_project" | "all_tasks";
 type ProjectFilter = "active" | "someday_maybe" | "all";
+
+const AddTaskForm = dynamic(() =>
+  import("@/components/add-task-form").then((mod) => mod.AddTaskForm),
+);
 
 export function TasksView({ projects }: { projects: TasksViewProject[] }) {
   const [mode, setMode] = useState<Mode>("by_project");

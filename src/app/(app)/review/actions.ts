@@ -1,19 +1,19 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import {
   projects,
   tasks,
+  WEEKLY_PRIORITY_CAP,
   weeklyPriorities,
   weeklyReviews,
 } from "@/lib/db/schema";
 import { requireUserId } from "@/lib/server/session";
 import {
   PriorityCapExceededError,
-  assertWeeklyRoomForOne,
   ensureWeeklyReview,
 } from "@/lib/server/priority-cap";
 import { weekStartIso } from "@/lib/time";
@@ -66,11 +66,12 @@ export async function updateProjectNotes(
   notes: string,
 ): Promise<void> {
   const userId = await requireUserId();
-  await assertOwnsProject(userId, projectId);
-  await db
+  const [updated] = await db
     .update(projects)
     .set({ notes, updatedAt: new Date() })
-    .where(eq(projects.id, projectId));
+    .where(and(eq(projects.id, projectId), eq(projects.userId, userId)))
+    .returning({ id: projects.id });
+  if (!updated) throw new Error("Project not found");
   revalidatePath("/review");
   revalidatePath("/tasks");
 }
@@ -128,23 +129,17 @@ export async function toggleWeeklyPriority(
     return { ok: true };
   }
 
-  try {
-    await assertWeeklyRoomForOne(reviewId);
-  } catch (err) {
-    if (err instanceof PriorityCapExceededError) {
-      return { ok: false, error: err.message };
-    }
-    throw err;
-  }
-
-  const count = await db
-    .select({ id: weeklyPriorities.id })
+  const [existingCount] = await db
+    .select({ value: count() })
     .from(weeklyPriorities)
     .where(eq(weeklyPriorities.weeklyReviewId, reviewId));
+  if (existingCount.value >= WEEKLY_PRIORITY_CAP) {
+    return { ok: false, error: new PriorityCapExceededError("weekly").message };
+  }
   await db.insert(weeklyPriorities).values({
     weeklyReviewId: reviewId,
     taskId,
-    sortOrder: count.length,
+    sortOrder: existingCount.value,
   });
   revalidatePath("/review");
   return { ok: true };

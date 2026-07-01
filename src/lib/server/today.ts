@@ -105,15 +105,31 @@ export async function loadEligibleForPlan(
   excludeTaskIds: string[],
 ): Promise<TodayTask[]> {
   const weekStart = weekStartIso();
-  const [review] = await db
-    .select({ id: weeklyReviews.id })
-    .from(weeklyReviews)
-    .where(
-      and(
-        eq(weeklyReviews.userId, userId),
-        eq(weeklyReviews.weekStartDate, weekStart),
+  const [reviewRows, rows] = await Promise.all([
+    db
+      .select({ id: weeklyReviews.id })
+      .from(weeklyReviews)
+      .where(
+        and(
+          eq(weeklyReviews.userId, userId),
+          eq(weeklyReviews.weekStartDate, weekStart),
+        ),
       ),
-    );
+    db
+      .select({ task: tasks, projectName: projects.name })
+      .from(tasks)
+      .leftJoin(projects, eq(tasks.projectId, projects.id))
+      .where(
+        and(
+          eq(tasks.userId, userId),
+          ne(tasks.status, "done"),
+          excludeTaskIds.length
+            ? not(inArray(tasks.id, excludeTaskIds))
+            : undefined,
+        ),
+      ),
+  ]);
+  const [review] = reviewRows;
 
   const weekPrioIds = new Set(
     review
@@ -125,20 +141,6 @@ export async function loadEligibleForPlan(
         ).map((r) => r.id)
       : [],
   );
-
-  const rows = await db
-    .select({ task: tasks, projectName: projects.name })
-    .from(tasks)
-    .leftJoin(projects, eq(tasks.projectId, projects.id))
-    .where(
-      and(
-        eq(tasks.userId, userId),
-        ne(tasks.status, "done"),
-        excludeTaskIds.length
-          ? not(inArray(tasks.id, excludeTaskIds))
-          : undefined,
-      ),
-    );
 
   return rows
     .map((r) => ({

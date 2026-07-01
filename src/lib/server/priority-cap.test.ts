@@ -14,7 +14,7 @@ vi.mock("@/lib/db", () => {
   const rows: unknown[] = [];
   const chain = {
     from: () => chain,
-    where: () => rows,
+    where: () => [{ value: rows.length }],
   };
   return {
     db: {

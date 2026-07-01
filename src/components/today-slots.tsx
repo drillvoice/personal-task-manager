@@ -5,17 +5,19 @@ import { Plus } from "lucide-react";
 import { PrioritySlot } from "@/components/priority-slot";
 import { PriorityBadge } from "@/components/priority-badge";
 import { DueLabel } from "@/components/due-label";
-import { addToTodayPlan } from "@/app/(app)/today/actions";
+import {
+  addToTodayPlan,
+  loadEligibleForTodayPlan,
+} from "@/app/(app)/today/actions";
 import type { TodaySlot, TodayTask } from "@/lib/server/today";
 
 export function TodaySlots({
   slots,
-  eligible,
 }: {
   slots: TodaySlot[];
-  eligible: TodayTask[];
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [eligible, setEligible] = useState<TodayTask[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -26,12 +28,17 @@ export function TodaySlots({
     if (!canAdd) return;
     setError(null);
     setPickerOpen(true);
+    if (eligible) return;
+    startTransition(async () => {
+      setEligible(await loadEligibleForTodayPlan());
+    });
   };
 
   const pick = (id: string) => {
     startTransition(async () => {
       const res = await addToTodayPlan(id);
       if (res.ok) {
+        setEligible(null);
         setPickerOpen(false);
       } else {
         setError(res.error);
@@ -84,7 +91,14 @@ export function TodaySlots({
               {error}
             </p>
           )}
-          {eligible.length === 0 ? (
+          {eligible === null ? (
+            <p
+              className="font-mono text-[11px]"
+              style={{ color: "var(--color-ink-soft)" }}
+            >
+              Loading tasks…
+            </p>
+          ) : eligible.length === 0 ? (
             <p
               className="font-mono text-[11px]"
               style={{ color: "var(--color-ink-soft)" }}

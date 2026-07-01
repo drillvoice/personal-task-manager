@@ -75,12 +75,7 @@ export async function updateTask(input: {
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid" };
   }
-  const [owned] = await db
-    .select({ id: tasks.id })
-    .from(tasks)
-    .where(and(eq(tasks.id, parsed.data.id), eq(tasks.userId, userId)));
-  if (!owned) return { ok: false, error: "Task not found" };
-  await db
+  const [updated] = await db
     .update(tasks)
     .set({
       title: parsed.data.title,
@@ -88,7 +83,9 @@ export async function updateTask(input: {
       priority: parsed.data.priority,
       dueDate: parsed.data.dueDate,
     })
-    .where(eq(tasks.id, parsed.data.id));
+    .where(and(eq(tasks.id, parsed.data.id), eq(tasks.userId, userId)))
+    .returning({ id: tasks.id });
+  if (!updated) return { ok: false, error: "Task not found" };
   revalidatePath("/tasks");
   revalidatePath("/today");
   return { ok: true };
@@ -98,12 +95,11 @@ export async function deleteTask(
   taskId: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const userId = await requireUserId();
-  const [owned] = await db
-    .select({ id: tasks.id })
-    .from(tasks)
-    .where(and(eq(tasks.id, taskId), eq(tasks.userId, userId)));
-  if (!owned) return { ok: false, error: "Task not found" };
-  await db.delete(tasks).where(eq(tasks.id, taskId));
+  const [deleted] = await db
+    .delete(tasks)
+    .where(and(eq(tasks.id, taskId), eq(tasks.userId, userId)))
+    .returning({ id: tasks.id });
+  if (!deleted) return { ok: false, error: "Task not found" };
   revalidatePath("/tasks");
   revalidatePath("/today");
   return { ok: true };

@@ -117,7 +117,10 @@ export const projects = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (t) => [index("projects_user_status_idx").on(t.userId, t.status)],
+  (t) => [
+    index("projects_user_status_idx").on(t.userId, t.status),
+    index("projects_user_name_idx").on(t.userId, t.name),
+  ],
 );
 
 export const tasks = pgTable(
@@ -143,6 +146,12 @@ export const tasks = pgTable(
   },
   (t) => [
     index("tasks_user_status_idx").on(t.userId, t.status),
+    index("tasks_user_due_priority_idx").on(t.userId, t.dueDate, t.priority),
+    index("tasks_user_sort_created_idx").on(
+      t.userId,
+      t.sortOrder,
+      t.createdAt,
+    ),
     index("tasks_project_idx").on(t.projectId),
   ],
 );

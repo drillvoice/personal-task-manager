@@ -1,10 +1,14 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import dynamic from "next/dynamic";
 import { Plus } from "lucide-react";
-import { AddProjectForm } from "@/components/add-project-form";
 import { upsertWeeklyNote } from "@/app/(app)/projects/actions";
 import type { ProjectsTableData } from "@/lib/server/projects";
+
+const AddProjectForm = dynamic(() =>
+  import("@/components/add-project-form").then((mod) => mod.AddProjectForm),
+);
 
 export function ProjectsTable({ data }: { data: ProjectsTableData }) {
   const [showAdd, setShowAdd] = useState(false);
