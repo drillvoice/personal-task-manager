@@ -5,6 +5,16 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 
 ## [Unreleased]
 
+### Changed
+- Auth provider swapped from Resend magic-link to GitHub OAuth. For a
+  single-user personal app the email path had too many moving parts
+  (domain verification, deliverability, expiring links, silent failures).
+  GitHub OAuth is one click, no email round-trip. The `ALLOWED_EMAIL`
+  gate stays — we now compare it against the GitHub-linked primary email
+  in the `signIn` callback. Env vars: `AUTH_RESEND_KEY` and
+  `AUTH_EMAIL_FROM` are gone; `AUTH_GITHUB_ID` and `AUTH_GITHUB_SECRET`
+  are new. Removed the `resend` package.
+
 ### Fixed
 - Post-sign-in `ERR_TOO_MANY_REDIRECTS`. Cause: Auth.js v5 with JWT session
   strategy doesn't auto-populate `session.user.id` — `requireUserId()` bounced

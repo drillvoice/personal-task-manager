@@ -15,7 +15,9 @@ data, so correctness matters.
 ## Stack
 - Next.js 16 (App Router), TypeScript strict, Tailwind v4 (CSS-first `@theme`)
 - Drizzle ORM + postgres.js against Neon Postgres
-- Auth.js v5 (beta) with Resend magic-link, single-user allowlist gate
+- Auth.js v5 (beta) with GitHub OAuth, single-user `ALLOWED_EMAIL` allowlist
+  gate (the app was briefly on Resend magic-link — swapped out because for a
+  single-user app the email path had too many moving parts)
 - date-fns / date-fns-tz — **all "today" and week-bucket logic must go
   through `src/lib/time.ts`** and stay anchored to `Australia/Sydney`
 - vitest for the handful of tests we do keep

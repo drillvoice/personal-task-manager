@@ -6,7 +6,7 @@ plus DNS propagation if you want a custom domain.
 
 - [ ] **§1** Push the repo to GitHub
 - [ ] **§2** Create the Neon Postgres project (dev + prod branches)
-- [ ] **§3** Set up Resend for magic-link email
+- [ ] **§3** Register the GitHub OAuth App
 - [ ] **§4** Create the Vercel project and link the GitHub repo
 - [ ] **§5** Fill in environment variables (dev locally, prod in Vercel)
 - [ ] **§6** Add PWA icons (optional but recommended before shipping)
@@ -42,8 +42,8 @@ spec's §8 recommendation.
 3. Postgres version: **whatever the default is** (18 as of writing). Any modern
    version works — Drizzle and postgres.js don't care.
 4. If Neon offers to enable **Neon Auth**, leave it **off**. That's their
-   own auth product; we're doing auth in-app via Auth.js + Resend, so a
-   parallel Neon Auth user store would be dead weight.
+   own auth product; we're doing auth in-app via Auth.js + GitHub OAuth,
+   so a parallel Neon Auth user store would be dead weight.
 5. When Neon offers to name the default branch, keep it `main`.
 6. In the Neon dashboard, note two things:
    - **Connection string** for the `main` (production) branch — you'll paste
@@ -61,32 +61,40 @@ spec's §8 recommendation.
 
 ---
 
-## §3 · Set up Resend for magic-link email
+## §3 · Register the GitHub OAuth App
 
-1. Sign up at <https://resend.com>. Use the same email address you'll want to
-   sign in as — it becomes your `ALLOWED_EMAIL`.
-2. Create an API key: `API Keys → Create API Key`, name it something like
-   `task-manager`. Copy the value — you'll only see it once. Save somewhere
-   temporary until you paste it into Vercel.
-3. **Decide your "from" address.** Two options:
-   - **Easy path (recommended for first deploy):** use Resend's shared
-     sender `onboarding@resend.dev` — no DNS, no domain verification. The
-     catch is Resend will only *send to* the email address on your Resend
-     account, which is fine for a single-user app. Set
-     `AUTH_EMAIL_FROM="Task Manager <onboarding@resend.dev>"` and you're
-     done.
-   - **Own-domain path (optional, do this later):** in Resend, `Domains → Add
-     Domain`, enter e.g. `yourname.com`, then add the SPF, DKIM, and DMARC
-     DNS records Resend shows you at your registrar. Wait for the domain to
-     say "Verified" (usually a few minutes). Set `AUTH_EMAIL_FROM="Task
-     Manager <no-reply@yourname.com>"`.
+Sign-in is via "Sign in with GitHub" — no email delivery to worry about, no
+expiring magic links.
 
-**Do not skip step 3.** If `AUTH_EMAIL_FROM` is unset or points at an
-unverified domain, Resend returns 403 and Auth.js surfaces it as a generic
-"server error" on the sign-in page.
+1. Go to <https://github.com/settings/developers> → **OAuth Apps** → **New
+   OAuth App**.
+2. Fill in:
+   - **Application name:** something like `Task Manager`.
+   - **Homepage URL:** your Vercel deployment URL (e.g.
+     `https://personal-task-manager-<hash>.vercel.app`, or your custom
+     domain if you have one).
+   - **Application description:** anything, or leave blank.
+   - **Authorization callback URL:** `<homepage>/api/auth/callback/github`
+     (e.g. `https://personal-task-manager-<hash>.vercel.app/api/auth/callback/github`).
+     GitHub accepts multiple callback URLs on the same app since 2021, so
+     you can also add `http://localhost:3000/api/auth/callback/github` in
+     the same field for local dev — put each URL on its own line.
+3. Click **Register application**. You'll land on the app's page:
+   - Copy the **Client ID** — this becomes `AUTH_GITHUB_ID`.
+   - Click **Generate a new client secret**, copy the value — this becomes
+     `AUTH_GITHUB_SECRET`. You'll only see it once.
+4. **Sanity-check your GitHub primary email.** Auth.js reads the primary
+   email from your GitHub account and passes it to our `signIn` allowlist.
+   Go to <https://github.com/settings/emails> — if "Keep my email addresses
+   private" is on, your effective primary email is
+   `NNNNN+username@users.noreply.github.com`. Either uncheck that so your
+   real email is used, or set `ALLOWED_EMAIL` to the `users.noreply.github.com`
+   value.
 
-> Cost: Resend Free tier = 3,000 emails/mo, plenty for magic-link auth on a
-> single user.
+> Why GitHub OAuth over magic-link email: for a personal single-user app
+> the email path adds a lot of moving parts (sending domain verification,
+> deliverability, expiring links) with no real benefit. This is the simpler
+> path.
 
 ---
 
@@ -115,15 +123,19 @@ Production and the dev Neon branch string for Preview/Development.
 |---|---|---|
 | `DATABASE_URL` | Neon Postgres pooled connection string | Neon dashboard → the pooled URL for `main` (prod) or `dev` (local) |
 | `AUTH_SECRET` | Session cookie signing key | Generate: `openssl rand -base64 32` |
-| `AUTH_URL` | Base URL Auth.js redirects back to | **Local only** — set to `http://localhost:3000` in `.env.local`. **Do not set in Vercel Production or Preview** — Auth.js auto-detects from `VERCEL_URL`. Setting `http://localhost:3000` in prod will send every magic-link redirect to your laptop |
-| `AUTH_RESEND_KEY` | Resend API key | Resend dashboard → API Keys |
-| `AUTH_EMAIL_FROM` | From address on the magic-link email | e.g. `Task Manager <no-reply@yourname.com>` |
+| `AUTH_URL` | Base URL Auth.js redirects back to | **Local only** — set to `http://localhost:3000` in `.env.local`. **Do not set in Vercel Production or Preview** — Auth.js auto-detects from `VERCEL_URL`. Setting `http://localhost:3000` in prod will send every OAuth callback to your laptop |
+| `AUTH_GITHUB_ID` | GitHub OAuth App Client ID | From §3, the OAuth App page |
+| `AUTH_GITHUB_SECRET` | GitHub OAuth App Client Secret | From §3, "Generate a new client secret" |
 | `ALLOWED_EMAIL` | The single email that's allowed to sign in | Your email address (case-insensitive) |
 
 **In Vercel:** for each of the three environments (Production, Preview,
 Development), set the same keys. It's fine for all three to share the same
-Resend key and `AUTH_SECRET`; the `DATABASE_URL` should differ (prod ↔ dev
-Neon branch).
+GitHub OAuth credentials and `AUTH_SECRET`; the `DATABASE_URL` should
+differ (prod ↔ dev Neon branch).
+
+> **Cleanup from earlier setup:** if you had `AUTH_RESEND_KEY` and
+> `AUTH_EMAIL_FROM` set from the magic-link days, delete them from all
+> three environments — they're no longer read.
 
 ---
 
@@ -183,9 +195,8 @@ data. It refuses to run against production (`NODE_ENV=production`).
 
 1. Push to `main` — Vercel auto-deploys.
 2. Wait for the build to finish, click the deployed URL.
-3. You'll be redirected to `/login`. Enter your email, click **Send magic
-   link**. Check your inbox.
-4. Click the link — you should land on `/today`.
+3. You'll be redirected to `/login`. Click **Sign in with GitHub**.
+4. Approve the OAuth authorisation on GitHub. You should land on `/today`.
 5. Tap **New task** in the Tasks tab and add one. It should appear.
 6. Try adding it to today's plan. Try the priority cap — try to add a fourth,
    confirm it's blocked with the "already has 3 tasks" error.
@@ -197,18 +208,20 @@ data. It refuses to run against production (`NODE_ENV=production`).
    still be there next week.
 
 If any of the above fails:
-- **"Server error" on the sign-in button** — check Vercel logs
-  (Deployments → click the failing one → Functions → the failed request).
-  Most common cause: `AUTH_EMAIL_FROM` unset, or its domain not verified in
-  Resend. Fastest fix: set it to `Task Manager <onboarding@resend.dev>` per
-  §3 easy path.
-- **Login email doesn't arrive but no error** — check the Resend dashboard
-  "Logs" tab. If you're using `onboarding@resend.dev`, remember it can only
-  send to the address on your Resend account.
-- **Magic link redirects you to `localhost:3000`** — `AUTH_URL` is set on
+- **GitHub says "redirect_uri is not associated with this application"** —
+  the callback URL registered in your OAuth App (§3) doesn't include the
+  URL you're actually signing in from. Add it to the OAuth App's
+  authorization callback URL list.
+- **"That GitHub account isn't allowed to sign in here"** — `ALLOWED_EMAIL`
+  doesn't match your GitHub primary email. Check
+  <https://github.com/settings/emails>; if "Keep my email addresses
+  private" is on, either turn it off, or use the
+  `NNNNN+username@users.noreply.github.com` value as `ALLOWED_EMAIL`.
+- **Sign-in redirects you to `localhost:3000`** — `AUTH_URL` is set on
   Vercel Production. Delete it there (see §5); Auth.js will auto-detect
   from `VERCEL_URL`.
 - **App crashes on any page** — check Vercel's function logs; usually
   `DATABASE_URL` is wrong or points at the unpooled endpoint.
-- **"Task not found" or auth loops** — confirm `ALLOWED_EMAIL` matches
-  what you're signing in with, case-insensitive.
+- **After a successful sign-in you get stuck in a redirect loop** — this
+  almost always means an old session cookie from an earlier deploy is
+  still around. Clear cookies for the Vercel URL, then retry.
