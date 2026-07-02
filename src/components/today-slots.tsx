@@ -5,16 +5,22 @@ import { Plus } from "lucide-react";
 import { PrioritySlot } from "@/components/priority-slot";
 import { PriorityBadge } from "@/components/priority-badge";
 import { DueLabel } from "@/components/due-label";
-import {
-  addToTodayPlan,
-  loadEligibleForTodayPlan,
-} from "@/app/(app)/today/actions";
 import type { TodaySlot, TodayTask } from "@/lib/server/today";
 
-export function TodaySlots({
+export function PlanSlots({
   slots,
+  pickerLabel,
+  addAction,
+  loadEligibleAction,
+  removeAction,
+  onToggleDone,
 }: {
   slots: TodaySlot[];
+  pickerLabel: string;
+  addAction: (id: string) => Promise<{ ok: true } | { ok: false; error: string }>;
+  loadEligibleAction: () => Promise<TodayTask[]>;
+  removeAction: (id: string) => Promise<void>;
+  onToggleDone?: (id: string, done: boolean) => Promise<void>;
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [eligible, setEligible] = useState<TodayTask[] | null>(null);
@@ -30,13 +36,13 @@ export function TodaySlots({
     setPickerOpen(true);
     if (eligible) return;
     startTransition(async () => {
-      setEligible(await loadEligibleForTodayPlan());
+      setEligible(await loadEligibleAction());
     });
   };
 
   const pick = (id: string) => {
     startTransition(async () => {
-      const res = await addToTodayPlan(id);
+      const res = await addAction(id);
       if (res.ok) {
         setEligible(null);
         setPickerOpen(false);
@@ -59,6 +65,8 @@ export function TodaySlots({
                 : null
             }
             onOpenPicker={openPicker}
+            onRemove={removeAction}
+            onToggleDone={onToggleDone}
           />
         ))}
       </div>
@@ -76,7 +84,7 @@ export function TodaySlots({
               className="font-mono text-[11px] font-semibold"
               style={{ color: "var(--color-ink-soft)" }}
             >
-              PICK ONE FOR TODAY
+              {pickerLabel}
             </p>
             <button
               type="button"

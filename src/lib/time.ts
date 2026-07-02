@@ -18,6 +18,10 @@ export function todayIso(now: Date = new Date()): string {
   return formatInTimeZone(now, APP_TZ, "yyyy-MM-dd");
 }
 
+export function tomorrowIso(now: Date = new Date()): string {
+  return formatInTimeZone(addDays(toZonedTime(now, APP_TZ), 1), APP_TZ, "yyyy-MM-dd");
+}
+
 /**
  * Monday-anchored week bucket for the given moment. Returns `yyyy-MM-dd` of the
  * Monday that week belongs to, in the app timezone. Used to key

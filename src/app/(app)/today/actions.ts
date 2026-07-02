@@ -10,7 +10,7 @@ import {
   ensureDailyPlan,
 } from "@/lib/server/priority-cap";
 import { loadEligibleForPlan } from "@/lib/server/today";
-import { todayIso } from "@/lib/time";
+import { todayIso, tomorrowIso } from "@/lib/time";
 
 async function assertOwnsTask(userId: string, taskId: string) {
   const [row] = await db
@@ -20,12 +20,13 @@ async function assertOwnsTask(userId: string, taskId: string) {
   if (!row) throw new Error("Task not found");
 }
 
-export async function addToTodayPlan(taskId: string): Promise<
-  { ok: true } | { ok: false; error: string }
-> {
+async function addToPlanForDate(
+  taskId: string,
+  dateIso: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
   const userId = await requireUserId();
   await assertOwnsTask(userId, taskId);
-  const planId = await ensureDailyPlan(userId, todayIso());
+  const planId = await ensureDailyPlan(userId, dateIso);
   const [existing] = await db
     .select({ value: count() })
     .from(dailyPlanItems)
@@ -41,9 +42,9 @@ export async function addToTodayPlan(taskId: string): Promise<
   return { ok: true };
 }
 
-export async function loadEligibleForTodayPlan() {
+async function loadEligibleForPlanDate(dateIso: string) {
   const userId = await requireUserId();
-  const planId = await ensureDailyPlan(userId, todayIso());
+  const planId = await ensureDailyPlan(userId, dateIso);
   const planned = await db
     .select({ taskId: dailyPlanItems.taskId })
     .from(dailyPlanItems)
@@ -54,10 +55,10 @@ export async function loadEligibleForTodayPlan() {
   );
 }
 
-export async function removeFromTodayPlan(taskId: string) {
+async function removeFromPlanForDate(taskId: string, dateIso: string) {
   const userId = await requireUserId();
   await assertOwnsTask(userId, taskId);
-  const planId = await ensureDailyPlan(userId, todayIso());
+  const planId = await ensureDailyPlan(userId, dateIso);
   await db
     .delete(dailyPlanItems)
     .where(
@@ -67,6 +68,30 @@ export async function removeFromTodayPlan(taskId: string) {
       ),
     );
   revalidatePath("/today");
+}
+
+export async function addToTodayPlan(taskId: string) {
+  return addToPlanForDate(taskId, todayIso());
+}
+
+export async function loadEligibleForTodayPlan() {
+  return loadEligibleForPlanDate(todayIso());
+}
+
+export async function removeFromTodayPlan(taskId: string) {
+  return removeFromPlanForDate(taskId, todayIso());
+}
+
+export async function addToTomorrowPlan(taskId: string) {
+  return addToPlanForDate(taskId, tomorrowIso());
+}
+
+export async function loadEligibleForTomorrowPlan() {
+  return loadEligibleForPlanDate(tomorrowIso());
+}
+
+export async function removeFromTomorrowPlan(taskId: string) {
+  return removeFromPlanForDate(taskId, tomorrowIso());
 }
 
 export async function setTaskDone(taskId: string, done: boolean) {
