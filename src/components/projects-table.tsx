@@ -59,10 +59,11 @@ export function ProjectsTable({ data }: { data: ProjectsTableData }) {
           <thead>
             <tr>
               <th
-                className="font-display sticky left-0 top-0 z-20 px-3 py-2 text-left text-[13px] font-semibold"
+                className="font-display sticky left-0 top-0 z-20 whitespace-nowrap px-3 py-2 text-left text-[13px] font-semibold"
                 style={{
                   background: "var(--color-paper-raised)",
-                  minWidth: 220,
+                  width: "1%",
+                  maxWidth: 220,
                 }}
               >
                 Project
@@ -102,8 +103,9 @@ export function ProjectsTable({ data }: { data: ProjectsTableData }) {
             {data.rows.map((row) => (
               <tr key={row.id}>
                 <td
-                  className="font-display sticky left-0 z-10 px-3 py-2.5 align-top text-[13px] font-semibold"
+                  className="font-display sticky left-0 z-10 max-w-[220px] truncate px-3 py-2.5 align-top text-[13px] font-semibold"
                   style={{ background: "var(--color-paper-raised)" }}
+                  title={row.name}
                 >
                   {row.name}
                 </td>
