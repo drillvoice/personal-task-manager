@@ -42,6 +42,9 @@ export function TasksView({ projects }: { projects: TasksViewProject[] }) {
   const active = hasActiveFilters(filters);
 
   const matches = (t: TasksViewTask): boolean => {
+    if (t.status === "done") {
+      return false;
+    }
     if (
       filters.search.trim() &&
       !t.title.toLowerCase().includes(filters.search.toLowerCase())
@@ -164,15 +167,21 @@ export function TasksView({ projects }: { projects: TasksViewProject[] }) {
 
       {mode === "by_project" && !active && (
         <>
-          {projectsForMode.map((p) => (
-            <ProjectCard
-              key={p.id ?? "inbox"}
-              project={p}
-              visibleTasks={p.tasks}
-              defaultOpen={p.status === "active" || p.id === null}
-              projects={projectOptions}
-            />
-          ))}
+          {projectsForMode
+            .map((p) => ({
+              p,
+              openTasks: p.tasks.filter((t) => t.status !== "done"),
+            }))
+            .filter(({ openTasks }) => openTasks.length > 0)
+            .map(({ p, openTasks }) => (
+              <ProjectCard
+                key={p.id ?? "inbox"}
+                project={p}
+                visibleTasks={openTasks}
+                defaultOpen={p.status === "active" || p.id === null}
+                projects={projectOptions}
+              />
+            ))}
         </>
       )}
 

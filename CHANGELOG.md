@@ -6,6 +6,11 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 ## [Unreleased]
 
 ### Changed
+- Tasks view: completed tasks are hidden by default (both "By project" and
+  "All tasks" modes), and projects with no incomplete tasks no longer show
+  up in the "By project" list.
+
+### Changed
 - First-load performance: database queries now run over Neon's HTTP driver
   (`drizzle-orm/neon-http`) instead of a TCP postgres.js pool, removing the
   connection handshake on serverless cold starts. Local CLI scripts
