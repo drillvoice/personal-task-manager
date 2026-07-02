@@ -2,7 +2,6 @@
 
 import { useTransition } from "react";
 import { Check, Plus, X } from "lucide-react";
-import { removeFromTodayPlan, setTaskDone } from "@/app/(app)/today/actions";
 
 type Task = {
   id: string;
@@ -14,10 +13,14 @@ export function PrioritySlot({
   number,
   task,
   onOpenPicker,
+  onRemove,
+  onToggleDone,
 }: {
   number: 1 | 2 | 3;
   task: Task | null;
   onOpenPicker: () => void;
+  onRemove: (id: string) => Promise<void>;
+  onToggleDone?: (id: string, done: boolean) => Promise<void>;
 }) {
   const [pending, startTransition] = useTransition();
 
@@ -63,29 +66,31 @@ export function PrioritySlot({
       >
         {number}
       </span>
-      <button
-        type="button"
-        onClick={() =>
-          startTransition(async () => {
-            await setTaskDone(task.id, !done);
-          })
-        }
-        disabled={pending}
-        aria-pressed={done}
-        aria-label={done ? "Mark task incomplete" : "Mark task complete"}
-        className="flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded-[4px] border-[1.5px]"
-        style={{
-          background: done ? "var(--color-teal)" : "transparent",
-          borderColor: done ? "var(--color-teal)" : "var(--color-ink-soft)",
-        }}
-      >
-        {done && <Check size={12} color="var(--color-paper-raised)" strokeWidth={3} />}
-      </button>
+      {onToggleDone && (
+        <button
+          type="button"
+          onClick={() =>
+            startTransition(async () => {
+              await onToggleDone(task.id, !done);
+            })
+          }
+          disabled={pending}
+          aria-pressed={done}
+          aria-label={done ? "Mark task incomplete" : "Mark task complete"}
+          className="flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded-[4px] border-[1.5px]"
+          style={{
+            background: done ? "var(--color-teal)" : "transparent",
+            borderColor: done ? "var(--color-teal)" : "var(--color-ink-soft)",
+          }}
+        >
+          {done && <Check size={12} color="var(--color-paper-raised)" strokeWidth={3} />}
+        </button>
+      )}
       <span
         className="flex-1 text-[14px] font-medium leading-tight"
         style={{
-          color: done ? "var(--color-ink-soft)" : "var(--color-ink)",
-          textDecoration: done ? "line-through" : "none",
+          color: onToggleDone && done ? "var(--color-ink-soft)" : "var(--color-ink)",
+          textDecoration: onToggleDone && done ? "line-through" : "none",
         }}
       >
         {task.title}
@@ -94,7 +99,7 @@ export function PrioritySlot({
         type="button"
         onClick={() =>
           startTransition(async () => {
-            await removeFromTodayPlan(task.id);
+            await onRemove(task.id);
           })
         }
         disabled={pending}

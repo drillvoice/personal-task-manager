@@ -9,7 +9,7 @@ import {
   weeklyPriorities,
   weeklyReviews,
 } from "@/lib/db/schema";
-import { todayIso, weekStartIso } from "@/lib/time";
+import { todayIso, tomorrowIso, weekStartIso } from "@/lib/time";
 import { ensureDailyPlan } from "./priority-cap";
 
 export type TodayTask = {
@@ -31,6 +31,9 @@ export type TodayData = {
   planId: string;
   dateIso: string;
   slots: TodaySlot[];
+  tomorrowPlanId: string;
+  tomorrowDateIso: string;
+  tomorrowSlots: TodaySlot[];
   alsoDue: TodayTask[];
 };
 
@@ -49,38 +52,22 @@ function toTask(
   };
 }
 
-export async function loadTodayData(userId: string): Promise<TodayData> {
-  const dateIso = todayIso();
-
-  // Plan + slot tasks come back in one joined query, and the also-due list
-  // excludes in-plan tasks in JS rather than SQL, so both queries can run in
-  // parallel — this page renders on every app open, so roundtrips matter.
-  const [planRows, alsoDueRows] = await Promise.all([
-    db
-      .select({
-        planId: dailyPlans.id,
-        task: tasks,
-        projectName: projects.name,
-      })
-      .from(dailyPlans)
-      .leftJoin(dailyPlanItems, eq(dailyPlanItems.dailyPlanId, dailyPlans.id))
-      .leftJoin(tasks, eq(dailyPlanItems.taskId, tasks.id))
-      .leftJoin(projects, eq(tasks.projectId, projects.id))
-      .where(and(eq(dailyPlans.userId, userId), eq(dailyPlans.date, dateIso)))
-      .orderBy(asc(dailyPlanItems.sortOrder)),
-    db
-      .select({ task: tasks, projectName: projects.name })
-      .from(tasks)
-      .leftJoin(projects, eq(tasks.projectId, projects.id))
-      .where(
-        and(
-          eq(tasks.userId, userId),
-          ne(tasks.status, "done"),
-          lte(tasks.dueDate, dateIso),
-        ),
-      )
-      .orderBy(asc(tasks.dueDate), asc(tasks.priority)),
-  ]);
+async function loadPlanSlots(
+  userId: string,
+  dateIso: string,
+): Promise<{ planId: string; slots: TodaySlot[]; taskIds: string[] }> {
+  const planRows = await db
+    .select({
+      planId: dailyPlans.id,
+      task: tasks,
+      projectName: projects.name,
+    })
+    .from(dailyPlans)
+    .leftJoin(dailyPlanItems, eq(dailyPlanItems.dailyPlanId, dailyPlans.id))
+    .leftJoin(tasks, eq(dailyPlanItems.taskId, tasks.id))
+    .leftJoin(projects, eq(tasks.projectId, projects.id))
+    .where(and(eq(dailyPlans.userId, userId), eq(dailyPlans.date, dateIso)))
+    .orderBy(asc(dailyPlanItems.sortOrder));
 
   const planId =
     planRows[0]?.planId ?? (await ensureDailyPlan(userId, dateIso));
@@ -97,12 +84,41 @@ export async function loadTodayData(userId: string): Promise<TodayData> {
     };
   });
 
-  const inPlanIds = new Set(slotTasks.map((r) => r.task.id));
+  return { planId, slots, taskIds: slotTasks.map((r) => r.task.id) };
+}
+
+export async function loadTodayData(userId: string): Promise<TodayData> {
+  const dateIso = todayIso();
+  const tomorrowDateIso = tomorrowIso();
+
+  // Today's plan, tomorrow's plan, and the also-due list all run in
+  // parallel — this page renders on every app open, so roundtrips matter.
+  const [todayPlan, tomorrowPlan, alsoDueRows] = await Promise.all([
+    loadPlanSlots(userId, dateIso),
+    loadPlanSlots(userId, tomorrowDateIso),
+    db
+      .select({ task: tasks, projectName: projects.name })
+      .from(tasks)
+      .leftJoin(projects, eq(tasks.projectId, projects.id))
+      .where(
+        and(
+          eq(tasks.userId, userId),
+          ne(tasks.status, "done"),
+          lte(tasks.dueDate, dateIso),
+        ),
+      )
+      .orderBy(asc(tasks.dueDate), asc(tasks.priority)),
+  ]);
+
+  const inPlanIds = new Set(todayPlan.taskIds);
 
   return {
-    planId,
+    planId: todayPlan.planId,
     dateIso,
-    slots,
+    slots: todayPlan.slots,
+    tomorrowPlanId: tomorrowPlan.planId,
+    tomorrowDateIso,
+    tomorrowSlots: tomorrowPlan.slots,
     alsoDue: alsoDueRows
       .filter((r) => !inPlanIds.has(r.task.id))
       .map((r) => toTask(r.task, r.projectName ?? null)),

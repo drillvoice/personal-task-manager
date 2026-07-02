@@ -5,6 +5,14 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 
 ## [Unreleased]
 
+### Added
+- Today view: a "Tomorrow's three" section below "Also due today", using the
+  same three-slot picker as today's plan but scoped to tomorrow's daily
+  plan. Lets you assign next-day priorities while wrapping up today. Reuses
+  the existing `daily_plans`/`daily_plan_items` tables (already keyed by
+  date) — no schema change. Unlike today's slots, tomorrow's slots have no
+  complete checkbox since those tasks aren't due yet.
+
 ### Changed
 - Tasks view: completed tasks are hidden by default (both "By project" and
   "All tasks" modes), and projects with no incomplete tasks no longer show
