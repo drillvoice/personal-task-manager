@@ -24,7 +24,7 @@ const personFields = {
   email: z.string().trim().max(320).default(""),
   phone: z.string().trim().max(50).default(""),
   notes: z.string().max(5000).default(""),
-  organisationId: orgIdField,
+  organisationId: orgIdField.default(null),
 };
 
 const createPersonSchema = z.object(personFields);
