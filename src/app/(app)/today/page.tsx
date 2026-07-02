@@ -1,9 +1,18 @@
 import { formatInTimeZone } from "date-fns-tz";
 import { TaskRow } from "@/components/task-row";
-import { TodaySlots } from "@/components/today-slots";
+import { PlanSlots } from "@/components/today-slots";
 import { requireUserId } from "@/lib/server/session";
 import { loadTodayData } from "@/lib/server/today";
 import { APP_TZ } from "@/lib/time";
+import {
+  addToTodayPlan,
+  addToTomorrowPlan,
+  loadEligibleForTodayPlan,
+  loadEligibleForTomorrowPlan,
+  removeFromTodayPlan,
+  removeFromTomorrowPlan,
+  setTaskDone,
+} from "@/app/(app)/today/actions";
 
 export const dynamic = "force-dynamic";
 
@@ -29,9 +38,16 @@ export default async function TodayPage() {
         <h1 className="font-display text-xl font-bold">Today&rsquo;s three</h1>
       </header>
 
-      <TodaySlots slots={today.slots} />
+      <PlanSlots
+        slots={today.slots}
+        pickerLabel="PICK ONE FOR TODAY"
+        addAction={addToTodayPlan}
+        loadEligibleAction={loadEligibleForTodayPlan}
+        removeAction={removeFromTodayPlan}
+        onToggleDone={setTaskDone}
+      />
 
-      <section>
+      <section className="mb-8">
         <div className="mb-2 flex items-center justify-between">
           <h2
             className="font-mono text-[11px] font-semibold"
@@ -64,6 +80,24 @@ export default async function TodayPage() {
             ))}
           </div>
         )}
+      </section>
+
+      <section>
+        <div className="mb-2 flex items-center justify-between">
+          <h2
+            className="font-mono text-[11px] font-semibold"
+            style={{ color: "var(--color-ink-soft)" }}
+          >
+            TOMORROW&rsquo;S THREE
+          </h2>
+        </div>
+        <PlanSlots
+          slots={today.tomorrowSlots}
+          pickerLabel="PICK ONE FOR TOMORROW"
+          addAction={addToTomorrowPlan}
+          loadEligibleAction={loadEligibleForTomorrowPlan}
+          removeAction={removeFromTomorrowPlan}
+        />
       </section>
     </div>
   );
