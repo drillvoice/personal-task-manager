@@ -6,6 +6,12 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 ## [Unreleased]
 
 ### Added
+- People & Organisations (mini CRM): new People page (with nav item) for
+  creating, editing, and deleting people (name, role, email, phone, notes,
+  organisation) and organisations (name, notes). Tasks can now be linked to
+  one person or one organisation via a contact picker in the add/edit task
+  forms; linked contacts show as a small chip on the task row. Deleting a
+  person or organisation unlinks their tasks (ON DELETE SET NULL).
 - Today view: a "Tomorrow's three" section below "Also due today", using the
   same three-slot picker as today's plan but scoped to tomorrow's daily
   plan. Lets you assign next-day priorities while wrapping up today. Reuses

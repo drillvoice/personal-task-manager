@@ -1,12 +1,15 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Check } from "lucide-react";
+import { Check, Users } from "lucide-react";
 import { DueLabel } from "@/components/due-label";
 import { PriorityBadge } from "@/components/priority-badge";
 import { TagChip } from "@/components/tag-chip";
 import { ProjectDropdown } from "@/components/project-dropdown";
 import type { ProjectOption } from "@/components/project-dropdown";
+import { ContactDropdown } from "@/components/contact-dropdown";
+import type { ContactSelection } from "@/components/contact-dropdown";
+import type { ContactOption } from "@/lib/server/people";
 import { setTaskDone } from "@/app/(app)/today/actions";
 import { updateTask, deleteTask } from "@/app/(app)/tasks/actions";
 
@@ -19,33 +22,58 @@ export type TaskRowProps = {
     dueDate: string | null;
     projectId?: string | null;
     projectName: string | null;
+    personId?: string | null;
+    personName?: string | null;
+    orgId?: string | null;
+    orgName?: string | null;
   };
   tags?: { name: string }[];
   showProject?: boolean;
   projects?: ProjectOption[];
+  people?: ContactOption[];
+  orgs?: ContactOption[];
 };
 
 function EditTaskForm({
   task,
   projects,
+  people = [],
+  orgs = [],
   onDone,
 }: {
   task: TaskRowProps["task"];
   projects: ProjectOption[];
+  people?: ContactOption[];
+  orgs?: ContactOption[];
   onDone: () => void;
 }) {
   const [title, setTitle] = useState(task.title);
   const [projectId, setProjectId] = useState<string>(task.projectId ?? "");
+  const [personId, setPersonId] = useState<string>(task.personId ?? "");
+  const [orgId, setOrgId] = useState<string>(task.orgId ?? "");
   const [priority, setPriority] = useState<1 | 2 | 3>(task.priority);
   const [dueDate, setDueDate] = useState(task.dueDate ?? "");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
+  const setContact = (sel: ContactSelection) => {
+    setPersonId(sel.type === "person" ? sel.id : "");
+    setOrgId(sel.type === "org" ? sel.id : "");
+  };
+
   const save = () => {
     if (!title.trim()) return;
     startTransition(async () => {
-      const res = await updateTask({ id: task.id, title, projectId, priority, dueDate });
+      const res = await updateTask({
+        id: task.id,
+        title,
+        projectId,
+        personId,
+        orgId,
+        priority,
+        dueDate,
+      });
       if (res.ok) {
         onDone();
       } else {
@@ -92,6 +120,15 @@ function EditTaskForm({
             value={projectId}
             onChange={setProjectId}
           />
+          <div className="mt-2">
+            <ContactDropdown
+              people={people}
+              orgs={orgs}
+              personId={personId}
+              orgId={orgId}
+              onChange={setContact}
+            />
+          </div>
         </div>
         <input
           type="date"
@@ -178,10 +215,18 @@ function EditTaskForm({
   );
 }
 
-export function TaskRow({ task, tags = [], showProject = false, projects }: TaskRowProps) {
+export function TaskRow({
+  task,
+  tags = [],
+  showProject = false,
+  projects,
+  people,
+  orgs,
+}: TaskRowProps) {
   const [pending, startTransition] = useTransition();
   const [editing, setEditing] = useState(false);
   const done = task.status === "done";
+  const contactName = task.personName ?? task.orgName ?? null;
 
   const toggle = () => {
     startTransition(async () => {
@@ -194,6 +239,8 @@ export function TaskRow({ task, tags = [], showProject = false, projects }: Task
       <EditTaskForm
         task={task}
         projects={projects}
+        people={people}
+        orgs={orgs}
         onDone={() => setEditing(false)}
       />
     );
@@ -234,6 +281,15 @@ export function TaskRow({ task, tags = [], showProject = false, projects }: Task
           style={{ color: "var(--color-ink-soft)" }}
         >
           {task.projectName}
+        </span>
+      )}
+      {contactName && (
+        <span
+          className="font-mono flex items-center gap-1 text-[10px]"
+          style={{ color: "var(--color-ink-soft)" }}
+        >
+          <Users size={10} />
+          {contactName}
         </span>
       )}
       <PriorityBadge priority={task.priority} />

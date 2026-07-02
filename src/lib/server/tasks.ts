@@ -1,7 +1,14 @@
 import "server-only";
 import { and, asc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { projects, tags, taskTags, tasks } from "@/lib/db/schema";
+import {
+  organisations,
+  people,
+  projects,
+  tags,
+  taskTags,
+  tasks,
+} from "@/lib/db/schema";
 
 export type TasksViewProject = {
   id: string | null; // null = Inbox pseudo-project
@@ -19,6 +26,10 @@ export type TasksViewTask = {
   dueDate: string | null;
   projectId: string | null;
   projectName: string | null;
+  personId: string | null;
+  personName: string | null;
+  orgId: string | null;
+  orgName: string | null;
   tags: { name: string; color: string }[];
 };
 
@@ -30,9 +41,16 @@ export async function loadTasksData(userId: string) {
       .where(eq(projects.userId, userId))
       .orderBy(asc(projects.name)),
     db
-      .select({ task: tasks, projectName: projects.name })
+      .select({
+        task: tasks,
+        projectName: projects.name,
+        personName: people.name,
+        orgName: organisations.name,
+      })
       .from(tasks)
       .leftJoin(projects, eq(tasks.projectId, projects.id))
+      .leftJoin(people, eq(tasks.personId, people.id))
+      .leftJoin(organisations, eq(tasks.organisationId, organisations.id))
       .where(eq(tasks.userId, userId))
       .orderBy(asc(tasks.sortOrder), asc(tasks.createdAt)),
     db
@@ -78,6 +96,10 @@ export async function loadTasksData(userId: string) {
       dueDate: r.task.dueDate,
       projectId: r.task.projectId,
       projectName: r.projectName ?? null,
+      personId: r.task.personId,
+      personName: r.personName ?? null,
+      orgId: r.task.organisationId,
+      orgName: r.orgName ?? null,
       tags: tagsByTask.get(r.task.id) ?? [],
     };
     if (r.task.projectId) {

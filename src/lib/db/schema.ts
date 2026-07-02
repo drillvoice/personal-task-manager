@@ -123,6 +123,54 @@ export const projects = pgTable(
   ],
 );
 
+export const organisations = pgTable(
+  "organisations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    notes: text("notes").notNull().default(""),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("organisations_user_name_idx").on(t.userId, t.name)],
+);
+
+export const people = pgTable(
+  "people",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    organisationId: uuid("organisation_id").references(
+      () => organisations.id,
+      { onDelete: "set null" },
+    ),
+    name: text("name").notNull(),
+    role: text("role").notNull().default(""),
+    email: text("email").notNull().default(""),
+    phone: text("phone").notNull().default(""),
+    notes: text("notes").notNull().default(""),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("people_user_name_idx").on(t.userId, t.name),
+    index("people_organisation_idx").on(t.organisationId),
+  ],
+);
+
 export const tasks = pgTable(
   "tasks",
   {
@@ -131,6 +179,12 @@ export const tasks = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     projectId: uuid("project_id").references(() => projects.id, {
+      onDelete: "set null",
+    }),
+    personId: uuid("person_id").references(() => people.id, {
+      onDelete: "set null",
+    }),
+    organisationId: uuid("organisation_id").references(() => organisations.id, {
       onDelete: "set null",
     }),
     title: text("title").notNull(),
@@ -153,6 +207,8 @@ export const tasks = pgTable(
       t.createdAt,
     ),
     index("tasks_project_idx").on(t.projectId),
+    index("tasks_person_idx").on(t.personId),
+    index("tasks_organisation_idx").on(t.organisationId),
   ],
 );
 
@@ -283,6 +339,29 @@ export const usersRelations = relations(users, ({ many }) => ({
   tags: many(tags),
   weeklyReviews: many(weeklyReviews),
   dailyPlans: many(dailyPlans),
+  organisations: many(organisations),
+  people: many(people),
+}));
+
+export const organisationsRelations = relations(
+  organisations,
+  ({ one, many }) => ({
+    user: one(users, {
+      fields: [organisations.userId],
+      references: [users.id],
+    }),
+    people: many(people),
+    tasks: many(tasks),
+  }),
+);
+
+export const peopleRelations = relations(people, ({ one, many }) => ({
+  user: one(users, { fields: [people.userId], references: [users.id] }),
+  organisation: one(organisations, {
+    fields: [people.organisationId],
+    references: [organisations.id],
+  }),
+  tasks: many(tasks),
 }));
 
 export const projectsRelations = relations(projects, ({ one, many }) => ({
@@ -296,6 +375,14 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
   project: one(projects, {
     fields: [tasks.projectId],
     references: [projects.id],
+  }),
+  person: one(people, {
+    fields: [tasks.personId],
+    references: [people.id],
+  }),
+  organisation: one(organisations, {
+    fields: [tasks.organisationId],
+    references: [organisations.id],
   }),
   tags: many(taskTags),
   weeklyPriorities: many(weeklyPriorities),
@@ -373,6 +460,10 @@ export type NewProject = typeof projects.$inferInsert;
 export type Task = typeof tasks.$inferSelect;
 export type NewTask = typeof tasks.$inferInsert;
 export type Tag = typeof tags.$inferSelect;
+export type Organisation = typeof organisations.$inferSelect;
+export type NewOrganisation = typeof organisations.$inferInsert;
+export type Person = typeof people.$inferSelect;
+export type NewPerson = typeof people.$inferInsert;
 export type ProjectWeeklyNote = typeof projectWeeklyNotes.$inferSelect;
 export type WeeklyReview = typeof weeklyReviews.$inferSelect;
 export type WeeklyPriority = typeof weeklyPriorities.$inferSelect;

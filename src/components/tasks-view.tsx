@@ -11,6 +11,7 @@ import {
   makeEmptyFilters,
   type SmartFilters,
 } from "@/components/smart-search-bar";
+import type { ContactOption } from "@/lib/server/people";
 import type { TasksViewProject, TasksViewTask } from "@/lib/server/tasks";
 
 type Mode = "by_project" | "all_tasks";
@@ -20,7 +21,15 @@ const AddTaskForm = dynamic(() =>
   import("@/components/add-task-form").then((mod) => mod.AddTaskForm),
 );
 
-export function TasksView({ projects }: { projects: TasksViewProject[] }) {
+export function TasksView({
+  projects,
+  people,
+  orgs,
+}: {
+  projects: TasksViewProject[];
+  people: ContactOption[];
+  orgs: ContactOption[];
+}) {
   const [mode, setMode] = useState<Mode>("by_project");
   const [projectFilter, setProjectFilter] = useState<ProjectFilter>("active");
   const [filters, setFilters] = useState<SmartFilters>(makeEmptyFilters());
@@ -130,6 +139,8 @@ export function TasksView({ projects }: { projects: TasksViewProject[] }) {
       {showAdd && (
         <AddTaskForm
           projects={projectOptions}
+          people={people}
+          orgs={orgs}
           onCancel={() => setShowAdd(false)}
           onCreated={() => setShowAdd(false)}
         />
@@ -180,6 +191,8 @@ export function TasksView({ projects }: { projects: TasksViewProject[] }) {
                 visibleTasks={openTasks}
                 defaultOpen={p.status === "active" || p.id === null}
                 projects={projectOptions}
+                people={people}
+                orgs={orgs}
               />
             ))}
         </>
@@ -208,6 +221,8 @@ export function TasksView({ projects }: { projects: TasksViewProject[] }) {
                 visibleTasks={matched}
                 defaultOpen
                 projects={projectOptions}
+                people={people}
+                orgs={orgs}
               />
             ));
           })()}
@@ -241,6 +256,8 @@ export function TasksView({ projects }: { projects: TasksViewProject[] }) {
                 tags={t.tags.map((tg) => ({ name: tg.name }))}
                 showProject
                 projects={projectOptions}
+                people={people}
+                orgs={orgs}
               />
             ));
           })()}

@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Circle, Grid3x3, ListTodo, RefreshCw } from "lucide-react";
+import { Circle, Grid3x3, ListTodo, RefreshCw, Users } from "lucide-react";
 
 const items = [
   { href: "/today", label: "Today", Icon: Circle },
   { href: "/tasks", label: "Tasks", Icon: ListTodo },
   { href: "/projects", label: "Projects", Icon: Grid3x3 },
+  { href: "/people", label: "People", Icon: Users },
   { href: "/review", label: "Review", Icon: RefreshCw },
 ] as const;
 
