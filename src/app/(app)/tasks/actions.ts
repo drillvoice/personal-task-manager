@@ -7,13 +7,17 @@ import { db } from "@/lib/db";
 import { tasks } from "@/lib/db/schema";
 import { requireUserId } from "@/lib/server/session";
 
+const nullableUuid = z
+  .string()
+  .uuid()
+  .nullable()
+  .or(z.literal("").transform(() => null));
+
 const createSchema = z.object({
   title: z.string().trim().min(1, "Title is required").max(200),
-  projectId: z
-    .string()
-    .uuid()
-    .nullable()
-    .or(z.literal("").transform(() => null)),
+  projectId: nullableUuid,
+  personId: nullableUuid.default(null),
+  orgId: nullableUuid.default(null),
   priority: z.union([z.literal(1), z.literal(2), z.literal(3)]),
   dueDate: z
     .string()
@@ -33,11 +37,14 @@ export async function createTask(input: CreateTaskInput): Promise<
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid" };
   }
-  const { title, projectId, priority, dueDate, status } = parsed.data;
+  const { title, projectId, personId, orgId, priority, dueDate, status } =
+    parsed.data;
   await db.insert(tasks).values({
     userId,
     title,
     projectId: projectId ?? null,
+    personId: personId ?? null,
+    organisationId: orgId ?? null,
     priority,
     dueDate: dueDate ?? null,
     status,
@@ -50,11 +57,9 @@ export async function createTask(input: CreateTaskInput): Promise<
 const updateSchema = z.object({
   id: z.string().uuid(),
   title: z.string().trim().min(1, "Title is required").max(200),
-  projectId: z
-    .string()
-    .uuid()
-    .nullable()
-    .or(z.literal("").transform(() => null)),
+  projectId: nullableUuid,
+  personId: nullableUuid.default(null),
+  orgId: nullableUuid.default(null),
   priority: z.union([z.literal(1), z.literal(2), z.literal(3)]),
   dueDate: z
     .string()
@@ -67,6 +72,8 @@ export async function updateTask(input: {
   id: string;
   title: string;
   projectId: string;
+  personId?: string;
+  orgId?: string;
   priority: 1 | 2 | 3;
   dueDate: string;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
@@ -80,6 +87,8 @@ export async function updateTask(input: {
     .set({
       title: parsed.data.title,
       projectId: parsed.data.projectId,
+      personId: parsed.data.personId,
+      organisationId: parsed.data.orgId,
       priority: parsed.data.priority,
       dueDate: parsed.data.dueDate,
     })

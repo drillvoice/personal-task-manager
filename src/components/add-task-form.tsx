@@ -4,14 +4,21 @@ import { useState, useTransition } from "react";
 import { createTask } from "@/app/(app)/tasks/actions";
 import { ProjectDropdown } from "@/components/project-dropdown";
 import type { ProjectOption } from "@/components/project-dropdown";
+import { ContactDropdown } from "@/components/contact-dropdown";
+import type { ContactSelection } from "@/components/contact-dropdown";
+import type { ContactOption } from "@/lib/server/people";
 
 export function AddTaskForm({
   projects,
+  people = [],
+  orgs = [],
   onCancel,
   onCreated,
   defaultProjectId,
 }: {
   projects: ProjectOption[];
+  people?: ContactOption[];
+  orgs?: ContactOption[];
   onCancel: () => void;
   onCreated: () => void;
   defaultProjectId?: string | null;
@@ -22,8 +29,16 @@ export function AddTaskForm({
   );
   const [priority, setPriority] = useState<1 | 2 | 3>(3);
   const [dueDate, setDueDate] = useState("");
+  const [personId, setPersonId] = useState("");
+  const [orgId, setOrgId] = useState("");
+  const [showContact, setShowContact] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+
+  const setContact = (sel: ContactSelection) => {
+    setPersonId(sel.type === "person" ? sel.id : "");
+    setOrgId(sel.type === "org" ? sel.id : "");
+  };
 
   const submit = () => {
     if (!title.trim()) return;
@@ -31,6 +46,8 @@ export function AddTaskForm({
       const res = await createTask({
         title,
         projectId: projectId === "" ? null : projectId,
+        personId: personId || null,
+        orgId: orgId || null,
         priority,
         dueDate: dueDate || null,
         status: "next_action",
@@ -38,6 +55,8 @@ export function AddTaskForm({
       if (res.ok) {
         setTitle("");
         setDueDate("");
+        setPersonId("");
+        setOrgId("");
         onCreated();
       } else {
         setError(res.error);
@@ -113,6 +132,26 @@ export function AddTaskForm({
           })}
         </div>
       </div>
+      {showContact ? (
+        <div className="mb-3 sm:max-w-[320px]">
+          <ContactDropdown
+            people={people}
+            orgs={orgs}
+            personId={personId}
+            orgId={orgId}
+            onChange={setContact}
+          />
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setShowContact(true)}
+          className="font-mono mb-3 text-[11px]"
+          style={{ color: "var(--color-ink-soft)" }}
+        >
+          + contact
+        </button>
+      )}
       {error && (
         <p
           className="font-mono mb-2 text-[11px]"

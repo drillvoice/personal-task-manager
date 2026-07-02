@@ -5,6 +5,14 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 
 ## [Unreleased]
 
+### Added
+- People & Organisations (mini CRM): new People page (with nav item) for
+  creating, editing, and deleting people (name, role, email, phone, notes,
+  organisation) and organisations (name, notes). Tasks can now be linked to
+  one person or one organisation via a contact picker in the add/edit task
+  forms; linked contacts show as a small chip on the task row. Deleting a
+  person or organisation unlinks their tasks (ON DELETE SET NULL).
+
 ### Changed
 - Tasks view: completed tasks are hidden by default (both "By project" and
   "All tasks" modes), and projects with no incomplete tasks no longer show
