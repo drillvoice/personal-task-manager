@@ -6,6 +6,10 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 ## [Unreleased]
 
 ### Added
+- Contact picker in task add/edit forms now has a "+ New person…" option:
+  type a name to create the person inline and link them to the task. Other
+  details (role, email, org, notes) can be filled in later on the People
+  page.
 - People & Organisations (mini CRM): new People page (with nav item) for
   creating, editing, and deleting people (name, role, email, phone, notes,
   organisation) and organisations (name, notes). Tasks can now be linked to
