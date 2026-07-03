@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { Check, Users } from "lucide-react";
 import { DueLabel } from "@/components/due-label";
 import { PriorityBadge } from "@/components/priority-badge";
 import { TagChip } from "@/components/tag-chip";
-import { ProjectDropdown } from "@/components/project-dropdown";
-import type { ProjectOption } from "@/components/project-dropdown";
-import { ContactDropdown } from "@/components/contact-dropdown";
-import type { ContactSelection } from "@/components/contact-dropdown";
+import { EntityPicker } from "@/components/entity-picker";
+import type { PickerOption } from "@/components/entity-picker";
+import { createProject } from "@/app/(app)/projects/actions";
+import { createPerson } from "@/app/(app)/people/actions";
+import type { ProjectSelectOption as ProjectOption } from "@/lib/server/projects";
 import type { ContactOption } from "@/lib/server/people";
 import { setTaskDone } from "@/app/(app)/today/actions";
 import { updateTask, deleteTask } from "@/app/(app)/tasks/actions";
@@ -22,44 +23,57 @@ export type TaskRowProps = {
     dueDate: string | null;
     projectId?: string | null;
     projectName: string | null;
-    personId?: string | null;
-    personName?: string | null;
-    orgId?: string | null;
-    orgName?: string | null;
+    assignees?: { id: string; name: string }[];
   };
   tags?: { name: string }[];
   showProject?: boolean;
+  layout?: "inline" | "stacked";
   projects?: ProjectOption[];
   people?: ContactOption[];
-  orgs?: ContactOption[];
 };
 
 function EditTaskForm({
   task,
   projects,
   people = [],
-  orgs = [],
   onDone,
 }: {
   task: TaskRowProps["task"];
   projects: ProjectOption[];
   people?: ContactOption[];
-  orgs?: ContactOption[];
   onDone: () => void;
 }) {
   const [title, setTitle] = useState(task.title);
   const [projectId, setProjectId] = useState<string>(task.projectId ?? "");
-  const [personId, setPersonId] = useState<string>(task.personId ?? "");
-  const [orgId, setOrgId] = useState<string>(task.orgId ?? "");
+  const [assigneeIds, setAssigneeIds] = useState<string[]>(
+    task.assignees?.map((a) => a.id) ?? [],
+  );
   const [priority, setPriority] = useState<1 | 2 | 3>(task.priority);
   const [dueDate, setDueDate] = useState(task.dueDate ?? "");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const setContact = (sel: ContactSelection) => {
-    setPersonId(sel.type === "person" ? sel.id : "");
-    setOrgId(sel.type === "org" ? sel.id : "");
+  const projectOptions = useMemo(
+    () =>
+      projects
+        .filter((p): p is { id: string; name: string } => p.id !== null)
+        .map((p) => ({ id: p.id, name: p.name })),
+    [projects],
+  );
+
+  const createProjectOption = async (
+    name: string,
+  ): Promise<PickerOption | null> => {
+    const res = await createProject({ name, status: "active" });
+    return res.ok ? { id: res.id, name } : null;
+  };
+
+  const createPersonOption = async (
+    name: string,
+  ): Promise<PickerOption | null> => {
+    const res = await createPerson({ name });
+    return res.ok ? { id: res.id, name } : null;
   };
 
   const save = () => {
@@ -69,8 +83,7 @@ function EditTaskForm({
         id: task.id,
         title,
         projectId,
-        personId,
-        orgId,
+        assigneeIds,
         priority,
         dueDate,
       });
@@ -115,18 +128,23 @@ function EditTaskForm({
       />
       <div className="mb-2 grid grid-cols-1 gap-2 sm:grid-cols-[minmax(220px,1fr)_160px_auto] sm:items-start">
         <div className="min-w-0">
-          <ProjectDropdown
-            projects={projects}
-            value={projectId}
-            onChange={setProjectId}
+          <EntityPicker
+            mode="single"
+            options={projectOptions}
+            selectedIds={projectId ? [projectId] : []}
+            onChange={(ids) => setProjectId(ids[0] ?? "")}
+            onCreate={createProjectOption}
+            placeholder="Inbox (no project)"
           />
           <div className="mt-2">
-            <ContactDropdown
-              people={people}
-              orgs={orgs}
-              personId={personId}
-              orgId={orgId}
-              onChange={setContact}
+            <EntityPicker
+              mode="multi"
+              options={people}
+              selectedIds={assigneeIds}
+              onChange={setAssigneeIds}
+              onCreate={createPersonOption}
+              placeholder="Add assignee…"
+              icon={Users}
             />
           </div>
         </div>
@@ -219,14 +237,14 @@ export function TaskRow({
   task,
   tags = [],
   showProject = false,
+  layout = "inline",
   projects,
   people,
-  orgs,
 }: TaskRowProps) {
   const [pending, startTransition] = useTransition();
   const [editing, setEditing] = useState(false);
   const done = task.status === "done";
-  const contactName = task.personName ?? task.orgName ?? null;
+  const assigneeNames = (task.assignees ?? []).map((a) => a.name);
 
   const toggle = () => {
     startTransition(async () => {
@@ -240,9 +258,82 @@ export function TaskRow({
         task={task}
         projects={projects}
         people={people}
-        orgs={orgs}
         onDone={() => setEditing(false)}
       />
+    );
+  }
+
+  const checkbox = (
+    <button
+      onClick={toggle}
+      disabled={pending}
+      aria-pressed={done}
+      aria-label={done ? "Mark task incomplete" : "Mark task complete"}
+      className="flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded-[4px] border-[1.5px]"
+      style={{
+        background: done ? "var(--color-teal)" : "transparent",
+        borderColor: done ? "var(--color-teal)" : "var(--color-ink-soft)",
+      }}
+    >
+      {done && <Check size={12} color="var(--color-paper-raised)" strokeWidth={3} />}
+    </button>
+  );
+
+  const titleSpan = (
+    <span
+      className="text-[14px]"
+      style={{
+        color: done ? "var(--color-ink-soft)" : "var(--color-ink)",
+        textDecoration: done ? "line-through" : "none",
+        cursor: projects ? "pointer" : "default",
+      }}
+      onClick={projects ? () => setEditing(true) : undefined}
+    >
+      {task.title}
+    </span>
+  );
+
+  const projectMeta = showProject && task.projectName && (
+    <span className="font-mono text-[11px]" style={{ color: "var(--color-ink-soft)" }}>
+      {task.projectName}
+    </span>
+  );
+
+  const assigneeMeta = assigneeNames.length > 0 && (
+    <span
+      className="font-mono flex items-center gap-1 text-[10px]"
+      style={{ color: "var(--color-ink-soft)" }}
+    >
+      <Users size={10} />
+      {assigneeNames.join(", ")}
+    </span>
+  );
+
+  const tagMeta = (
+    <>
+      <PriorityBadge priority={task.priority} />
+      {task.status === "waiting_on" && <TagChip tone="accent">waiting</TagChip>}
+      {tags.map((t) => (
+        <TagChip key={t.name}>{t.name}</TagChip>
+      ))}
+      <DueLabel dateIso={task.dueDate} />
+    </>
+  );
+
+  if (layout === "stacked") {
+    return (
+      <div
+        className="border-b px-1 py-2.5"
+        style={{ borderColor: "var(--color-line)" }}
+      >
+        <div className="mb-1.5">{titleSpan}</div>
+        <div className="flex flex-wrap items-center gap-2">
+          {checkbox}
+          {projectMeta}
+          {assigneeMeta}
+          {tagMeta}
+        </div>
+      </div>
     );
   }
 
@@ -251,53 +342,11 @@ export function TaskRow({
       className="group flex flex-wrap items-center gap-2 border-b px-1 py-2.5"
       style={{ borderColor: "var(--color-line)" }}
     >
-      <button
-        onClick={toggle}
-        disabled={pending}
-        aria-pressed={done}
-        aria-label={done ? "Mark task incomplete" : "Mark task complete"}
-        className="flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded-[4px] border-[1.5px]"
-        style={{
-          background: done ? "var(--color-teal)" : "transparent",
-          borderColor: done ? "var(--color-teal)" : "var(--color-ink-soft)",
-        }}
-      >
-        {done && <Check size={12} color="var(--color-paper-raised)" strokeWidth={3} />}
-      </button>
-      <span
-        className="min-w-[120px] flex-1 text-[14px]"
-        style={{
-          color: done ? "var(--color-ink-soft)" : "var(--color-ink)",
-          textDecoration: done ? "line-through" : "none",
-          cursor: projects ? "pointer" : "default",
-        }}
-        onClick={projects ? () => setEditing(true) : undefined}
-      >
-        {task.title}
-      </span>
-      {showProject && task.projectName && (
-        <span
-          className="font-mono text-[11px]"
-          style={{ color: "var(--color-ink-soft)" }}
-        >
-          {task.projectName}
-        </span>
-      )}
-      {contactName && (
-        <span
-          className="font-mono flex items-center gap-1 text-[10px]"
-          style={{ color: "var(--color-ink-soft)" }}
-        >
-          <Users size={10} />
-          {contactName}
-        </span>
-      )}
-      <PriorityBadge priority={task.priority} />
-      {task.status === "waiting_on" && <TagChip tone="accent">waiting</TagChip>}
-      {tags.map((t) => (
-        <TagChip key={t.name}>{t.name}</TagChip>
-      ))}
-      <DueLabel dateIso={task.dueDate} />
+      {checkbox}
+      <span className="min-w-[120px] flex-1">{titleSpan}</span>
+      {projectMeta}
+      {assigneeMeta}
+      {tagMeta}
     </div>
   );
 }

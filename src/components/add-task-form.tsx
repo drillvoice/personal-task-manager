@@ -1,17 +1,18 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
+import { Users } from "lucide-react";
 import { createTask } from "@/app/(app)/tasks/actions";
-import { ProjectDropdown } from "@/components/project-dropdown";
-import type { ProjectOption } from "@/components/project-dropdown";
-import { ContactDropdown } from "@/components/contact-dropdown";
-import type { ContactSelection } from "@/components/contact-dropdown";
+import { createProject } from "@/app/(app)/projects/actions";
+import { createPerson } from "@/app/(app)/people/actions";
+import { EntityPicker } from "@/components/entity-picker";
+import type { PickerOption } from "@/components/entity-picker";
+import type { ProjectSelectOption as ProjectOption } from "@/lib/server/projects";
 import type { ContactOption } from "@/lib/server/people";
 
 export function AddTaskForm({
   projects,
   people = [],
-  orgs = [],
   onCancel,
   onCreated,
   defaultProjectId,
@@ -19,7 +20,6 @@ export function AddTaskForm({
 }: {
   projects: ProjectOption[];
   people?: ContactOption[];
-  orgs?: ContactOption[];
   onCancel: () => void;
   onCreated: () => void;
   defaultProjectId?: string | null;
@@ -35,15 +35,30 @@ export function AddTaskForm({
   );
   const [priority, setPriority] = useState<1 | 2 | 3>(3);
   const [dueDate, setDueDate] = useState("");
-  const [personId, setPersonId] = useState("");
-  const [orgId, setOrgId] = useState("");
-  const [showContact, setShowContact] = useState(false);
+  const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const setContact = (sel: ContactSelection) => {
-    setPersonId(sel.type === "person" ? sel.id : "");
-    setOrgId(sel.type === "org" ? sel.id : "");
+  const projectOptions = useMemo(
+    () =>
+      projects
+        .filter((p): p is { id: string; name: string } => p.id !== null)
+        .map((p) => ({ id: p.id, name: p.name })),
+    [projects],
+  );
+
+  const createProjectOption = async (
+    name: string,
+  ): Promise<PickerOption | null> => {
+    const res = await createProject({ name, status: "active" });
+    return res.ok ? { id: res.id, name } : null;
+  };
+
+  const createPersonOption = async (
+    name: string,
+  ): Promise<PickerOption | null> => {
+    const res = await createPerson({ name });
+    return res.ok ? { id: res.id, name } : null;
   };
 
   const submit = () => {
@@ -52,8 +67,7 @@ export function AddTaskForm({
       const res = await createTask({
         title,
         projectId: projectId === "" ? null : projectId,
-        personId: personId || null,
-        orgId: orgId || null,
+        assigneeIds,
         meetingId: meetingId ?? null,
         priority,
         dueDate: dueDate || null,
@@ -62,14 +76,52 @@ export function AddTaskForm({
       if (res.ok) {
         setTitle("");
         setDueDate("");
-        setPersonId("");
-        setOrgId("");
+        setAssigneeIds([]);
         onCreated();
       } else {
         setError(res.error);
       }
     });
   };
+
+  const dateInput = (
+    <input
+      type="date"
+      value={dueDate}
+      onChange={(e) => setDueDate(e.target.value)}
+      className="w-full border p-2 text-[13px] outline-none sm:w-[160px]"
+      style={{
+        background: "transparent",
+        borderColor: "var(--color-line)",
+        color: "var(--color-ink)",
+      }}
+    />
+  );
+
+  const priorityButtons = (
+    <div className="grid grid-cols-3 items-center gap-1 sm:flex">
+      {[1, 2, 3].map((p) => {
+        const active = priority === p;
+        return (
+          <button
+            key={p}
+            type="button"
+            onClick={() => setPriority(p as 1 | 2 | 3)}
+            className="font-mono border px-2.5 py-2 text-[11px] font-semibold"
+            style={{
+              borderColor: active ? `var(--color-p${p})` : "var(--color-line)",
+              background: active ? `var(--color-p${p})` : "transparent",
+              color: active
+                ? "var(--color-paper-raised)"
+                : "var(--color-ink-soft)",
+            }}
+          >
+            P{p}
+          </button>
+        );
+      })}
+    </div>
+  );
 
   return (
     <div
@@ -97,68 +149,50 @@ export function AddTaskForm({
           }
         }}
       />
-      <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-[minmax(220px,1fr)_160px_auto] sm:items-start">
-        <div className="min-w-0">
-          <ProjectDropdown
-            projects={projects}
-            value={projectId}
-            onChange={setProjectId}
-          />
-        </div>
-        <input
-          type="date"
-          value={dueDate}
-          onChange={(e) => setDueDate(e.target.value)}
-          className="w-full border p-2 text-[13px] outline-none sm:w-[160px]"
-          style={{
-            background: "transparent",
-            borderColor: "var(--color-line)",
-            color: "var(--color-ink)",
-          }}
-        />
-        <div className="grid grid-cols-3 items-center gap-1 sm:flex">
-          {[1, 2, 3].map((p) => {
-            const active = priority === p;
-            return (
-              <button
-                key={p}
-                type="button"
-                onClick={() => setPriority(p as 1 | 2 | 3)}
-                className="font-mono border px-2.5 py-2 text-[11px] font-semibold"
-                style={{
-                  borderColor: active ? `var(--color-p${p})` : "var(--color-line)",
-                  background: active ? `var(--color-p${p})` : "transparent",
-                  color: active
-                    ? "var(--color-paper-raised)"
-                    : "var(--color-ink-soft)",
-                }}
-              >
-                P{p}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-      {showContact ? (
-        <div className="mb-3 sm:max-w-[320px]">
-          <ContactDropdown
-            people={people}
-            orgs={orgs}
-            personId={personId}
-            orgId={orgId}
-            onChange={setContact}
-          />
-        </div>
+      {meetingId ? (
+        <>
+          <div className="mb-2 grid grid-cols-1 gap-2 sm:grid-cols-[minmax(220px,1fr)_auto] sm:items-start">
+            <div className="min-w-0">
+              <EntityPicker
+                mode="single"
+                options={projectOptions}
+                selectedIds={projectId ? [projectId] : []}
+                onChange={(ids) => setProjectId(ids[0] ?? "")}
+                onCreate={createProjectOption}
+                placeholder="Inbox (no project)"
+              />
+            </div>
+            {priorityButtons}
+          </div>
+          <div className="mb-3">{dateInput}</div>
+        </>
       ) : (
-        <button
-          type="button"
-          onClick={() => setShowContact(true)}
-          className="font-mono mb-3 text-[11px]"
-          style={{ color: "var(--color-ink-soft)" }}
-        >
-          + contact
-        </button>
+        <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-[minmax(220px,1fr)_160px_auto] sm:items-start">
+          <div className="min-w-0">
+            <EntityPicker
+              mode="single"
+              options={projectOptions}
+              selectedIds={projectId ? [projectId] : []}
+              onChange={(ids) => setProjectId(ids[0] ?? "")}
+              onCreate={createProjectOption}
+              placeholder="Inbox (no project)"
+            />
+          </div>
+          {dateInput}
+          {priorityButtons}
+        </div>
       )}
+      <div className="mb-3 sm:max-w-[320px]">
+        <EntityPicker
+          mode="multi"
+          options={people}
+          selectedIds={assigneeIds}
+          onChange={setAssigneeIds}
+          onCreate={createPersonOption}
+          placeholder="Add assignee…"
+          icon={Users}
+        />
+      </div>
       {error && (
         <p
           className="font-mono mb-2 text-[11px]"

@@ -5,7 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CalendarDays, Plus, Search, Users } from "lucide-react";
 import { createMeeting } from "@/app/(app)/meetings/actions";
-import { AttendeePicker } from "@/components/attendee-picker";
+import { createPerson } from "@/app/(app)/people/actions";
+import { EntityPicker } from "@/components/entity-picker";
+import type { PickerOption } from "@/components/entity-picker";
 import { TagChip } from "@/components/tag-chip";
 import { DueLabel } from "@/components/due-label";
 import type { MeetingListItem } from "@/lib/server/meetings";
@@ -93,6 +95,13 @@ function NewMeetingForm({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
+  const createPersonOption = async (
+    name: string,
+  ): Promise<PickerOption | null> => {
+    const res = await createPerson({ name });
+    return res.ok ? { id: res.id, name } : null;
+  };
+
   const submit = () => {
     if (!title.trim() || !meetingDate) return;
     startTransition(async () => {
@@ -133,10 +142,14 @@ function NewMeetingForm({
       />
       <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_160px]">
         <div className="min-w-0">
-          <AttendeePicker
-            people={people}
+          <EntityPicker
+            mode="multi"
+            options={people}
             selectedIds={attendeeIds}
             onChange={setAttendeeIds}
+            onCreate={createPersonOption}
+            placeholder="Add attendee…"
+            icon={Users}
           />
         </div>
         <input

@@ -3,34 +3,35 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Plus, Users } from "lucide-react";
 import {
+  createTag,
   deleteMeeting,
   setMeetingAttendees,
   setMeetingStatus,
+  setMeetingTags,
   updateMeeting,
   updateMeetingNotes,
   updateMeetingPrepNotes,
 } from "@/app/(app)/meetings/actions";
+import { createPerson } from "@/app/(app)/people/actions";
 import { AddTaskForm } from "@/components/add-task-form";
-import { AttendeePicker } from "@/components/attendee-picker";
 import { AutosaveTextarea } from "@/components/autosave-textarea";
-import { MeetingTagPicker } from "@/components/meeting-tag-picker";
+import { EntityPicker } from "@/components/entity-picker";
+import type { PickerOption } from "@/components/entity-picker";
 import { TaskRow } from "@/components/task-row";
-import type { ProjectOption } from "@/components/project-dropdown";
+import type { ProjectSelectOption as ProjectOption } from "@/lib/server/projects";
 import type { ContactOption } from "@/lib/server/people";
 import type { MeetingDetail, TagOption } from "@/lib/server/meetings";
 
 export function MeetingDetailView({
   meeting,
   people,
-  orgs,
   projects,
   availableTags,
 }: {
   meeting: MeetingDetail;
   people: ContactOption[];
-  orgs: ContactOption[];
   projects: ProjectOption[];
   availableTags: TagOption[];
 }) {
@@ -41,6 +42,7 @@ export function MeetingDetailView({
   const [attendeeIds, setAttendeeIds] = useState<string[]>(
     meeting.attendees.map((a) => a.id),
   );
+  const [tagIds, setTagIds] = useState<string[]>(meeting.tags.map((t) => t.id));
   const [showAdd, setShowAdd] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [, startTransition] = useTransition();
@@ -58,6 +60,27 @@ export function MeetingDetailView({
     startTransition(async () => {
       await setMeetingAttendees({ id: meeting.id, attendeeIds: ids });
     });
+  };
+
+  const changeTags = (ids: string[]) => {
+    setTagIds(ids);
+    startTransition(async () => {
+      await setMeetingTags({ id: meeting.id, tagIds: ids });
+    });
+  };
+
+  const createPersonOption = async (
+    name: string,
+  ): Promise<PickerOption | null> => {
+    const res = await createPerson({ name });
+    return res.ok ? { id: res.id, name } : null;
+  };
+
+  const createTagOption = async (
+    name: string,
+  ): Promise<PickerOption | null> => {
+    const res = await createTag({ name });
+    return res.ok ? { id: res.id, name: res.name, color: res.color } : null;
   };
 
   const toggleStatus = () => {
@@ -137,18 +160,25 @@ export function MeetingDetailView({
       </div>
 
       <div className="mb-2 sm:max-w-[420px]">
-        <AttendeePicker
-          people={people}
+        <EntityPicker
+          mode="multi"
+          options={people}
           selectedIds={attendeeIds}
           onChange={changeAttendees}
+          onCreate={createPersonOption}
+          placeholder="Add attendee…"
+          icon={Users}
         />
       </div>
 
-      <div className="mb-5">
-        <MeetingTagPicker
-          meetingId={meeting.id}
-          availableTags={availableTags}
-          initialTagIds={meeting.tags.map((t) => t.id)}
+      <div className="mb-5 sm:max-w-[420px]">
+        <EntityPicker
+          mode="multi"
+          options={availableTags}
+          selectedIds={tagIds}
+          onChange={changeTags}
+          onCreate={createTagOption}
+          placeholder="Add tag…"
         />
       </div>
 
@@ -208,7 +238,6 @@ export function MeetingDetailView({
             <AddTaskForm
               projects={projects}
               people={people}
-              orgs={orgs}
               meetingId={meeting.id}
               defaultProjectId={null}
               onCancel={() => setShowAdd(false)}
@@ -232,9 +261,9 @@ export function MeetingDetailView({
                   key={t.id}
                   task={t}
                   showProject
+                  layout="stacked"
                   projects={projects}
                   people={people}
-                  orgs={orgs}
                 />
               ))}
             </div>

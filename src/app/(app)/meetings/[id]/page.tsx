@@ -25,7 +25,6 @@ export default async function MeetingDetailPage({
     <MeetingDetailView
       meeting={meeting}
       people={contacts.people}
-      orgs={contacts.orgs}
       projects={projects}
       availableTags={availableTags}
     />

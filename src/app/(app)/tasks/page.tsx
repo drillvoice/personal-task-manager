@@ -11,11 +11,5 @@ export default async function TasksPage() {
     loadTasksData(userId),
     loadContactOptions(userId),
   ]);
-  return (
-    <TasksView
-      projects={data.projects}
-      people={contacts.people}
-      orgs={contacts.orgs}
-    />
-  );
+  return <TasksView projects={data.projects} people={contacts.people} />;
 }
