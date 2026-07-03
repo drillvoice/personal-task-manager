@@ -98,6 +98,10 @@ export function EntityPicker({
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setHighlight((h) => Math.max(h - 1, 0));
+    } else if (e.key === "Backspace" && query === "" && selectedIds.length > 0) {
+      e.preventDefault();
+      onChange(selectedIds.slice(0, -1));
+      setConfirmingId(null);
     } else if (e.key === "Escape") {
       setOpen(false);
       setConfirmingId(null);
