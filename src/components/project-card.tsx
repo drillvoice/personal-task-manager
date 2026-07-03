@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { TaskRow } from "@/components/task-row";
-import type { ProjectOption } from "@/components/project-dropdown";
+import type { ProjectSelectOption as ProjectOption } from "@/lib/server/projects";
 import type { ContactOption } from "@/lib/server/people";
 import type { TasksViewProject, TasksViewTask } from "@/lib/server/tasks";
 
@@ -14,7 +14,6 @@ export function ProjectCard({
   showTaskProject = false,
   projects,
   people,
-  orgs,
 }: {
   project: TasksViewProject;
   visibleTasks: TasksViewTask[];
@@ -22,7 +21,6 @@ export function ProjectCard({
   showTaskProject?: boolean;
   projects?: ProjectOption[];
   people?: ContactOption[];
-  orgs?: ContactOption[];
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const activeCount = project.tasks.filter((t) => t.status !== "done").length;
@@ -80,7 +78,6 @@ export function ProjectCard({
               showProject={showTaskProject}
               projects={projects}
               people={people}
-              orgs={orgs}
             />
           ))}
         </div>

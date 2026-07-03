@@ -5,6 +5,22 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 
 ## [Unreleased]
 
+### Changed
+- All tag / person / project selectors are now a single shared type-to-select
+  picker: type to filter existing items, press Enter to select (or to create a
+  new one if nothing matches), and selected items show as chips. Removing a
+  chip takes a second confirming click. This replaces the old dropdown +
+  "Edit tags" / "+ contact" patterns everywhere (meeting attendees & tags, new
+  meeting form, and the project & assignee fields in the task add/edit forms).
+- Tasks now support **multiple assignees** (people) instead of a single
+  person/organisation contact. Existing single-person assignments are migrated
+  into the new `task_assignees` join table; **organisation assignment on tasks
+  has been removed** (org data on tasks is dropped in the migration).
+  Organisations still exist for the People CRM.
+- Meeting detail: the linked-task rows are stacked (title on its own row,
+  metadata beneath) so they read cleanly in the tasks column, and the in-meeting
+  add-task form gives the date its own full-width row.
+
 ### Added
 - Meetings module: new Meetings page (with nav item) for scheduling upcoming
   meetings with a date and attendees picked from the People CRM (including

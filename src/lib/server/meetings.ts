@@ -1,14 +1,14 @@
 import "server-only";
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   meetingAttendees,
   meetingTags,
   meetings,
-  organisations,
   people,
   projects,
   tags,
+  taskAssignees,
   tasks,
 } from "@/lib/db/schema";
 import type { TasksViewTask } from "@/lib/server/tasks";
@@ -133,16 +133,33 @@ export async function loadMeetingDetail(
       .select({
         task: tasks,
         projectName: projects.name,
-        personName: people.name,
-        orgName: organisations.name,
       })
       .from(tasks)
       .leftJoin(projects, eq(tasks.projectId, projects.id))
-      .leftJoin(people, eq(tasks.personId, people.id))
-      .leftJoin(organisations, eq(tasks.organisationId, organisations.id))
       .where(and(eq(tasks.meetingId, meetingId), eq(tasks.userId, userId)))
       .orderBy(asc(tasks.createdAt)),
   ]);
+
+  const taskIds = taskRows.map((r) => r.task.id);
+  const assigneeRows = taskIds.length
+    ? await db
+        .select({
+          taskId: taskAssignees.taskId,
+          id: people.id,
+          name: people.name,
+        })
+        .from(taskAssignees)
+        .innerJoin(people, eq(taskAssignees.personId, people.id))
+        .where(inArray(taskAssignees.taskId, taskIds))
+        .orderBy(asc(people.name))
+    : [];
+
+  const assigneesByTask = new Map<string, { id: string; name: string }[]>();
+  for (const a of assigneeRows) {
+    const list = assigneesByTask.get(a.taskId) ?? [];
+    list.push({ id: a.id, name: a.name });
+    assigneesByTask.set(a.taskId, list);
+  }
 
   return {
     id: meetingRow.id,
@@ -161,10 +178,7 @@ export async function loadMeetingDetail(
       dueDate: r.task.dueDate,
       projectId: r.task.projectId,
       projectName: r.projectName ?? null,
-      personId: r.task.personId,
-      personName: r.personName ?? null,
-      orgId: r.task.organisationId,
-      orgName: r.orgName ?? null,
+      assignees: assigneesByTask.get(r.task.id) ?? [],
       tags: [],
     })),
   };

@@ -24,11 +24,9 @@ const AddTaskForm = dynamic(() =>
 export function TasksView({
   projects,
   people,
-  orgs,
 }: {
   projects: TasksViewProject[];
   people: ContactOption[];
-  orgs: ContactOption[];
 }) {
   const [mode, setMode] = useState<Mode>("by_project");
   const [projectFilter, setProjectFilter] = useState<ProjectFilter>("active");
@@ -140,7 +138,6 @@ export function TasksView({
         <AddTaskForm
           projects={projectOptions}
           people={people}
-          orgs={orgs}
           onCancel={() => setShowAdd(false)}
           onCreated={() => setShowAdd(false)}
         />
@@ -192,7 +189,6 @@ export function TasksView({
                 defaultOpen={p.status === "active" || p.id === null}
                 projects={projectOptions}
                 people={people}
-                orgs={orgs}
               />
             ))}
         </>
@@ -222,7 +218,6 @@ export function TasksView({
                 defaultOpen
                 projects={projectOptions}
                 people={people}
-                orgs={orgs}
               />
             ));
           })()}
@@ -257,7 +252,6 @@ export function TasksView({
                 showProject
                 projects={projectOptions}
                 people={people}
-                orgs={orgs}
               />
             ));
           })()}

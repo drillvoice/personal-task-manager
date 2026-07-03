@@ -1,11 +1,11 @@
 import "server-only";
-import { and, asc, eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
-  organisations,
   people,
   projects,
   tags,
+  taskAssignees,
   taskTags,
   tasks,
 } from "@/lib/db/schema";
@@ -26,15 +26,12 @@ export type TasksViewTask = {
   dueDate: string | null;
   projectId: string | null;
   projectName: string | null;
-  personId: string | null;
-  personName: string | null;
-  orgId: string | null;
-  orgName: string | null;
+  assignees: { id: string; name: string }[];
   tags: { name: string; color: string }[];
 };
 
 export async function loadTasksData(userId: string) {
-  const [projectRows, taskRows, tagRows] = await Promise.all([
+  const [projectRows, taskRows, tagRows, assigneeRows] = await Promise.all([
     db
       .select()
       .from(projects)
@@ -44,13 +41,9 @@ export async function loadTasksData(userId: string) {
       .select({
         task: tasks,
         projectName: projects.name,
-        personName: people.name,
-        orgName: organisations.name,
       })
       .from(tasks)
       .leftJoin(projects, eq(tasks.projectId, projects.id))
-      .leftJoin(people, eq(tasks.personId, people.id))
-      .leftJoin(organisations, eq(tasks.organisationId, organisations.id))
       .where(eq(tasks.userId, userId))
       .orderBy(asc(tasks.sortOrder), asc(tasks.createdAt)),
     db
@@ -59,6 +52,17 @@ export async function loadTasksData(userId: string) {
       .innerJoin(tags, eq(taskTags.tagId, tags.id))
       .innerJoin(tasks, eq(taskTags.taskId, tasks.id))
       .where(eq(tasks.userId, userId)),
+    db
+      .select({
+        taskId: taskAssignees.taskId,
+        id: people.id,
+        name: people.name,
+      })
+      .from(taskAssignees)
+      .innerJoin(people, eq(taskAssignees.personId, people.id))
+      .innerJoin(tasks, eq(taskAssignees.taskId, tasks.id))
+      .where(eq(tasks.userId, userId))
+      .orderBy(asc(people.name)),
   ]);
 
   const tagsByTask = new Map<string, { name: string; color: string }[]>();
@@ -66,6 +70,13 @@ export async function loadTasksData(userId: string) {
     const list = tagsByTask.get(t.taskId) ?? [];
     list.push({ name: t.name, color: t.color });
     tagsByTask.set(t.taskId, list);
+  }
+
+  const assigneesByTask = new Map<string, { id: string; name: string }[]>();
+  for (const a of assigneeRows) {
+    const list = assigneesByTask.get(a.taskId) ?? [];
+    list.push({ id: a.id, name: a.name });
+    assigneesByTask.set(a.taskId, list);
   }
 
   const projectsById = new Map<string, TasksViewProject>();
@@ -96,10 +107,7 @@ export async function loadTasksData(userId: string) {
       dueDate: r.task.dueDate,
       projectId: r.task.projectId,
       projectName: r.projectName ?? null,
-      personId: r.task.personId,
-      personName: r.personName ?? null,
-      orgId: r.task.organisationId,
-      orgName: r.orgName ?? null,
+      assignees: assigneesByTask.get(r.task.id) ?? [],
       tags: tagsByTask.get(r.task.id) ?? [],
     };
     if (r.task.projectId) {

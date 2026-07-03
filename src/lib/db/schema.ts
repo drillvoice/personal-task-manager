@@ -193,12 +193,6 @@ export const tasks = pgTable(
     projectId: uuid("project_id").references(() => projects.id, {
       onDelete: "set null",
     }),
-    personId: uuid("person_id").references(() => people.id, {
-      onDelete: "set null",
-    }),
-    organisationId: uuid("organisation_id").references(() => organisations.id, {
-      onDelete: "set null",
-    }),
     meetingId: uuid("meeting_id").references(() => meetings.id, {
       onDelete: "set null",
     }),
@@ -222,10 +216,21 @@ export const tasks = pgTable(
       t.createdAt,
     ),
     index("tasks_project_idx").on(t.projectId),
-    index("tasks_person_idx").on(t.personId),
-    index("tasks_organisation_idx").on(t.organisationId),
     index("tasks_meeting_idx").on(t.meetingId),
   ],
+);
+
+export const taskAssignees = pgTable(
+  "task_assignees",
+  {
+    taskId: uuid("task_id")
+      .notNull()
+      .references(() => tasks.id, { onDelete: "cascade" }),
+    personId: uuid("person_id")
+      .notNull()
+      .references(() => people.id, { onDelete: "cascade" }),
+  },
+  (t) => [primaryKey({ columns: [t.taskId, t.personId] })],
 );
 
 export const meetings = pgTable(
@@ -419,7 +424,6 @@ export const organisationsRelations = relations(
       references: [users.id],
     }),
     people: many(people),
-    tasks: many(tasks),
   }),
 );
 
@@ -429,7 +433,7 @@ export const peopleRelations = relations(people, ({ one, many }) => ({
     fields: [people.organisationId],
     references: [organisations.id],
   }),
-  tasks: many(tasks),
+  taskAssignees: many(taskAssignees),
   meetingAttendees: many(meetingAttendees),
 }));
 
@@ -445,21 +449,25 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
     fields: [tasks.projectId],
     references: [projects.id],
   }),
-  person: one(people, {
-    fields: [tasks.personId],
-    references: [people.id],
-  }),
-  organisation: one(organisations, {
-    fields: [tasks.organisationId],
-    references: [organisations.id],
-  }),
   meeting: one(meetings, {
     fields: [tasks.meetingId],
     references: [meetings.id],
   }),
+  assignees: many(taskAssignees),
   tags: many(taskTags),
   weeklyPriorities: many(weeklyPriorities),
   dailyPlanItems: many(dailyPlanItems),
+}));
+
+export const taskAssigneesRelations = relations(taskAssignees, ({ one }) => ({
+  task: one(tasks, {
+    fields: [taskAssignees.taskId],
+    references: [tasks.id],
+  }),
+  person: one(people, {
+    fields: [taskAssignees.personId],
+    references: [people.id],
+  }),
 }));
 
 export const tagsRelations = relations(tags, ({ one, many }) => ({
