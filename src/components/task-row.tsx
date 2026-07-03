@@ -10,9 +10,10 @@ import type { PickerOption } from "@/components/entity-picker";
 import { createProject } from "@/app/(app)/projects/actions";
 import { createPerson } from "@/app/(app)/people/actions";
 import type { ProjectSelectOption as ProjectOption } from "@/lib/server/projects";
+import type { TagOption } from "@/lib/server/tasks";
 import type { ContactOption } from "@/lib/server/people";
 import { setTaskDone } from "@/app/(app)/today/actions";
-import { updateTask, deleteTask } from "@/app/(app)/tasks/actions";
+import { updateTask, deleteTask, createTaskTag } from "@/app/(app)/tasks/actions";
 
 export type TaskRowProps = {
   task: {
@@ -24,29 +25,35 @@ export type TaskRowProps = {
     projectId?: string | null;
     projectName: string | null;
     assignees?: { id: string; name: string }[];
+    tags?: { id: string; name: string; color: string }[];
   };
-  tags?: { name: string }[];
   showProject?: boolean;
   layout?: "inline" | "stacked";
   projects?: ProjectOption[];
   people?: ContactOption[];
+  tagOptions?: TagOption[];
 };
 
 function EditTaskForm({
   task,
   projects,
   people = [],
+  tagOptions = [],
   onDone,
 }: {
   task: TaskRowProps["task"];
   projects: ProjectOption[];
   people?: ContactOption[];
+  tagOptions?: TagOption[];
   onDone: () => void;
 }) {
   const [title, setTitle] = useState(task.title);
   const [projectId, setProjectId] = useState<string>(task.projectId ?? "");
   const [assigneeIds, setAssigneeIds] = useState<string[]>(
     task.assignees?.map((a) => a.id) ?? [],
+  );
+  const [tagIds, setTagIds] = useState<string[]>(
+    task.tags?.map((t) => t.id) ?? [],
   );
   const [priority, setPriority] = useState<1 | 2 | 3>(task.priority);
   const [dueDate, setDueDate] = useState(task.dueDate ?? "");
@@ -76,6 +83,13 @@ function EditTaskForm({
     return res.ok ? { id: res.id, name } : null;
   };
 
+  const createTagOption = async (
+    name: string,
+  ): Promise<PickerOption | null> => {
+    const res = await createTaskTag({ name });
+    return res.ok ? { id: res.id, name: res.name, color: res.color } : null;
+  };
+
   const save = () => {
     if (!title.trim()) return;
     startTransition(async () => {
@@ -84,6 +98,7 @@ function EditTaskForm({
         title,
         projectId,
         assigneeIds,
+        tagIds,
         priority,
         dueDate,
       });
@@ -145,6 +160,16 @@ function EditTaskForm({
               onCreate={createPersonOption}
               placeholder="Add assignee…"
               icon={Users}
+            />
+          </div>
+          <div className="mt-2">
+            <EntityPicker
+              mode="multi"
+              options={tagOptions}
+              selectedIds={tagIds}
+              onChange={setTagIds}
+              onCreate={createTagOption}
+              placeholder="Add tag…"
             />
           </div>
         </div>
@@ -235,16 +260,17 @@ function EditTaskForm({
 
 export function TaskRow({
   task,
-  tags = [],
   showProject = false,
   layout = "inline",
   projects,
   people,
+  tagOptions,
 }: TaskRowProps) {
   const [pending, startTransition] = useTransition();
   const [editing, setEditing] = useState(false);
   const done = task.status === "done";
   const assigneeNames = (task.assignees ?? []).map((a) => a.name);
+  const tags = task.tags ?? [];
 
   const toggle = () => {
     startTransition(async () => {
@@ -258,6 +284,7 @@ export function TaskRow({
         task={task}
         projects={projects}
         people={people}
+        tagOptions={tagOptions}
         onDone={() => setEditing(false)}
       />
     );
@@ -314,7 +341,9 @@ export function TaskRow({
       <PriorityBadge priority={task.priority} />
       {task.status === "waiting_on" && <TagChip tone="accent">waiting</TagChip>}
       {tags.map((t) => (
-        <TagChip key={t.name}>{t.name}</TagChip>
+        <TagChip key={t.id} color={t.color}>
+          {t.name}
+        </TagChip>
       ))}
       <DueLabel dateIso={task.dueDate} />
     </>

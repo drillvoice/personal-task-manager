@@ -1,5 +1,5 @@
 import "server-only";
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   people,
@@ -27,8 +27,18 @@ export type TasksViewTask = {
   projectId: string | null;
   projectName: string | null;
   assignees: { id: string; name: string }[];
-  tags: { name: string; color: string }[];
+  tags: { id: string; name: string; color: string }[];
 };
+
+export type TagOption = { id: string; name: string; color: string };
+
+export async function loadTaskTagOptions(userId: string): Promise<TagOption[]> {
+  return db
+    .select({ id: tags.id, name: tags.name, color: tags.color })
+    .from(tags)
+    .where(and(eq(tags.userId, userId), eq(tags.kind, "task")))
+    .orderBy(asc(tags.name));
+}
 
 export async function loadTasksData(userId: string) {
   const [projectRows, taskRows, tagRows, assigneeRows] = await Promise.all([
@@ -47,7 +57,12 @@ export async function loadTasksData(userId: string) {
       .where(eq(tasks.userId, userId))
       .orderBy(asc(tasks.sortOrder), asc(tasks.createdAt)),
     db
-      .select({ taskId: taskTags.taskId, name: tags.name, color: tags.color })
+      .select({
+        taskId: taskTags.taskId,
+        id: tags.id,
+        name: tags.name,
+        color: tags.color,
+      })
       .from(taskTags)
       .innerJoin(tags, eq(taskTags.tagId, tags.id))
       .innerJoin(tasks, eq(taskTags.taskId, tasks.id))
@@ -65,10 +80,13 @@ export async function loadTasksData(userId: string) {
       .orderBy(asc(people.name)),
   ]);
 
-  const tagsByTask = new Map<string, { name: string; color: string }[]>();
+  const tagsByTask = new Map<
+    string,
+    { id: string; name: string; color: string }[]
+  >();
   for (const t of tagRows) {
     const list = tagsByTask.get(t.taskId) ?? [];
-    list.push({ name: t.name, color: t.color });
+    list.push({ id: t.id, name: t.name, color: t.color });
     tagsByTask.set(t.taskId, list);
   }
 

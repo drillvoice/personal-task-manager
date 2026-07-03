@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { people, taskAssignees, tasks } from "@/lib/db/schema";
+import { people, tags, taskAssignees, taskTags, tasks } from "@/lib/db/schema";
 import { requireUserId } from "@/lib/server/session";
 
 const nullableUuid = z
@@ -14,6 +14,7 @@ const nullableUuid = z
   .or(z.literal("").transform(() => null));
 
 const assigneeIds = z.array(z.string().uuid()).max(100).default([]);
+const tagIds = z.array(z.string().uuid()).max(100).default([]);
 
 // Junction rows carry no userId, so submitted ids must be checked against the
 // user's own people before inserting.
@@ -26,10 +27,25 @@ async function ownedPersonIds(userId: string, ids: string[]): Promise<boolean> {
   return rows.length === ids.length;
 }
 
+async function ownedTaskTagIds(
+  userId: string,
+  ids: string[],
+): Promise<boolean> {
+  if (ids.length === 0) return true;
+  const rows = await db
+    .select({ id: tags.id })
+    .from(tags)
+    .where(
+      and(eq(tags.userId, userId), eq(tags.kind, "task"), inArray(tags.id, ids)),
+    );
+  return rows.length === ids.length;
+}
+
 const createSchema = z.object({
   title: z.string().trim().min(1, "Title is required").max(200),
   projectId: nullableUuid,
   assigneeIds,
+  tagIds,
   meetingId: nullableUuid.default(null),
   priority: z.union([z.literal(1), z.literal(2), z.literal(3)]),
   dueDate: z
@@ -56,6 +72,10 @@ export async function createTask(input: CreateTaskInput): Promise<
   if (!(await ownedPersonIds(userId, uniqueAssignees))) {
     return { ok: false, error: "Unknown assignee" };
   }
+  const uniqueTags = [...new Set(parsed.data.tagIds)];
+  if (!(await ownedTaskTagIds(userId, uniqueTags))) {
+    return { ok: false, error: "Unknown tag" };
+  }
   const [row] = await db
     .insert(tasks)
     .values({
@@ -73,6 +93,11 @@ export async function createTask(input: CreateTaskInput): Promise<
       uniqueAssignees.map((personId) => ({ taskId: row.id, personId })),
     );
   }
+  if (uniqueTags.length > 0) {
+    await db.insert(taskTags).values(
+      uniqueTags.map((tagId) => ({ taskId: row.id, tagId })),
+    );
+  }
   revalidatePath("/tasks");
   revalidatePath("/today");
   if (meetingId) revalidatePath(`/meetings/${meetingId}`);
@@ -84,6 +109,7 @@ const updateSchema = z.object({
   title: z.string().trim().min(1, "Title is required").max(200),
   projectId: nullableUuid,
   assigneeIds,
+  tagIds,
   priority: z.union([z.literal(1), z.literal(2), z.literal(3)]),
   dueDate: z
     .string()
@@ -106,6 +132,10 @@ export async function updateTask(
   if (!(await ownedPersonIds(userId, uniqueAssignees))) {
     return { ok: false, error: "Unknown assignee" };
   }
+  const uniqueTags = [...new Set(parsed.data.tagIds)];
+  if (!(await ownedTaskTagIds(userId, uniqueTags))) {
+    return { ok: false, error: "Unknown tag" };
+  }
   const [updated] = await db
     .update(tasks)
     .set({
@@ -123,9 +153,46 @@ export async function updateTask(
       uniqueAssignees.map((personId) => ({ taskId: updated.id, personId })),
     );
   }
+  await db.delete(taskTags).where(eq(taskTags.taskId, updated.id));
+  if (uniqueTags.length > 0) {
+    await db.insert(taskTags).values(
+      uniqueTags.map((tagId) => ({ taskId: updated.id, tagId })),
+    );
+  }
   revalidatePath("/tasks");
   revalidatePath("/today");
   return { ok: true };
+}
+
+const createTagSchema = z.object({
+  name: z.string().trim().min(1, "Name is required").max(50),
+});
+
+export async function createTaskTag(
+  input: z.input<typeof createTagSchema>,
+): Promise<
+  | { ok: true; id: string; name: string; color: string }
+  | { ok: false; error: string }
+> {
+  const userId = await requireUserId();
+  const parsed = createTagSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid" };
+  }
+  const name = parsed.data.name;
+  const [existing] = await db
+    .select({ id: tags.id, name: tags.name, color: tags.color })
+    .from(tags)
+    .where(
+      and(eq(tags.userId, userId), eq(tags.kind, "task"), eq(tags.name, name)),
+    );
+  if (existing) return { ok: true, ...existing };
+  const [row] = await db
+    .insert(tags)
+    .values({ userId, name, kind: "task" })
+    .returning({ id: tags.id, name: tags.name, color: tags.color });
+  revalidatePath("/tasks");
+  return { ok: true, ...row };
 }
 
 export async function deleteTask(

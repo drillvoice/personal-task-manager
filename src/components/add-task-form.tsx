@@ -2,17 +2,19 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { Users } from "lucide-react";
-import { createTask } from "@/app/(app)/tasks/actions";
+import { createTask, createTaskTag } from "@/app/(app)/tasks/actions";
 import { createProject } from "@/app/(app)/projects/actions";
 import { createPerson } from "@/app/(app)/people/actions";
 import { EntityPicker } from "@/components/entity-picker";
 import type { PickerOption } from "@/components/entity-picker";
 import type { ProjectSelectOption as ProjectOption } from "@/lib/server/projects";
+import type { TagOption } from "@/lib/server/tasks";
 import type { ContactOption } from "@/lib/server/people";
 
 export function AddTaskForm({
   projects,
   people = [],
+  tags = [],
   onCancel,
   onCreated,
   defaultProjectId,
@@ -20,6 +22,7 @@ export function AddTaskForm({
 }: {
   projects: ProjectOption[];
   people?: ContactOption[];
+  tags?: TagOption[];
   onCancel: () => void;
   onCreated: () => void;
   defaultProjectId?: string | null;
@@ -36,6 +39,7 @@ export function AddTaskForm({
   const [priority, setPriority] = useState<1 | 2 | 3>(3);
   const [dueDate, setDueDate] = useState("");
   const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
+  const [tagIds, setTagIds] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -61,6 +65,13 @@ export function AddTaskForm({
     return res.ok ? { id: res.id, name } : null;
   };
 
+  const createTagOption = async (
+    name: string,
+  ): Promise<PickerOption | null> => {
+    const res = await createTaskTag({ name });
+    return res.ok ? { id: res.id, name: res.name, color: res.color } : null;
+  };
+
   const submit = () => {
     if (!title.trim()) return;
     startTransition(async () => {
@@ -68,6 +79,7 @@ export function AddTaskForm({
         title,
         projectId: projectId === "" ? null : projectId,
         assigneeIds,
+        tagIds,
         meetingId: meetingId ?? null,
         priority,
         dueDate: dueDate || null,
@@ -77,6 +89,7 @@ export function AddTaskForm({
         setTitle("");
         setDueDate("");
         setAssigneeIds([]);
+        setTagIds([]);
         onCreated();
       } else {
         setError(res.error);
@@ -191,6 +204,16 @@ export function AddTaskForm({
           onCreate={createPersonOption}
           placeholder="Add assignee…"
           icon={Users}
+        />
+      </div>
+      <div className="mb-3 sm:max-w-[320px]">
+        <EntityPicker
+          mode="multi"
+          options={tags}
+          selectedIds={tagIds}
+          onChange={setTagIds}
+          onCreate={createTagOption}
+          placeholder="Add tag…"
         />
       </div>
       {error && (
