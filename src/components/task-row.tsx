@@ -158,7 +158,7 @@ function EditTaskForm({
               selectedIds={assigneeIds}
               onChange={setAssigneeIds}
               onCreate={createPersonOption}
-              placeholder="Add assignee…"
+              placeholder="Relationship"
               icon={Users}
             />
           </div>
@@ -177,6 +177,13 @@ function EditTaskForm({
           type="date"
           value={dueDate}
           onChange={(e) => setDueDate(e.target.value)}
+          onClick={(e) => {
+            try {
+              e.currentTarget.showPicker();
+            } catch {
+              // showPicker throws where unsupported; native affordance remains.
+            }
+          }}
           className="w-full border p-2 text-[13px] outline-none sm:w-[160px]"
           style={{
             background: "transparent",
