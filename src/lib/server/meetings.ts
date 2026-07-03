@@ -9,6 +9,7 @@ import {
   projects,
   tags,
   taskAssignees,
+  taskTags,
   tasks,
 } from "@/lib/db/schema";
 import type { TasksViewTask } from "@/lib/server/tasks";
@@ -141,24 +142,49 @@ export async function loadMeetingDetail(
   ]);
 
   const taskIds = taskRows.map((r) => r.task.id);
-  const assigneeRows = taskIds.length
-    ? await db
-        .select({
-          taskId: taskAssignees.taskId,
-          id: people.id,
-          name: people.name,
-        })
-        .from(taskAssignees)
-        .innerJoin(people, eq(taskAssignees.personId, people.id))
-        .where(inArray(taskAssignees.taskId, taskIds))
-        .orderBy(asc(people.name))
-    : [];
+  const [assigneeRows, taskTagRows] = await Promise.all([
+    taskIds.length
+      ? db
+          .select({
+            taskId: taskAssignees.taskId,
+            id: people.id,
+            name: people.name,
+          })
+          .from(taskAssignees)
+          .innerJoin(people, eq(taskAssignees.personId, people.id))
+          .where(inArray(taskAssignees.taskId, taskIds))
+          .orderBy(asc(people.name))
+      : Promise.resolve([]),
+    taskIds.length
+      ? db
+          .select({
+            taskId: taskTags.taskId,
+            id: tags.id,
+            name: tags.name,
+            color: tags.color,
+          })
+          .from(taskTags)
+          .innerJoin(tags, eq(taskTags.tagId, tags.id))
+          .where(inArray(taskTags.taskId, taskIds))
+          .orderBy(asc(tags.name))
+      : Promise.resolve([]),
+  ]);
 
   const assigneesByTask = new Map<string, { id: string; name: string }[]>();
   for (const a of assigneeRows) {
     const list = assigneesByTask.get(a.taskId) ?? [];
     list.push({ id: a.id, name: a.name });
     assigneesByTask.set(a.taskId, list);
+  }
+
+  const tagsByTask = new Map<
+    string,
+    { id: string; name: string; color: string }[]
+  >();
+  for (const t of taskTagRows) {
+    const list = tagsByTask.get(t.taskId) ?? [];
+    list.push({ id: t.id, name: t.name, color: t.color });
+    tagsByTask.set(t.taskId, list);
   }
 
   return {
@@ -179,7 +205,7 @@ export async function loadMeetingDetail(
       projectId: r.task.projectId,
       projectName: r.projectName ?? null,
       assignees: assigneesByTask.get(r.task.id) ?? [],
-      tags: [],
+      tags: tagsByTask.get(r.task.id) ?? [],
     })),
   };
 }

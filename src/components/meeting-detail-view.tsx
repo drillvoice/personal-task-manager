@@ -23,17 +23,20 @@ import { TaskRow } from "@/components/task-row";
 import type { ProjectSelectOption as ProjectOption } from "@/lib/server/projects";
 import type { ContactOption } from "@/lib/server/people";
 import type { MeetingDetail, TagOption } from "@/lib/server/meetings";
+import type { TagOption as TaskTagOption } from "@/lib/server/tasks";
 
 export function MeetingDetailView({
   meeting,
   people,
   projects,
   availableTags,
+  taskTagOptions,
 }: {
   meeting: MeetingDetail;
   people: ContactOption[];
   projects: ProjectOption[];
   availableTags: TagOption[];
+  taskTagOptions: TaskTagOption[];
 }) {
   const router = useRouter();
   const [title, setTitle] = useState(meeting.title);
@@ -238,6 +241,7 @@ export function MeetingDetailView({
             <AddTaskForm
               projects={projects}
               people={people}
+              tags={taskTagOptions}
               meetingId={meeting.id}
               defaultProjectId={null}
               onCancel={() => setShowAdd(false)}
@@ -264,6 +268,7 @@ export function MeetingDetailView({
                   layout="stacked"
                   projects={projects}
                   people={people}
+                  tagOptions={taskTagOptions}
                 />
               ))}
             </div>

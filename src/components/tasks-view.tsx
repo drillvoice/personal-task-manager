@@ -12,7 +12,11 @@ import {
   type SmartFilters,
 } from "@/components/smart-search-bar";
 import type { ContactOption } from "@/lib/server/people";
-import type { TasksViewProject, TasksViewTask } from "@/lib/server/tasks";
+import type {
+  TagOption,
+  TasksViewProject,
+  TasksViewTask,
+} from "@/lib/server/tasks";
 
 type Mode = "by_project" | "all_tasks";
 type ProjectFilter = "active" | "someday_maybe" | "all";
@@ -24,9 +28,11 @@ const AddTaskForm = dynamic(() =>
 export function TasksView({
   projects,
   people,
+  tagOptions,
 }: {
   projects: TasksViewProject[];
   people: ContactOption[];
+  tagOptions: TagOption[];
 }) {
   const [mode, setMode] = useState<Mode>("by_project");
   const [projectFilter, setProjectFilter] = useState<ProjectFilter>("active");
@@ -138,6 +144,7 @@ export function TasksView({
         <AddTaskForm
           projects={projectOptions}
           people={people}
+          tags={tagOptions}
           onCancel={() => setShowAdd(false)}
           onCreated={() => setShowAdd(false)}
         />
@@ -189,6 +196,7 @@ export function TasksView({
                 defaultOpen={p.status === "active" || p.id === null}
                 projects={projectOptions}
                 people={people}
+                tagOptions={tagOptions}
               />
             ))}
         </>
@@ -218,6 +226,7 @@ export function TasksView({
                 defaultOpen
                 projects={projectOptions}
                 people={people}
+                tagOptions={tagOptions}
               />
             ));
           })()}
@@ -248,10 +257,10 @@ export function TasksView({
               <TaskRow
                 key={t.id}
                 task={t}
-                tags={t.tags.map((tg) => ({ name: tg.name }))}
                 showProject
                 projects={projectOptions}
                 people={people}
+                tagOptions={tagOptions}
               />
             ));
           })()}

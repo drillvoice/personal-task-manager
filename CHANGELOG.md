@@ -6,6 +6,11 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 ## [Unreleased]
 
 ### Changed
+- Tasks can now be **tagged**: the task add/edit forms have a tag picker (the
+  same type-to-select control), so you can attach existing task tags or create
+  new ones inline. Tags show as chips on the task row and are filterable via
+  the existing smart-search tag chips. (Priority remains its own required
+  P1/P2/P3 field — unchanged.)
 - All tag / person / project selectors are now a single shared type-to-select
   picker: type to filter existing items, press Enter to select (or to create a
   new one if nothing matches), and selected items show as chips. Removing a
