@@ -10,6 +10,7 @@ import { TagChip } from "@/components/tag-chip";
 import { DueLabel } from "@/components/due-label";
 import type { MeetingListItem } from "@/lib/server/meetings";
 import type { ContactOption } from "@/lib/server/people";
+import { todayIso } from "@/lib/time";
 
 function matchesFilters(
   m: MeetingListItem,
@@ -87,7 +88,7 @@ function NewMeetingForm({
 }) {
   const router = useRouter();
   const [title, setTitle] = useState("");
-  const [meetingDate, setMeetingDate] = useState("");
+  const [meetingDate, setMeetingDate] = useState(() => todayIso());
   const [attendeeIds, setAttendeeIds] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -130,7 +131,7 @@ function NewMeetingForm({
           }
         }}
       />
-      <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-[minmax(220px,1fr)_160px]">
+      <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_160px]">
         <div className="min-w-0">
           <AttendeePicker
             people={people}
