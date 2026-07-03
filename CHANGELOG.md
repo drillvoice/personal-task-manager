@@ -34,6 +34,9 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
   complete checkbox since those tasks aren't due yet.
 
 ### Changed
+- Meetings: the whole module now uses the wide desktop frame (it was only
+  the detail page), the new-meeting form no longer overflows its card on
+  narrow widths, and the date field defaults to today (Sydney time).
 - Tasks view: completed tasks are hidden by default (both "By project" and
   "All tasks" modes), and projects with no incomplete tasks no longer show
   up in the "By project" list.
