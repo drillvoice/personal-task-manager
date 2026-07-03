@@ -6,6 +6,16 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 ## [Unreleased]
 
 ### Added
+- Meetings module: new Meetings page (with nav item) for scheduling upcoming
+  meetings with a date and attendees picked from the People CRM (including
+  inline person creation). Each meeting has autosaving prep notes and meeting
+  notes, tags (a vocabulary of their own, separate from task tags, creatable
+  inline), and a
+  quick-add task panel — tasks created there are normal tasks (Inbox by
+  default) that stay linked to the meeting. Marking a meeting completed moves
+  it to a searchable archive (filter by title, attendee, or tag). Deleting a
+  meeting keeps its tasks (ON DELETE SET NULL). The meeting detail page uses
+  the wide two-column layout: notes on the left, tasks on the right.
 - Contact picker in task add/edit forms now has a "+ New person…" option:
   type a name to create the person inline and link them to the task. Other
   details (role, email, org, notes) can be filled in later on the People

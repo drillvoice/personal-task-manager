@@ -22,6 +22,20 @@
       "when": 1783032538827,
       "tag": "0002_graceful_santa_claus",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1783043195548,
+      "tag": "0003_melted_grey_gargoyle",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1783045893945,
+      "tag": "0004_bent_carnage",
+      "breakpoints": true
     }
   ]
 }

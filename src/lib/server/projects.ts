@@ -4,6 +4,19 @@ import { db } from "@/lib/db";
 import { projectWeeklyNotes, projects } from "@/lib/db/schema";
 import { weekLabel, weekStartIso } from "@/lib/time";
 
+export type ProjectSelectOption = { id: string | null; name: string };
+
+export async function loadProjectOptions(
+  userId: string,
+): Promise<ProjectSelectOption[]> {
+  const rows = await db
+    .select({ id: projects.id, name: projects.name })
+    .from(projects)
+    .where(eq(projects.userId, userId))
+    .orderBy(asc(projects.name));
+  return [{ id: null, name: "Inbox (no project)" }, ...rows];
+}
+
 export type ProjectsTableRow = {
   id: string;
   name: string;

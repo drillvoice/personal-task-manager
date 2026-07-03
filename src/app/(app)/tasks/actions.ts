@@ -18,6 +18,7 @@ const createSchema = z.object({
   projectId: nullableUuid,
   personId: nullableUuid.default(null),
   orgId: nullableUuid.default(null),
+  meetingId: nullableUuid.default(null),
   priority: z.union([z.literal(1), z.literal(2), z.literal(3)]),
   dueDate: z
     .string()
@@ -37,20 +38,30 @@ export async function createTask(input: CreateTaskInput): Promise<
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid" };
   }
-  const { title, projectId, personId, orgId, priority, dueDate, status } =
-    parsed.data;
+  const {
+    title,
+    projectId,
+    personId,
+    orgId,
+    meetingId,
+    priority,
+    dueDate,
+    status,
+  } = parsed.data;
   await db.insert(tasks).values({
     userId,
     title,
     projectId: projectId ?? null,
     personId: personId ?? null,
     organisationId: orgId ?? null,
+    meetingId: meetingId ?? null,
     priority,
     dueDate: dueDate ?? null,
     status,
   });
   revalidatePath("/tasks");
   revalidatePath("/today");
+  if (meetingId) revalidatePath(`/meetings/${meetingId}`);
   return { ok: true };
 }
 

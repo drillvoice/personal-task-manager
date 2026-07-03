@@ -33,6 +33,18 @@ export const taskStatus = pgEnum("task_status", [
   "done",
 ]);
 
+export const meetingStatus = pgEnum("meeting_status", [
+  "upcoming",
+  "completed",
+]);
+
+/*
+ * Task tags and meeting tags are deliberately separate vocabularies —
+ * task tags are workflow-ish ("waiting", "next"), meeting tags are
+ * topical ("NSW", "internal"). One table, discriminated by kind.
+ */
+export const tagKind = pgEnum("tag_kind", ["task", "meeting"]);
+
 export const taskContext = pgEnum("task_context", [
   "computer",
   "calls",
@@ -187,6 +199,9 @@ export const tasks = pgTable(
     organisationId: uuid("organisation_id").references(() => organisations.id, {
       onDelete: "set null",
     }),
+    meetingId: uuid("meeting_id").references(() => meetings.id, {
+      onDelete: "set null",
+    }),
     title: text("title").notNull(),
     status: taskStatus("status").notNull().default("next_action"),
     priority: integer("priority").notNull().default(3),
@@ -209,7 +224,58 @@ export const tasks = pgTable(
     index("tasks_project_idx").on(t.projectId),
     index("tasks_person_idx").on(t.personId),
     index("tasks_organisation_idx").on(t.organisationId),
+    index("tasks_meeting_idx").on(t.meetingId),
   ],
+);
+
+export const meetings = pgTable(
+  "meetings",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    status: meetingStatus("status").notNull().default("upcoming"),
+    meetingDate: date("meeting_date").notNull(),
+    prepNotes: text("prep_notes").notNull().default(""),
+    meetingNotes: text("meeting_notes").notNull().default(""),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("meetings_user_status_date_idx").on(t.userId, t.status, t.meetingDate),
+  ],
+);
+
+export const meetingAttendees = pgTable(
+  "meeting_attendees",
+  {
+    meetingId: uuid("meeting_id")
+      .notNull()
+      .references(() => meetings.id, { onDelete: "cascade" }),
+    personId: uuid("person_id")
+      .notNull()
+      .references(() => people.id, { onDelete: "cascade" }),
+  },
+  (t) => [primaryKey({ columns: [t.meetingId, t.personId] })],
+);
+
+export const meetingTags = pgTable(
+  "meeting_tags",
+  {
+    meetingId: uuid("meeting_id")
+      .notNull()
+      .references(() => meetings.id, { onDelete: "cascade" }),
+    tagId: uuid("tag_id")
+      .notNull()
+      .references(() => tags.id, { onDelete: "cascade" }),
+  },
+  (t) => [primaryKey({ columns: [t.meetingId, t.tagId] })],
 );
 
 export const tags = pgTable(
@@ -220,12 +286,13 @@ export const tags = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
+    kind: tagKind("kind").notNull().default("task"),
     color: text("color").notNull().default("#2E5F5C"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
   },
-  (t) => [uniqueIndex("tags_user_name_uniq").on(t.userId, t.name)],
+  (t) => [uniqueIndex("tags_user_kind_name_uniq").on(t.userId, t.kind, t.name)],
 );
 
 export const taskTags = pgTable(
@@ -341,6 +408,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   dailyPlans: many(dailyPlans),
   organisations: many(organisations),
   people: many(people),
+  meetings: many(meetings),
 }));
 
 export const organisationsRelations = relations(
@@ -362,6 +430,7 @@ export const peopleRelations = relations(people, ({ one, many }) => ({
     references: [organisations.id],
   }),
   tasks: many(tasks),
+  meetingAttendees: many(meetingAttendees),
 }));
 
 export const projectsRelations = relations(projects, ({ one, many }) => ({
@@ -384,6 +453,10 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
     fields: [tasks.organisationId],
     references: [organisations.id],
   }),
+  meeting: one(meetings, {
+    fields: [tasks.meetingId],
+    references: [meetings.id],
+  }),
   tags: many(taskTags),
   weeklyPriorities: many(weeklyPriorities),
   dailyPlanItems: many(dailyPlanItems),
@@ -392,6 +465,36 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
 export const tagsRelations = relations(tags, ({ one, many }) => ({
   user: one(users, { fields: [tags.userId], references: [users.id] }),
   tasks: many(taskTags),
+  meetings: many(meetingTags),
+}));
+
+export const meetingsRelations = relations(meetings, ({ one, many }) => ({
+  user: one(users, { fields: [meetings.userId], references: [users.id] }),
+  attendees: many(meetingAttendees),
+  tags: many(meetingTags),
+  tasks: many(tasks),
+}));
+
+export const meetingAttendeesRelations = relations(
+  meetingAttendees,
+  ({ one }) => ({
+    meeting: one(meetings, {
+      fields: [meetingAttendees.meetingId],
+      references: [meetings.id],
+    }),
+    person: one(people, {
+      fields: [meetingAttendees.personId],
+      references: [people.id],
+    }),
+  }),
+);
+
+export const meetingTagsRelations = relations(meetingTags, ({ one }) => ({
+  meeting: one(meetings, {
+    fields: [meetingTags.meetingId],
+    references: [meetings.id],
+  }),
+  tag: one(tags, { fields: [meetingTags.tagId], references: [tags.id] }),
 }));
 
 export const taskTagsRelations = relations(taskTags, ({ one }) => ({
@@ -469,6 +572,8 @@ export type WeeklyReview = typeof weeklyReviews.$inferSelect;
 export type WeeklyPriority = typeof weeklyPriorities.$inferSelect;
 export type DailyPlan = typeof dailyPlans.$inferSelect;
 export type DailyPlanItem = typeof dailyPlanItems.$inferSelect;
+export type Meeting = typeof meetings.$inferSelect;
+export type NewMeeting = typeof meetings.$inferInsert;
 
 /* PRIORITY_TASK_CAP is enforced in server actions — see lib/server/priority-cap.ts */
 export const PRIORITY_TASK_CAP = 3;
