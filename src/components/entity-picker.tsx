@@ -14,6 +14,7 @@ export function EntityPicker({
   onCreate,
   placeholder,
   icon: Icon,
+  suggestOnFocus = true,
 }: {
   mode: "single" | "multi";
   options: PickerOption[];
@@ -22,6 +23,7 @@ export function EntityPicker({
   onCreate?: (name: string) => Promise<PickerOption | null>;
   placeholder?: string;
   icon?: LucideIcon;
+  suggestOnFocus?: boolean;
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -109,7 +111,8 @@ export function EntityPicker({
     }
   };
 
-  const showDropdown = open && (suggestions.length > 0 || canCreate);
+  const showDropdown =
+    open && (suggestOnFocus || q !== "") && (suggestions.length > 0 || canCreate);
   const backdrop = showDropdown || confirmingId !== null;
 
   return (

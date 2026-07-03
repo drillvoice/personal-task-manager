@@ -160,6 +160,7 @@ function EditTaskForm({
               onCreate={createPersonOption}
               placeholder="Relationship"
               icon={Users}
+              suggestOnFocus={false}
             />
           </div>
           <div className="mt-2">

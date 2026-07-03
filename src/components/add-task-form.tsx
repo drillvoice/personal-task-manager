@@ -203,26 +203,29 @@ export function AddTaskForm({
           {priorityButtons}
         </div>
       )}
-      <div className="mb-3 sm:max-w-[320px]">
-        <EntityPicker
-          mode="multi"
-          options={people}
-          selectedIds={assigneeIds}
-          onChange={setAssigneeIds}
-          onCreate={createPersonOption}
-          placeholder="Relationship"
-          icon={Users}
-        />
-      </div>
-      <div className="mb-3 sm:max-w-[320px]">
-        <EntityPicker
-          mode="multi"
-          options={tags}
-          selectedIds={tagIds}
-          onChange={setTagIds}
-          onCreate={createTagOption}
-          placeholder="Add tag…"
-        />
+      <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <div className="min-w-0">
+          <EntityPicker
+            mode="multi"
+            options={people}
+            selectedIds={assigneeIds}
+            onChange={setAssigneeIds}
+            onCreate={createPersonOption}
+            placeholder="Relationship"
+            icon={Users}
+            suggestOnFocus={false}
+          />
+        </div>
+        <div className="min-w-0">
+          <EntityPicker
+            mode="multi"
+            options={tags}
+            selectedIds={tagIds}
+            onChange={setTagIds}
+            onCreate={createTagOption}
+            placeholder="Add tag…"
+          />
+        </div>
       </div>
       {error && (
         <p
