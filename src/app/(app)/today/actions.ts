@@ -104,8 +104,9 @@ export async function setTaskDone(taskId: string, done: boolean) {
         : { status: "next_action", completedAt: null },
     )
     .where(and(eq(tasks.id, taskId), eq(tasks.userId, userId)))
-    .returning({ id: tasks.id });
+    .returning({ id: tasks.id, meetingId: tasks.meetingId });
   if (!updated) throw new Error("Task not found");
   revalidatePath("/today");
   revalidatePath("/tasks");
+  if (updated.meetingId) revalidatePath(`/meetings/${updated.meetingId}`);
 }

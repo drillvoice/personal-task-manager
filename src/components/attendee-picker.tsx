@@ -1,27 +1,18 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { ChevronDown, Users } from "lucide-react";
+import { Check, ChevronDown, Users } from "lucide-react";
 import { createPerson } from "@/app/(app)/people/actions";
 import type { ContactOption } from "@/lib/server/people";
 
-export type ContactSelection =
-  | { type: "person"; id: string }
-  | { type: "org"; id: string }
-  | { type: "none" };
-
-export function ContactDropdown({
+export function AttendeePicker({
   people,
-  orgs,
-  personId,
-  orgId,
+  selectedIds,
   onChange,
 }: {
   people: ContactOption[];
-  orgs: ContactOption[];
-  personId: string;
-  orgId: string;
-  onChange: (selection: ContactSelection) => void;
+  selectedIds: string[];
+  onChange: (ids: string[]) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -37,18 +28,22 @@ export function ContactDropdown({
     ...people,
     ...extraPeople.filter((e) => !people.some((p) => p.id === e.id)),
   ];
-  const selectedPerson = allPeople.find((p) => p.id === personId);
-  const selectedOrg = orgs.find((o) => o.id === orgId);
-  const label = selectedPerson?.name ?? selectedOrg?.name ?? "No contact";
-  const hasSelection = Boolean(selectedPerson || selectedOrg);
+  const selected = allPeople.filter((p) => selectedIds.includes(p.id));
+  const label =
+    selected.length > 0
+      ? selected.map((p) => p.name).join(", ")
+      : "No attendees";
 
   useEffect(() => {
     if (creating) inputRef.current?.focus();
   }, [creating]);
 
-  const pick = (selection: ContactSelection) => {
-    onChange(selection);
-    setOpen(false);
+  const toggle = (id: string) => {
+    onChange(
+      selectedIds.includes(id)
+        ? selectedIds.filter((s) => s !== id)
+        : [...selectedIds, id],
+    );
   };
 
   const submitNew = () => {
@@ -60,21 +55,13 @@ export function ContactDropdown({
           ...prev,
           { id: res.id, name: newName.trim() },
         ]);
-        onChange({ type: "person", id: res.id });
+        onChange([...selectedIds, res.id]);
         setNewName("");
         setCreating(false);
+        setOpen(true);
       }
     });
   };
-
-  const sectionHeading = (text: string) => (
-    <p
-      className="font-mono px-3 pt-2 pb-1 text-[10px] font-semibold tracking-wide uppercase"
-      style={{ color: "var(--color-ink-soft)" }}
-    >
-      {text}
-    </p>
-  );
 
   if (creating) {
     return (
@@ -133,7 +120,7 @@ export function ContactDropdown({
         style={{
           background: "transparent",
           borderColor: "var(--color-line)",
-          color: hasSelection ? "var(--color-ink)" : "var(--color-ink-soft)",
+          color: selected.length > 0 ? "var(--color-ink)" : "var(--color-ink-soft)",
           textAlign: "left",
         }}
       >
@@ -160,62 +147,31 @@ export function ContactDropdown({
               borderColor: "var(--color-line)",
             }}
           >
-            <button
-              type="button"
-              onClick={() => pick({ type: "none" })}
-              className="block w-full px-3 py-2 text-left text-[13px] hover:bg-[var(--color-paper)]"
-              style={{
-                color: hasSelection
-                  ? "var(--color-ink-soft)"
-                  : "var(--color-ink)",
-                fontWeight: hasSelection ? 400 : 600,
-              }}
-            >
-              No contact
-            </button>
-            {allPeople.length > 0 && (
-              <>
-                {sectionHeading("People")}
-                {allPeople.map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => pick({ type: "person", id: p.id })}
-                    className="block w-full px-3 py-2 text-left text-[13px] hover:bg-[var(--color-paper)]"
-                    style={{
-                      color:
-                        p.id === personId
-                          ? "var(--color-ink)"
-                          : "var(--color-ink-soft)",
-                      fontWeight: p.id === personId ? 600 : 400,
-                    }}
-                  >
-                    {p.name}
-                  </button>
-                ))}
-              </>
-            )}
-            {orgs.length > 0 && (
-              <>
-                {sectionHeading("Organisations")}
-                {orgs.map((o) => (
-                  <button
-                    key={o.id}
-                    type="button"
-                    onClick={() => pick({ type: "org", id: o.id })}
-                    className="block w-full px-3 py-2 text-left text-[13px] hover:bg-[var(--color-paper)]"
-                    style={{
-                      color:
-                        o.id === orgId
-                          ? "var(--color-ink)"
-                          : "var(--color-ink-soft)",
-                      fontWeight: o.id === orgId ? 600 : 400,
-                    }}
-                  >
-                    {o.name}
-                  </button>
-                ))}
-              </>
+            {allPeople.map((p) => {
+              const on = selectedIds.includes(p.id);
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => toggle(p.id)}
+                  className="flex w-full items-center justify-between px-3 py-2 text-left text-[13px] hover:bg-[var(--color-paper)]"
+                  style={{
+                    color: on ? "var(--color-ink)" : "var(--color-ink-soft)",
+                    fontWeight: on ? 600 : 400,
+                  }}
+                >
+                  {p.name}
+                  {on && <Check size={13} style={{ color: "var(--color-teal)" }} />}
+                </button>
+              );
+            })}
+            {allPeople.length === 0 && (
+              <p
+                className="font-mono px-3 py-2 text-[11px]"
+                style={{ color: "var(--color-ink-soft)" }}
+              >
+                No people yet.
+              </p>
             )}
             <div
               className="border-t"

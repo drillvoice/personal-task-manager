@@ -15,6 +15,7 @@ export function AddTaskForm({
   onCancel,
   onCreated,
   defaultProjectId,
+  meetingId,
 }: {
   projects: ProjectOption[];
   people?: ContactOption[];
@@ -22,10 +23,15 @@ export function AddTaskForm({
   onCancel: () => void;
   onCreated: () => void;
   defaultProjectId?: string | null;
+  meetingId?: string;
 }) {
   const [title, setTitle] = useState("");
+  // defaultProjectId: undefined = no preference (first real project),
+  // null = explicitly Inbox.
   const [projectId, setProjectId] = useState<string>(
-    defaultProjectId ?? projects.find((p) => p.id !== null)?.id ?? "",
+    defaultProjectId !== undefined
+      ? (defaultProjectId ?? "")
+      : (projects.find((p) => p.id !== null)?.id ?? ""),
   );
   const [priority, setPriority] = useState<1 | 2 | 3>(3);
   const [dueDate, setDueDate] = useState("");
@@ -48,6 +54,7 @@ export function AddTaskForm({
         projectId: projectId === "" ? null : projectId,
         personId: personId || null,
         orgId: orgId || null,
+        meetingId: meetingId ?? null,
         priority,
         dueDate: dueDate || null,
         status: "next_action",
