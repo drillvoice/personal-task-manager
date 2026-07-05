@@ -39,7 +39,11 @@ async function assertOwnsTask(userId: string, taskId: string) {
 }
 
 export async function updateReviewFlag(
-  field: "inboxCleared" | "loopsCaptured",
+  field:
+    | "inboxCleared"
+    | "loopsCaptured"
+    | "lastWeekCalendarReviewed"
+    | "thisWeekCalendarReviewed",
   value: boolean,
 ): Promise<void> {
   const userId = await requireUserId();

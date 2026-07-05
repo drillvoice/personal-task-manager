@@ -34,6 +34,8 @@ export type ReviewData = {
     weekStartDate: string;
     inboxCleared: boolean;
     loopsCaptured: boolean;
+    lastWeekCalendarReviewed: boolean;
+    thisWeekCalendarReviewed: boolean;
     reflectionNotes: string;
     completedAt: Date | null;
   };
@@ -106,6 +108,8 @@ export async function loadReviewData(userId: string): Promise<ReviewData> {
       weekStartDate: review.weekStartDate,
       inboxCleared: review.inboxCleared,
       loopsCaptured: review.loopsCaptured,
+      lastWeekCalendarReviewed: review.lastWeekCalendarReviewed,
+      thisWeekCalendarReviewed: review.thisWeekCalendarReviewed,
       reflectionNotes: review.reflectionNotes,
       completedAt: review.completedAt,
     },

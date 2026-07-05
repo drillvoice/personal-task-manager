@@ -88,7 +88,7 @@ Snapshot of a project's state for a given week. Populated during the weekly revi
 ### A. Weekly Review Flow
 This is **one continuous scrollable page**, not a multi-step wizard — all sections visible and editable at once, in order:
 
-1. **Get clear** — checklist reminder to process email inbox to zero, capture any loose open loops as new tasks (quick-add inline)
+1. **Get clear** — checklist reminder to process email inbox to zero, capture any loose open loops as new tasks (quick-add inline), review last week's calendar, and review this week's calendar
 2. **Review projects** — every `active` project listed as its own card (not paged one-at-a-time): editable notes field, its tasks, and a quick-add for new next actions, all inline
 3. **Set weekly priorities** — checklist of all open tasks across active projects; pick exactly 3 (extra checkboxes disable/grey out once 3 are selected, with a live "x/3 selected" counter)
 4. **Reflection** — freeform textarea on how the week went

@@ -49,6 +49,8 @@ export function ReviewView({ data }: { data: ReviewData }) {
       <GetClear
         inboxCleared={data.review.inboxCleared}
         loopsCaptured={data.review.loopsCaptured}
+        lastWeekCalendarReviewed={data.review.lastWeekCalendarReviewed}
+        thisWeekCalendarReviewed={data.review.thisWeekCalendarReviewed}
       />
 
       <SectionHeading n={2} label="REVIEW PROJECTS" />
@@ -210,17 +212,31 @@ function SectionHeading({
 function GetClear({
   inboxCleared,
   loopsCaptured,
+  lastWeekCalendarReviewed,
+  thisWeekCalendarReviewed,
 }: {
   inboxCleared: boolean;
   loopsCaptured: boolean;
+  lastWeekCalendarReviewed: boolean;
+  thisWeekCalendarReviewed: boolean;
 }) {
   const [inbox, setInbox] = useState(inboxCleared);
   const [loops, setLoops] = useState(loopsCaptured);
+  const [lastWeekCalendar, setLastWeekCalendar] = useState(
+    lastWeekCalendarReviewed,
+  );
+  const [thisWeekCalendar, setThisWeekCalendar] = useState(
+    thisWeekCalendarReviewed,
+  );
   const [capture, setCapture] = useState("");
   const [pending, startTransition] = useTransition();
 
   const toggleFlag = (
-    field: "inboxCleared" | "loopsCaptured",
+    field:
+      | "inboxCleared"
+      | "loopsCaptured"
+      | "lastWeekCalendarReviewed"
+      | "thisWeekCalendarReviewed",
     current: boolean,
     setter: (v: boolean) => void,
   ) => {
@@ -260,6 +276,36 @@ function GetClear({
         checked={loops}
         onChange={() => toggleFlag("loopsCaptured", loops, setLoops)}
         label="Loose open loops captured"
+      />
+      <div
+        className="border-t"
+        style={{ borderColor: "var(--color-line)" }}
+      />
+      <FlagLabel
+        checked={lastWeekCalendar}
+        onChange={() =>
+          toggleFlag(
+            "lastWeekCalendarReviewed",
+            lastWeekCalendar,
+            setLastWeekCalendar,
+          )
+        }
+        label="Review last week's calendar"
+      />
+      <div
+        className="border-t"
+        style={{ borderColor: "var(--color-line)" }}
+      />
+      <FlagLabel
+        checked={thisWeekCalendar}
+        onChange={() =>
+          toggleFlag(
+            "thisWeekCalendarReviewed",
+            thisWeekCalendar,
+            setThisWeekCalendar,
+          )
+        }
+        label="Review this week's calendar"
       />
       <div
         className="mt-3 flex items-center gap-2 border-t pt-3"

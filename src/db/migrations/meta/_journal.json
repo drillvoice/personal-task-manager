@@ -43,6 +43,13 @@
       "when": 1783052563601,
       "tag": "0005_wonderful_hulk",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1783241494888,
+      "tag": "0006_violet_firestar",
+      "breakpoints": true
     }
   ]
 }
