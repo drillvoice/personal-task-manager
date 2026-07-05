@@ -25,6 +25,14 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 - Meeting detail: the linked-task rows are stacked (title on its own row,
   metadata beneath) so they read cleanly in the tasks column, and the in-meeting
   add-task form gives the date its own full-width row.
+- Weekly review now uses the wide desktop layout (matching Tasks/Projects/
+  Meetings) instead of the narrow mobile-first column. Each project's review
+  card is two-column: a bigger, resizable notes textarea on the left, open
+  tasks in a parallel column on the right. The notes field now writes to the
+  same per-week `project_weekly_notes` table the Projects history table reads
+  from — previously it wrote to a separate, non-versioned `projects.notes`
+  field — and the card shows the most recent past week's note (read-only)
+  above this week's textarea when one exists.
 
 ### Added
 - Weekly review "Get clear" checklist now includes two more items: reviewing

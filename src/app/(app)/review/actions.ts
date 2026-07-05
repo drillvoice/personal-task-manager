@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import {
+  projectWeeklyNotes,
   projects,
   tasks,
   WEEKLY_PRIORITY_CAP,
@@ -70,14 +71,22 @@ export async function updateProjectNotes(
   notes: string,
 ): Promise<void> {
   const userId = await requireUserId();
-  const [updated] = await db
-    .update(projects)
-    .set({ notes, updatedAt: new Date() })
-    .where(and(eq(projects.id, projectId), eq(projects.userId, userId)))
-    .returning({ id: projects.id });
-  if (!updated) throw new Error("Project not found");
+  const [owned] = await db
+    .select({ id: projects.id })
+    .from(projects)
+    .where(and(eq(projects.id, projectId), eq(projects.userId, userId)));
+  if (!owned) throw new Error("Project not found");
+
+  const weekStartDate = weekStartIso();
+  await db
+    .insert(projectWeeklyNotes)
+    .values({ projectId, weekStartDate, note: notes })
+    .onConflictDoUpdate({
+      target: [projectWeeklyNotes.projectId, projectWeeklyNotes.weekStartDate],
+      set: { note: notes, updatedAt: new Date() },
+    });
   revalidatePath("/review");
-  revalidatePath("/tasks");
+  revalidatePath("/projects");
 }
 
 const quickAddSchema = z.object({

@@ -3,17 +3,18 @@
 import { usePathname } from "next/navigation";
 
 /**
- * Wraps every authenticated page in a max-width container. Today and Review
- * stay close to the mobile-first mockup; Tasks, Projects, and Meetings use
- * the wider desktop surface needed for dense lists, table/editing controls,
- * and the two-column notes + tasks layout (Meetings is desktop-first).
+ * Wraps every authenticated page in a max-width container. Today stays
+ * close to the mobile-first mockup; Tasks, Projects, Meetings, and Review
+ * use the wider desktop surface needed for dense lists, table/editing
+ * controls, and two-column notes + tasks layouts.
  */
 export function AppFrame({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isWide =
     pathname.startsWith("/projects") ||
     pathname.startsWith("/tasks") ||
-    pathname.startsWith("/meetings");
+    pathname.startsWith("/meetings") ||
+    pathname.startsWith("/review");
   return (
     <div
       className="mx-auto flex min-h-screen w-full flex-col"

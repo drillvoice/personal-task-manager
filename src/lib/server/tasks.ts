@@ -3,12 +3,14 @@ import { and, asc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   people,
+  projectWeeklyNotes,
   projects,
   tags,
   taskAssignees,
   taskTags,
   tasks,
 } from "@/lib/db/schema";
+import { weekStartIso } from "@/lib/time";
 
 export type TasksViewProject = {
   id: string | null; // null = Inbox pseudo-project
@@ -41,44 +43,61 @@ export async function loadTaskTagOptions(userId: string): Promise<TagOption[]> {
 }
 
 export async function loadTasksData(userId: string) {
-  const [projectRows, taskRows, tagRows, assigneeRows] = await Promise.all([
-    db
-      .select()
-      .from(projects)
-      .where(eq(projects.userId, userId))
-      .orderBy(asc(projects.name)),
-    db
-      .select({
-        task: tasks,
-        projectName: projects.name,
-      })
-      .from(tasks)
-      .leftJoin(projects, eq(tasks.projectId, projects.id))
-      .where(eq(tasks.userId, userId))
-      .orderBy(asc(tasks.sortOrder), asc(tasks.createdAt)),
-    db
-      .select({
-        taskId: taskTags.taskId,
-        id: tags.id,
-        name: tags.name,
-        color: tags.color,
-      })
-      .from(taskTags)
-      .innerJoin(tags, eq(taskTags.tagId, tags.id))
-      .innerJoin(tasks, eq(taskTags.taskId, tasks.id))
-      .where(eq(tasks.userId, userId)),
-    db
-      .select({
-        taskId: taskAssignees.taskId,
-        id: people.id,
-        name: people.name,
-      })
-      .from(taskAssignees)
-      .innerJoin(people, eq(taskAssignees.personId, people.id))
-      .innerJoin(tasks, eq(taskAssignees.taskId, tasks.id))
-      .where(eq(tasks.userId, userId))
-      .orderBy(asc(people.name)),
-  ]);
+  const currentWeek = weekStartIso();
+  const [projectRows, taskRows, tagRows, assigneeRows, noteRows] =
+    await Promise.all([
+      db
+        .select()
+        .from(projects)
+        .where(eq(projects.userId, userId))
+        .orderBy(asc(projects.name)),
+      db
+        .select({
+          task: tasks,
+          projectName: projects.name,
+        })
+        .from(tasks)
+        .leftJoin(projects, eq(tasks.projectId, projects.id))
+        .where(eq(tasks.userId, userId))
+        .orderBy(asc(tasks.sortOrder), asc(tasks.createdAt)),
+      db
+        .select({
+          taskId: taskTags.taskId,
+          id: tags.id,
+          name: tags.name,
+          color: tags.color,
+        })
+        .from(taskTags)
+        .innerJoin(tags, eq(taskTags.tagId, tags.id))
+        .innerJoin(tasks, eq(taskTags.taskId, tasks.id))
+        .where(eq(tasks.userId, userId)),
+      db
+        .select({
+          taskId: taskAssignees.taskId,
+          id: people.id,
+          name: people.name,
+        })
+        .from(taskAssignees)
+        .innerJoin(people, eq(taskAssignees.personId, people.id))
+        .innerJoin(tasks, eq(taskAssignees.taskId, tasks.id))
+        .where(eq(tasks.userId, userId))
+        .orderBy(asc(people.name)),
+      db
+        .select({
+          projectId: projectWeeklyNotes.projectId,
+          note: projectWeeklyNotes.note,
+        })
+        .from(projectWeeklyNotes)
+        .innerJoin(projects, eq(projectWeeklyNotes.projectId, projects.id))
+        .where(
+          and(
+            eq(projects.userId, userId),
+            eq(projectWeeklyNotes.weekStartDate, currentWeek),
+          ),
+        ),
+    ]);
+
+  const notesByProject = new Map(noteRows.map((n) => [n.projectId, n.note]));
 
   const tagsByTask = new Map<
     string,
@@ -103,7 +122,7 @@ export async function loadTasksData(userId: string) {
       id: p.id,
       name: p.name,
       status: p.status,
-      notes: p.notes,
+      notes: notesByProject.get(p.id) ?? "",
       tasks: [],
     });
   }

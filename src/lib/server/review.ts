@@ -2,6 +2,7 @@ import "server-only";
 import { and, asc, desc, eq, ne } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
+  projectWeeklyNotes,
   projects,
   tasks,
   weeklyPriorities,
@@ -9,7 +10,7 @@ import {
 } from "@/lib/db/schema";
 import { ensureWeeklyReview } from "./priority-cap";
 import { computeStreak, lastCompletedReview } from "./streak";
-import { weekStartIso } from "@/lib/time";
+import { weekLabel, weekStartIso } from "@/lib/time";
 
 export type ReviewTask = {
   id: string;
@@ -25,6 +26,8 @@ export type ReviewProject = {
   id: string;
   name: string;
   notes: string;
+  previousNotes: string | null;
+  previousWeekLabel: string | null;
   tasks: ReviewTask[];
 };
 
@@ -50,7 +53,7 @@ export async function loadReviewData(userId: string): Promise<ReviewData> {
   const weekStart = weekStartIso();
   const reviewId = await ensureWeeklyReview(userId, weekStart);
 
-  const [reviewRows, priorReviews, projectRows, taskRows, priorityRows] =
+  const [reviewRows, priorReviews, projectRows, taskRows, priorityRows, noteRows] =
     await Promise.all([
       db.select().from(weeklyReviews).where(eq(weeklyReviews.id, reviewId)),
       db
@@ -76,11 +79,42 @@ export async function loadReviewData(userId: string): Promise<ReviewData> {
         .select({ taskId: weeklyPriorities.taskId })
         .from(weeklyPriorities)
         .where(eq(weeklyPriorities.weeklyReviewId, reviewId)),
+      db
+        .select({
+          projectId: projectWeeklyNotes.projectId,
+          weekStartDate: projectWeeklyNotes.weekStartDate,
+          note: projectWeeklyNotes.note,
+        })
+        .from(projectWeeklyNotes)
+        .innerJoin(projects, eq(projectWeeklyNotes.projectId, projects.id))
+        .where(
+          and(eq(projects.userId, userId), eq(projects.status, "active")),
+        )
+        .orderBy(desc(projectWeeklyNotes.weekStartDate)),
     ]);
   const [review] = reviewRows;
 
   const streak = computeStreak(priorReviews, weekStart);
   const last = lastCompletedReview(priorReviews);
+
+  const notesByProject = new Map<
+    string,
+    { current: string; previous: string; previousWeek: string } | undefined
+  >();
+  for (const n of noteRows) {
+    const existing = notesByProject.get(n.projectId) ?? {
+      current: "",
+      previous: "",
+      previousWeek: "",
+    };
+    if (n.weekStartDate === weekStart) {
+      existing.current = n.note;
+    } else if (!existing.previousWeek && n.note.trim()) {
+      existing.previous = n.note;
+      existing.previousWeek = n.weekStartDate;
+    }
+    notesByProject.set(n.projectId, existing);
+  }
 
   const tasksByProject = new Map<string, ReviewTask[]>();
   const actionable: ReviewTask[] = [];
@@ -115,12 +149,19 @@ export async function loadReviewData(userId: string): Promise<ReviewData> {
     },
     streak,
     lastCompletedAt: last?.completedAt ?? null,
-    activeProjects: projectRows.map((p) => ({
-      id: p.id,
-      name: p.name,
-      notes: p.notes,
-      tasks: tasksByProject.get(p.id) ?? [],
-    })),
+    activeProjects: projectRows.map((p) => {
+      const entry = notesByProject.get(p.id);
+      return {
+        id: p.id,
+        name: p.name,
+        notes: entry?.current ?? "",
+        previousNotes: entry?.previousWeek ? entry.previous : null,
+        previousWeekLabel: entry?.previousWeek
+          ? weekLabel(entry.previousWeek)
+          : null,
+        tasks: tasksByProject.get(p.id) ?? [],
+      };
+    }),
     actionableTasks: actionable,
     selectedPriorityIds: priorityRows.map((r) => r.taskId),
   };
