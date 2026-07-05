@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Reference material, not app code — see CLAUDE.md. Kept as authored.
+    "docs/**",
   ]),
 ]);
 

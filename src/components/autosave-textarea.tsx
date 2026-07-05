@@ -14,46 +14,46 @@ export function AutosaveTextarea({
   rows?: number;
 }) {
   const [value, setValue] = useState(initialValue);
+  const [savedValue, setSavedValue] = useState(initialValue);
+  const [prevInitial, setPrevInitial] = useState(initialValue);
   const [pending, startTransition] = useTransition();
-  const lastSaved = useRef(initialValue);
-  const prevInitial = useRef(initialValue);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Adopt server-delivered content when a revalidation hands us a new
-  // initialValue, but only if there are no pending local edits — otherwise a
+  // initialValue, but only if there are no unsaved local edits — otherwise a
   // background re-render would silently clobber whatever the user is typing.
-  useEffect(() => {
-    if (initialValue === prevInitial.current) return;
-    prevInitial.current = initialValue;
-    if (value === lastSaved.current) {
+  // React's render-time "adjust state on a prop change" pattern (not an effect).
+  if (initialValue !== prevInitial) {
+    setPrevInitial(initialValue);
+    if (value === savedValue) {
       setValue(initialValue);
-      lastSaved.current = initialValue;
+      setSavedValue(initialValue);
     }
-  }, [initialValue, value]);
+  }
 
   const save = (v: string) => {
-    if (v === lastSaved.current) return;
+    if (v === savedValue) return;
     startTransition(async () => {
       await onSave(v);
-      lastSaved.current = v;
+      setSavedValue(v);
     });
   };
 
   useEffect(() => {
-    if (value === lastSaved.current) return;
+    if (value === savedValue) return;
     timer.current = setTimeout(() => save(value), 800);
     return () => {
       if (timer.current) clearTimeout(timer.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value]);
+  }, [value, savedValue]);
 
   const flush = () => {
     if (timer.current) clearTimeout(timer.current);
     save(value);
   };
 
-  const dirty = value !== lastSaved.current;
+  const dirty = value !== savedValue;
 
   return (
     <div>
