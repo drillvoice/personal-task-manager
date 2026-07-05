@@ -56,6 +56,16 @@ export function weekLabel(weekStartIsoDate: string): string {
   return formatInTimeZone(new Date(`${weekStartIsoDate}T00:00:00`), APP_TZ, "d MMM");
 }
 
+/**
+ * "Mon 6 Jul" style label. Uses a fixed date-fns format rather than
+ * `toLocaleDateString`, whose output depends on the runtime's default
+ * locale — that mismatch between server (Node) and client (browser)
+ * locale caused a hydration error.
+ */
+export function shortDateLabel(date: Date): string {
+  return formatInTimeZone(date, APP_TZ, "EEE d MMM");
+}
+
 export function isToday(dateIso: string, now: Date = new Date()): boolean {
   const target = new Date(`${dateIso}T00:00:00`);
   return isSameDay(toZonedTime(target, APP_TZ), toZonedTime(now, APP_TZ));

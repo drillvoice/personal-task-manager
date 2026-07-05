@@ -34,6 +34,15 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
   field — and the card shows the most recent past week's note (read-only)
   above this week's textarea when one exists.
 
+### Fixed
+- Weekly review: the "last completed" date in the streak header no longer
+  triggers a hydration mismatch. It was formatted with
+  `toLocaleDateString(undefined, …)`, which resolves to whatever locale the
+  runtime defaults to — server (Node) and browser can disagree, producing
+  different text ("Mon 6 Jul" vs "Mon, Jul 6") on first render. Now formatted
+  with a fixed `date-fns` pattern via a new `shortDateLabel` helper in
+  `src/lib/time.ts`.
+
 ### Added
 - Weekly review "Get clear" checklist now includes two more items: reviewing
   last week's calendar and reviewing this week's calendar, alongside the

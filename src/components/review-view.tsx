@@ -12,6 +12,7 @@ import {
   updateReviewFlag,
 } from "@/app/(app)/review/actions";
 import type { ReviewData } from "@/lib/server/review";
+import { shortDateLabel } from "@/lib/time";
 
 const WEEKLY_CAP = 3;
 
@@ -168,11 +169,7 @@ function StreakHeader({ data }: { data: ReviewData }) {
   const line = [
     data.streak > 0 ? `${data.streak}-week streak` : null,
     data.lastCompletedAt
-      ? `last completed ${data.lastCompletedAt.toLocaleDateString(undefined, {
-          weekday: "short",
-          day: "numeric",
-          month: "short",
-        })}`
+      ? `last completed ${shortDateLabel(data.lastCompletedAt)}`
       : null,
   ]
     .filter(Boolean)
