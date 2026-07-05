@@ -346,6 +346,12 @@ export const weeklyReviews = pgTable(
     reflectionNotes: text("reflection_notes").notNull().default(""),
     inboxCleared: boolean("inbox_cleared").notNull().default(false),
     loopsCaptured: boolean("loops_captured").notNull().default(false),
+    lastWeekCalendarReviewed: boolean("last_week_calendar_reviewed")
+      .notNull()
+      .default(false),
+    thisWeekCalendarReviewed: boolean("this_week_calendar_reviewed")
+      .notNull()
+      .default(false),
   },
   (t) => [
     uniqueIndex("wr_user_week_uniq").on(t.userId, t.weekStartDate),

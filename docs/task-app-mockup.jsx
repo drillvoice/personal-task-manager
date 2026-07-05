@@ -506,6 +506,8 @@ function ReviewView({ projects }) {
       <div className="gtd-card p-4 mb-6">
         <label className="flex items-center gap-3 py-2 text-[14px]"><div className="gtd-checkbox" /> Inbox processed to zero</label>
         <label className="flex items-center gap-3 py-2 text-[14px] border-t" style={{ borderColor: "var(--line)" }}><div className="gtd-checkbox" /> Loose open loops captured</label>
+        <label className="flex items-center gap-3 py-2 text-[14px] border-t" style={{ borderColor: "var(--line)" }}><div className="gtd-checkbox" /> Review last week's calendar</label>
+        <label className="flex items-center gap-3 py-2 text-[14px] border-t" style={{ borderColor: "var(--line)" }}><div className="gtd-checkbox" /> Review this week's calendar</label>
         <div className="mt-3 pt-3 border-t flex items-center gap-2" style={{ borderColor: "var(--line)" }}>
           <Plus size={14} style={{ color: "var(--ink-soft)" }} />
           <input placeholder="Quick capture something you just remembered…" className="flex-1 bg-transparent text-[13px] outline-none" style={{ color: "var(--ink)" }} />

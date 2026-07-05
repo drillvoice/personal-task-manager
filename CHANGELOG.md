@@ -27,6 +27,9 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
   add-task form gives the date its own full-width row.
 
 ### Added
+- Weekly review "Get clear" checklist now includes two more items: reviewing
+  last week's calendar and reviewing this week's calendar, alongside the
+  existing inbox-to-zero and open-loops checks.
 - Meetings module: new Meetings page (with nav item) for scheduling upcoming
   meetings with a date and attendees picked from the People CRM (including
   inline person creation). Each meeting has autosaving prep notes and meeting

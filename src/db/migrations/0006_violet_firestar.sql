@@ -1,0 +1,2 @@
+ALTER TABLE "weekly_reviews" ADD COLUMN "last_week_calendar_reviewed" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+ALTER TABLE "weekly_reviews" ADD COLUMN "this_week_calendar_reviewed" boolean DEFAULT false NOT NULL;
