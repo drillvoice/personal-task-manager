@@ -3,17 +3,26 @@
 import { useState, useTransition } from "react";
 import { Plus } from "lucide-react";
 import { PersonRow } from "@/components/person-row";
-import { OrgDropdown } from "@/components/org-dropdown";
+import { EntityPicker } from "@/components/entity-picker";
+import type { PickerOption } from "@/components/entity-picker";
 import {
   EditFormActions,
   editInputStyle as inputStyle,
 } from "@/components/edit-form-actions";
 import {
+  createOrganisation,
   createPerson,
   deleteOrganisation,
   updateOrganisation,
 } from "@/app/(app)/people/actions";
 import type { OrganisationRow, PersonWithOrg } from "@/lib/server/people";
+
+const createOrgOption = async (
+  name: string,
+): Promise<PickerOption | null> => {
+  const res = await createOrganisation({ name });
+  return res.ok ? { id: res.id, name } : null;
+};
 
 function AddPersonForm({
   orgs,
@@ -81,7 +90,14 @@ function AddPersonForm({
           style={inputStyle}
           onKeyDown={keyHandler}
         />
-        <OrgDropdown orgs={orgs} value={orgId} onChange={setOrgId} />
+        <EntityPicker
+          mode="single"
+          options={orgs}
+          selectedIds={orgId ? [orgId] : []}
+          onChange={(ids) => setOrgId(ids[0] ?? "")}
+          onCreate={createOrgOption}
+          placeholder="No organisation"
+        />
         <input
           value={email}
           onChange={(e) => setEmail(e.target.value)}

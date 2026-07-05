@@ -29,6 +29,11 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
   length cap (matching meeting notes) rather than written unbounded.
 
 ### Changed
+- The organisation field on the person add/edit forms now uses the same
+  type-to-select picker as every other selector (type to filter, Enter to
+  select, inline "+ Create" for a new organisation, chip to clear) instead of
+  its own bespoke dropdown. This was the last selector still on the old
+  dropdown pattern.
 - Tasks can now be **tagged**: the task add/edit forms have a tag picker (the
   same type-to-select control), so you can attach existing task tags or create
   new ones inline. Tags show as chips on the task row and are filterable via
