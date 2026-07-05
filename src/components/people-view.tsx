@@ -5,17 +5,15 @@ import { Plus } from "lucide-react";
 import { PersonRow } from "@/components/person-row";
 import { OrgDropdown } from "@/components/org-dropdown";
 import {
+  EditFormActions,
+  editInputStyle as inputStyle,
+} from "@/components/edit-form-actions";
+import {
   createPerson,
   deleteOrganisation,
   updateOrganisation,
 } from "@/app/(app)/people/actions";
 import type { OrganisationRow, PersonWithOrg } from "@/lib/server/people";
-
-const inputStyle = {
-  background: "transparent",
-  borderColor: "var(--color-line)",
-  color: "var(--color-ink)",
-} as const;
 
 function AddPersonForm({
   orgs,
@@ -153,7 +151,6 @@ function OrgRow({ org }: { org: OrganisationRow }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(org.name);
   const [notes, setNotes] = useState(org.notes);
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -170,10 +167,6 @@ function OrgRow({ org }: { org: OrganisationRow }) {
   };
 
   const del = () => {
-    if (!confirmDelete) {
-      setConfirmDelete(true);
-      return;
-    }
     startTransition(async () => {
       await deleteOrganisation(org.id);
     });
@@ -231,62 +224,15 @@ function OrgRow({ org }: { org: OrganisationRow }) {
           if (e.key === "Escape") setEditing(false);
         }}
       />
-      {error && (
-        <p
-          className="font-mono mb-2 text-[11px]"
-          style={{ color: "var(--color-danger)" }}
-        >
-          {error}
-        </p>
-      )}
-      <div className="flex items-center justify-between">
-        <button
-          type="button"
-          onClick={del}
-          disabled={pending}
-          className="font-mono text-[11px]"
-          style={{
-            color: confirmDelete
-              ? "var(--color-danger)"
-              : "var(--color-ink-soft)",
-          }}
-        >
-          {confirmDelete ? "Confirm delete?" : "Delete organisation"}
-        </button>
-        {confirmDelete && (
-          <button
-            type="button"
-            onClick={() => setConfirmDelete(false)}
-            className="font-mono ml-2 text-[11px]"
-            style={{ color: "var(--color-ink-soft)" }}
-          >
-            Keep
-          </button>
-        )}
-        <div className="ml-auto flex gap-2">
-          <button
-            type="button"
-            onClick={() => setEditing(false)}
-            className="font-mono px-3 py-1.5 text-[12px]"
-            style={{ color: "var(--color-ink-soft)" }}
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={save}
-            disabled={pending || !name.trim()}
-            className="font-mono px-3 py-1.5 text-[12px] font-semibold"
-            style={{
-              background: "var(--color-ink)",
-              color: "var(--color-paper)",
-              opacity: pending || !name.trim() ? 0.6 : 1,
-            }}
-          >
-            Save
-          </button>
-        </div>
-      </div>
+      <EditFormActions
+        deleteLabel="Delete organisation"
+        onDelete={del}
+        onCancel={() => setEditing(false)}
+        onSave={save}
+        canSave={!!name.trim()}
+        pending={pending}
+        error={error}
+      />
     </div>
   );
 }

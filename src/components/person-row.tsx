@@ -4,6 +4,10 @@ import { useState, useTransition } from "react";
 import { Mail, Phone } from "lucide-react";
 import { OrgDropdown } from "@/components/org-dropdown";
 import type { OrgOption } from "@/components/org-dropdown";
+import {
+  EditFormActions,
+  editInputStyle as inputStyle,
+} from "@/components/edit-form-actions";
 import { deletePerson, updatePerson } from "@/app/(app)/people/actions";
 import type { PersonWithOrg } from "@/lib/server/people";
 
@@ -22,7 +26,6 @@ function PersonEditForm({
   const [phone, setPhone] = useState(person.phone);
   const [notes, setNotes] = useState(person.notes);
   const [orgId, setOrgId] = useState(person.orgId ?? "");
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -47,21 +50,11 @@ function PersonEditForm({
   };
 
   const del = () => {
-    if (!confirmDelete) {
-      setConfirmDelete(true);
-      return;
-    }
     startTransition(async () => {
       await deletePerson(person.id);
       onDone();
     });
   };
-
-  const inputStyle = {
-    background: "transparent",
-    borderColor: "var(--color-line)",
-    color: "var(--color-ink)",
-  } as const;
 
   const keyHandler = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); save(); }
@@ -122,62 +115,15 @@ function PersonEditForm({
           if (e.key === "Escape") onDone();
         }}
       />
-      {error && (
-        <p
-          className="font-mono mb-2 text-[11px]"
-          style={{ color: "var(--color-danger)" }}
-        >
-          {error}
-        </p>
-      )}
-      <div className="flex items-center justify-between">
-        <button
-          type="button"
-          onClick={del}
-          disabled={pending}
-          className="font-mono text-[11px]"
-          style={{
-            color: confirmDelete
-              ? "var(--color-danger)"
-              : "var(--color-ink-soft)",
-          }}
-        >
-          {confirmDelete ? "Confirm delete?" : "Delete person"}
-        </button>
-        {confirmDelete && (
-          <button
-            type="button"
-            onClick={() => setConfirmDelete(false)}
-            className="font-mono ml-2 text-[11px]"
-            style={{ color: "var(--color-ink-soft)" }}
-          >
-            Keep
-          </button>
-        )}
-        <div className="ml-auto flex gap-2">
-          <button
-            type="button"
-            onClick={onDone}
-            className="font-mono px-3 py-1.5 text-[12px]"
-            style={{ color: "var(--color-ink-soft)" }}
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={save}
-            disabled={pending || !name.trim()}
-            className="font-mono px-3 py-1.5 text-[12px] font-semibold"
-            style={{
-              background: "var(--color-ink)",
-              color: "var(--color-paper)",
-              opacity: pending || !name.trim() ? 0.6 : 1,
-            }}
-          >
-            Save
-          </button>
-        </div>
-      </div>
+      <EditFormActions
+        deleteLabel="Delete person"
+        onDelete={del}
+        onCancel={onDone}
+        onSave={save}
+        canSave={!!name.trim()}
+        pending={pending}
+        error={error}
+      />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { relations, sql } from "drizzle-orm";
 import {
   boolean,
+  check,
   date,
   index,
   integer,
@@ -372,6 +373,13 @@ export const weeklyPriorities = pgTable(
   },
   (t) => [
     uniqueIndex("wp_review_task_uniq").on(t.weeklyReviewId, t.taskId),
+    // Slot identity is the (review, sort_order) pair, and the range check caps
+    // a review at WEEKLY_PRIORITY_CAP rows. Together these make the "exactly 3"
+    // rule a DB invariant that survives a check-then-insert race, not just an
+    // app-level guard. The literal 3 mirrors WEEKLY_PRIORITY_CAP (defined below,
+    // so it can't be referenced from this config callback).
+    uniqueIndex("wp_review_slot_uniq").on(t.weeklyReviewId, t.sortOrder),
+    check("wp_slot_range", sql`${t.sortOrder} >= 0 and ${t.sortOrder} < 3`),
   ],
 );
 
@@ -404,6 +412,11 @@ export const dailyPlanItems = pgTable(
   },
   (t) => [
     uniqueIndex("dpi_plan_task_uniq").on(t.dailyPlanId, t.taskId),
+    // See weekly_priorities above: (plan, sort_order) is the slot identity and
+    // the range check caps a plan at PRIORITY_TASK_CAP rows, making the cap a
+    // DB invariant. The literal 3 mirrors PRIORITY_TASK_CAP (defined below).
+    uniqueIndex("dpi_plan_slot_uniq").on(t.dailyPlanId, t.sortOrder),
+    check("dpi_slot_range", sql`${t.sortOrder} >= 0 and ${t.sortOrder} < 3`),
   ],
 );
 
@@ -589,9 +602,10 @@ export type DailyPlanItem = typeof dailyPlanItems.$inferSelect;
 export type Meeting = typeof meetings.$inferSelect;
 export type NewMeeting = typeof meetings.$inferInsert;
 
-/* PRIORITY_TASK_CAP is enforced in server actions — see lib/server/priority-cap.ts */
+/*
+ * Enforced at two layers: the (plan|review, sort_order) unique index + range
+ * check above make the cap a DB invariant, and priority-cap.ts allocates the
+ * next free slot / rejects when full. Keep all three literals in sync.
+ */
 export const PRIORITY_TASK_CAP = 3;
 export const WEEKLY_PRIORITY_CAP = 3;
-
-// Prevent unused-import warning; keep sql exported for downstream use.
-void sql;

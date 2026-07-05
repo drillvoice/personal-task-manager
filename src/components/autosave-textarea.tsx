@@ -16,7 +16,20 @@ export function AutosaveTextarea({
   const [value, setValue] = useState(initialValue);
   const [pending, startTransition] = useTransition();
   const lastSaved = useRef(initialValue);
+  const prevInitial = useRef(initialValue);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Adopt server-delivered content when a revalidation hands us a new
+  // initialValue, but only if there are no pending local edits — otherwise a
+  // background re-render would silently clobber whatever the user is typing.
+  useEffect(() => {
+    if (initialValue === prevInitial.current) return;
+    prevInitial.current = initialValue;
+    if (value === lastSaved.current) {
+      setValue(initialValue);
+      lastSaved.current = initialValue;
+    }
+  }, [initialValue, value]);
 
   const save = (v: string) => {
     if (v === lastSaved.current) return;

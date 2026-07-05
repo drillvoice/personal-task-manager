@@ -43,4 +43,18 @@ export const db = new Proxy({} as Db, {
   },
 });
 
+/**
+ * Postgres unique-violation (SQLSTATE 23505). The Neon driver surfaces the
+ * SQLSTATE on the thrown error's `code`. Lets an action distinguish a lost
+ * insert race (two concurrent writes to the same slot) from a real failure.
+ */
+export function isUniqueViolation(err: unknown): boolean {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    "code" in err &&
+    (err as { code?: unknown }).code === "23505"
+  );
+}
+
 export { schema };

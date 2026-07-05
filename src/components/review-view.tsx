@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { Check, Flag, Plus } from "lucide-react";
 import { PriorityBadge } from "@/components/priority-badge";
+import { AutosaveTextarea } from "@/components/autosave-textarea";
 import {
   finishReview,
   quickAddTask,
@@ -12,15 +13,27 @@ import {
   updateReviewFlag,
 } from "@/app/(app)/review/actions";
 import type { ReviewData } from "@/lib/server/review";
+import { dayLabel } from "@/lib/time";
 
 const WEEKLY_CAP = 3;
 
 export function ReviewView({ data }: { data: ReviewData }) {
   const [priorityError, setPriorityError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(
-    new Set(data.selectedPriorityIds),
+    () => new Set(data.selectedPriorityIds),
   );
   const [pending, startTransition] = useTransition();
+
+  // Reconcile the optimistic set with server truth when a revalidation delivers
+  // a fresh prop. React's render-time "adjust state on a prop change" pattern
+  // (not an effect) keeps the stars and the "n/3" counter from drifting out of
+  // sync with what's actually persisted.
+  const selectedKey = data.selectedPriorityIds.join(",");
+  const [syncedKey, setSyncedKey] = useState(selectedKey);
+  if (selectedKey !== syncedKey) {
+    setSyncedKey(selectedKey);
+    setSelected(new Set(data.selectedPriorityIds));
+  }
 
   const selectedCount = selected.size;
 
@@ -166,11 +179,7 @@ function StreakHeader({ data }: { data: ReviewData }) {
   const line = [
     data.streak > 0 ? `${data.streak}-week streak` : null,
     data.lastCompletedAt
-      ? `last completed ${data.lastCompletedAt.toLocaleDateString(undefined, {
-          weekday: "short",
-          day: "numeric",
-          month: "short",
-        })}`
+      ? `last completed ${dayLabel(data.lastCompletedAt)}`
       : null,
   ]
     .filter(Boolean)
@@ -380,15 +389,8 @@ function ReviewProjectCard({
   weeklyOn: Set<string>;
   togglePriority: (id: string) => void;
 }) {
-  const [notes, setNotes] = useState(defaultNotes);
   const [action, setAction] = useState("");
   const [pending, startTransition] = useTransition();
-
-  const saveNotes = () => {
-    startTransition(async () => {
-      await updateProjectNotes(projectId, notes);
-    });
-  };
 
   const submitAction = () => {
     const title = action.trim();
@@ -408,18 +410,14 @@ function ReviewProjectCard({
       }}
     >
       <h3 className="font-display mb-2 text-[15px] font-semibold">{name}</h3>
-      <textarea
-        value={notes}
-        onChange={(e) => setNotes(e.target.value)}
-        onBlur={saveNotes}
-        rows={2}
-        placeholder="Any update? What's the state of this project?"
-        className="mb-2 w-full border bg-transparent p-2 text-[13px] outline-none"
-        style={{
-          borderColor: "var(--color-line)",
-          color: "var(--color-ink)",
-        }}
-      />
+      <div className="mb-2">
+        <AutosaveTextarea
+          initialValue={defaultNotes}
+          onSave={(v) => updateProjectNotes(projectId, v)}
+          placeholder="Any update? What's the state of this project?"
+          rows={2}
+        />
+      </div>
       {tasks.length === 0 && (
         <p
           className="py-1 text-[12px]"
@@ -473,29 +471,13 @@ function ReviewProjectCard({
 }
 
 function Reflection({ defaultValue }: { defaultValue: string }) {
-  const [value, setValue] = useState(defaultValue);
-  const [pending, startTransition] = useTransition();
-  const save = () =>
-    startTransition(async () => {
-      await updateReflection(value);
-    });
   return (
-    <div
-      className="mb-6 rounded-[4px] border p-4"
-      style={{
-        background: "var(--color-paper-raised)",
-        borderColor: "var(--color-line)",
-      }}
-    >
-      <textarea
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onBlur={save}
-        disabled={pending}
-        rows={3}
+    <div className="mb-6">
+      <AutosaveTextarea
+        initialValue={defaultValue}
+        onSave={(v) => updateReflection(v)}
         placeholder="How did this week actually go?"
-        className="w-full bg-transparent text-[13px] outline-none"
-        style={{ color: "var(--color-ink)" }}
+        rows={3}
       />
     </div>
   );

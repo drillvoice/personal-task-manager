@@ -2,10 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { projectWeeklyNotes, projects } from "@/lib/db/schema";
 import { requireUserId } from "@/lib/server/session";
+import { ownsProject } from "@/lib/server/ownership";
 import { weekStartFromIso } from "@/lib/time";
 
 const createSchema = z.object({
@@ -52,16 +52,9 @@ export async function upsertWeeklyNote(input: {
     return { ok: false, error: "Invalid input" };
   }
 
-  const [owned] = await db
-    .select({ id: projects.id })
-    .from(projects)
-    .where(
-      and(
-        eq(projects.id, parsed.data.projectId),
-        eq(projects.userId, userId),
-      ),
-    );
-  if (!owned) return { ok: false, error: "Project not found" };
+  if (!(await ownsProject(userId, parsed.data.projectId))) {
+    return { ok: false, error: "Project not found" };
+  }
 
   const week = weekStartFromIso(parsed.data.weekStartDate);
 

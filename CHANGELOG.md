@@ -5,6 +5,29 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 
 ## [Unreleased]
 
+### Fixed
+- The "exactly 3" priority cap (today's plan and the weekly review) is now a
+  database invariant, not just an app-level count check: a unique
+  `(plan/review, slot)` index plus a `0 ≤ slot < 3` range check make it
+  impossible to overflow the cap even if two adds race. Priority slots also
+  keep a stable position — removing the middle slot now leaves that slot empty
+  instead of shifting the others up.
+- The weekly review's project-notes and reflection fields now autosave (with a
+  save indicator) and reconcile with the server after a revalidation, so an
+  edit made elsewhere can no longer silently clobber, and a save no longer
+  depends on blurring the field. The weekly-priority stars likewise re-sync
+  with what's actually persisted.
+- The "last completed" date on the weekly review now renders in the app's
+  Sydney timezone regardless of the viewer's browser locale.
+- Task checkboxes (Tasks, Today's priority slots) now flip instantly when
+  toggled instead of waiting for the server round-trip, and revert on their own
+  if the save fails.
+- A tag filter no longer gets "stuck": if the last task carrying a tag is
+  deleted, that tag is dropped from the active filter set instead of silently
+  hiding results with no visible chip to clear.
+- Overlong weekly-review reflection and project-notes text is now rejected by a
+  length cap (matching meeting notes) rather than written unbounded.
+
 ### Changed
 - Tasks can now be **tagged**: the task add/edit forms have a tag picker (the
   same type-to-select control), so you can attach existing task tags or create

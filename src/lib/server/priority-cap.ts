@@ -1,5 +1,5 @@
 import "server-only";
-import { and, count, eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   PRIORITY_TASK_CAP,
@@ -25,24 +25,43 @@ export class PriorityCapExceededError extends Error {
   }
 }
 
-export async function assertDailyRoomForOne(planId: string): Promise<void> {
-  const [existing] = await db
-    .select({ value: count() })
-    .from(dailyPlanItems)
-    .where(eq(dailyPlanItems.dailyPlanId, planId));
-  if (existing.value >= PRIORITY_TASK_CAP) {
-    throw new PriorityCapExceededError("daily");
+/**
+ * Lowest free slot index in [0, cap) given the slots already taken. Filling
+ * gaps (rather than appending at `count`) keeps slot identity stable when a
+ * middle slot is removed, and pairs with the `(parent, sort_order)` unique
+ * index so a lost insert race throws instead of overflowing the cap.
+ */
+function nextFreeSlot(
+  taken: number[],
+  scope: "daily" | "weekly",
+): number {
+  const cap = scope === "daily" ? PRIORITY_TASK_CAP : WEEKLY_PRIORITY_CAP;
+  for (let slot = 0; slot < cap; slot++) {
+    if (!taken.includes(slot)) return slot;
   }
+  throw new PriorityCapExceededError(scope);
 }
 
-export async function assertWeeklyRoomForOne(reviewId: string): Promise<void> {
-  const [existing] = await db
-    .select({ value: count() })
+export async function reserveDailySlot(planId: string): Promise<number> {
+  const rows = await db
+    .select({ sortOrder: dailyPlanItems.sortOrder })
+    .from(dailyPlanItems)
+    .where(eq(dailyPlanItems.dailyPlanId, planId));
+  return nextFreeSlot(
+    rows.map((r) => r.sortOrder),
+    "daily",
+  );
+}
+
+export async function reserveWeeklySlot(reviewId: string): Promise<number> {
+  const rows = await db
+    .select({ sortOrder: weeklyPriorities.sortOrder })
     .from(weeklyPriorities)
     .where(eq(weeklyPriorities.weeklyReviewId, reviewId));
-  if (existing.value >= WEEKLY_PRIORITY_CAP) {
-    throw new PriorityCapExceededError("weekly");
-  }
+  return nextFreeSlot(
+    rows.map((r) => r.sortOrder),
+    "weekly",
+  );
 }
 
 /** Returns the daily plan id for (user, date), creating one if none exists. */

@@ -1,20 +1,21 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   PriorityCapExceededError,
-  assertDailyRoomForOne,
-  assertWeeklyRoomForOne,
+  reserveDailySlot,
+  reserveWeeklySlot,
 } from "./priority-cap";
 
 /**
- * Unit test the cap logic without touching a real database. Drizzle chain calls
- * are stubbed to return arrays of arbitrary length so we can assert the
- * decision boundary at 3.
+ * Unit test the slot-allocation logic without touching a real database. The
+ * Drizzle chain is stubbed to return the sort_order rows currently occupying a
+ * plan/review so we can assert which free slot is handed out and where the cap
+ * boundary rejects.
  */
 vi.mock("@/lib/db", () => {
-  const rows: unknown[] = [];
+  const rows: { sortOrder: number }[] = [];
   const chain = {
     from: () => chain,
-    where: () => [{ value: rows.length }],
+    where: () => rows,
   };
   return {
     db: {
@@ -26,45 +27,46 @@ vi.mock("@/lib/db", () => {
 });
 
 const mocked = await import("@/lib/db");
-const rows = (mocked.db as unknown as { __rows: unknown[] }).__rows;
+const rows = (mocked.db as unknown as { __rows: { sortOrder: number }[] })
+  .__rows;
 
-const setCount = (n: number) => {
+const setSlots = (taken: number[]) => {
   rows.length = 0;
-  for (let i = 0; i < n; i++) rows.push({ id: String(i) });
+  for (const s of taken) rows.push({ sortOrder: s });
 };
 
-describe("assertDailyRoomForOne", () => {
-  it("accepts 0, 1, and 2 existing items", async () => {
-    for (const n of [0, 1, 2]) {
-      setCount(n);
-      await expect(assertDailyRoomForOne("plan-1")).resolves.toBeUndefined();
-    }
+describe("reserveDailySlot", () => {
+  it("hands out slot 0 when the plan is empty", async () => {
+    setSlots([]);
+    await expect(reserveDailySlot("plan-1")).resolves.toBe(0);
   });
-  it("rejects at 3", async () => {
-    setCount(3);
-    await expect(assertDailyRoomForOne("plan-1")).rejects.toBeInstanceOf(
-      PriorityCapExceededError,
-    );
+  it("appends the next slot when filled in order", async () => {
+    setSlots([0]);
+    await expect(reserveDailySlot("plan-1")).resolves.toBe(1);
+    setSlots([0, 1]);
+    await expect(reserveDailySlot("plan-1")).resolves.toBe(2);
   });
-  it("rejects above 3", async () => {
-    setCount(5);
-    await expect(assertDailyRoomForOne("plan-1")).rejects.toBeInstanceOf(
+  it("fills a freed middle gap rather than appending", async () => {
+    setSlots([0, 2]);
+    await expect(reserveDailySlot("plan-1")).resolves.toBe(1);
+  });
+  it("rejects when all three slots are taken", async () => {
+    setSlots([0, 1, 2]);
+    await expect(reserveDailySlot("plan-1")).rejects.toBeInstanceOf(
       PriorityCapExceededError,
     );
   });
 });
 
-describe("assertWeeklyRoomForOne", () => {
-  it("accepts fewer than 3", async () => {
-    setCount(2);
-    await expect(
-      assertWeeklyRoomForOne("review-1"),
-    ).resolves.toBeUndefined();
+describe("reserveWeeklySlot", () => {
+  it("hands out the lowest free slot", async () => {
+    setSlots([1]);
+    await expect(reserveWeeklySlot("review-1")).resolves.toBe(0);
   });
-  it("rejects at 3", async () => {
-    setCount(3);
-    await expect(
-      assertWeeklyRoomForOne("review-1"),
-    ).rejects.toBeInstanceOf(PriorityCapExceededError);
+  it("rejects when the review is full", async () => {
+    setSlots([0, 1, 2]);
+    await expect(reserveWeeklySlot("review-1")).rejects.toBeInstanceOf(
+      PriorityCapExceededError,
+    );
   });
 });

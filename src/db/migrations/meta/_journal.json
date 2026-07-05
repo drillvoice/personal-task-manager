@@ -50,6 +50,13 @@
       "when": 1783241494888,
       "tag": "0006_violet_firestar",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1783248617876,
+      "tag": "0007_shocking_snowbird",
+      "breakpoints": true
     }
   ]
 }

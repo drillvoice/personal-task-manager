@@ -59,6 +59,7 @@ async function loadPlanSlots(
   const planRows = await db
     .select({
       planId: dailyPlans.id,
+      sortOrder: dailyPlanItems.sortOrder,
       task: tasks,
       projectName: projects.name,
     })
@@ -72,19 +73,33 @@ async function loadPlanSlots(
   const planId =
     planRows[0]?.planId ?? (await ensureDailyPlan(userId, dateIso));
 
-  const slotTasks = planRows.flatMap((r) =>
-    r.task ? [{ task: r.task, projectName: r.projectName }] : [],
+  // Placement is keyed on sort_order (the stable slot index), not array
+  // position, so removing a middle slot leaves that slot empty rather than
+  // shifting the others up.
+  const bySlot = new Map<
+    number,
+    { task: typeof tasks.$inferSelect; projectName: string | null }
+  >(
+    planRows.flatMap((r) =>
+      r.task && r.sortOrder !== null
+        ? [[r.sortOrder, { task: r.task, projectName: r.projectName }] as const]
+        : [],
+    ),
   );
 
   const slots: TodaySlot[] = [1, 2, 3].map((n) => {
-    const row = slotTasks[n - 1];
+    const row = bySlot.get(n - 1);
     return {
       slot: n as 1 | 2 | 3,
       task: row ? toTask(row.task, row.projectName ?? null) : null,
     };
   });
 
-  return { planId, slots, taskIds: slotTasks.map((r) => r.task.id) };
+  return {
+    planId,
+    slots,
+    taskIds: slots.flatMap((s) => (s.task ? [s.task.id] : [])),
+  };
 }
 
 export async function loadTodayData(userId: string): Promise<TodayData> {

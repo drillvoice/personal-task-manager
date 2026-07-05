@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useOptimistic, useTransition } from "react";
 import { Check, Plus, X } from "lucide-react";
 
 type Task = {
@@ -23,6 +23,9 @@ export function PrioritySlot({
   onToggleDone?: (id: string, done: boolean) => Promise<void>;
 }) {
   const [pending, startTransition] = useTransition();
+  // Optimistic so the checkmark flips instantly; reverts on rejection and
+  // reconciles from props on revalidation.
+  const [done, setDone] = useOptimistic(task?.done ?? false);
 
   if (!task) {
     return (
@@ -48,8 +51,6 @@ export function PrioritySlot({
     );
   }
 
-  const { done } = task;
-
   return (
     <div
       className="flex w-full items-center gap-3 rounded-[4px] px-4 py-3"
@@ -71,6 +72,7 @@ export function PrioritySlot({
           type="button"
           onClick={() =>
             startTransition(async () => {
+              setDone(!done);
               await onToggleDone(task.id, !done);
             })
           }

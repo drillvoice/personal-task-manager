@@ -2,10 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { people, tags, taskAssignees, taskTags, tasks } from "@/lib/db/schema";
+import { tags, taskAssignees, taskTags, tasks } from "@/lib/db/schema";
 import { requireUserId } from "@/lib/server/session";
+import { ownedPersonIds, ownedTagIds } from "@/lib/server/ownership";
 
 const nullableUuid = z
   .string()
@@ -15,31 +16,6 @@ const nullableUuid = z
 
 const assigneeIds = z.array(z.string().uuid()).max(100).default([]);
 const tagIds = z.array(z.string().uuid()).max(100).default([]);
-
-// Junction rows carry no userId, so submitted ids must be checked against the
-// user's own people before inserting.
-async function ownedPersonIds(userId: string, ids: string[]): Promise<boolean> {
-  if (ids.length === 0) return true;
-  const rows = await db
-    .select({ id: people.id })
-    .from(people)
-    .where(and(eq(people.userId, userId), inArray(people.id, ids)));
-  return rows.length === ids.length;
-}
-
-async function ownedTaskTagIds(
-  userId: string,
-  ids: string[],
-): Promise<boolean> {
-  if (ids.length === 0) return true;
-  const rows = await db
-    .select({ id: tags.id })
-    .from(tags)
-    .where(
-      and(eq(tags.userId, userId), eq(tags.kind, "task"), inArray(tags.id, ids)),
-    );
-  return rows.length === ids.length;
-}
 
 const createSchema = z.object({
   title: z.string().trim().min(1, "Title is required").max(200),
@@ -73,7 +49,7 @@ export async function createTask(input: CreateTaskInput): Promise<
     return { ok: false, error: "Unknown assignee" };
   }
   const uniqueTags = [...new Set(parsed.data.tagIds)];
-  if (!(await ownedTaskTagIds(userId, uniqueTags))) {
+  if (!(await ownedTagIds(userId, uniqueTags, "task"))) {
     return { ok: false, error: "Unknown tag" };
   }
   const [row] = await db
@@ -133,7 +109,7 @@ export async function updateTask(
     return { ok: false, error: "Unknown assignee" };
   }
   const uniqueTags = [...new Set(parsed.data.tagIds)];
-  if (!(await ownedTaskTagIds(userId, uniqueTags))) {
+  if (!(await ownedTagIds(userId, uniqueTags, "task"))) {
     return { ok: false, error: "Unknown tag" };
   }
   const [updated] = await db

@@ -2,16 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import {
-  meetingAttendees,
-  meetingTags,
-  meetings,
-  people,
-  tags,
-} from "@/lib/db/schema";
+import { meetingAttendees, meetingTags, meetings, tags } from "@/lib/db/schema";
 import { requireUserId } from "@/lib/server/session";
+import { ownedPersonIds, ownedTagIds } from "@/lib/server/ownership";
 
 const dateField = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD");
 const titleField = z.string().trim().min(1, "Title is required").max(200);
@@ -27,35 +22,6 @@ async function ownedMeetingId(
     .from(meetings)
     .where(and(eq(meetings.id, meetingId), eq(meetings.userId, userId)));
   return row?.id ?? null;
-}
-
-// Junction tables carry no userId, so submitted ids must be checked against
-// the user's own rows before inserting.
-async function ownedPersonIds(
-  userId: string,
-  ids: string[],
-): Promise<boolean> {
-  if (ids.length === 0) return true;
-  const rows = await db
-    .select({ id: people.id })
-    .from(people)
-    .where(and(eq(people.userId, userId), inArray(people.id, ids)));
-  return rows.length === ids.length;
-}
-
-async function ownedTagIds(userId: string, ids: string[]): Promise<boolean> {
-  if (ids.length === 0) return true;
-  const rows = await db
-    .select({ id: tags.id })
-    .from(tags)
-    .where(
-      and(
-        eq(tags.userId, userId),
-        eq(tags.kind, "meeting"),
-        inArray(tags.id, ids),
-      ),
-    );
-  return rows.length === ids.length;
 }
 
 const createMeetingSchema = z.object({
@@ -229,7 +195,7 @@ export async function setMeetingTags(
   const meetingId = await ownedMeetingId(userId, parsed.data.id);
   if (!meetingId) return { ok: false, error: "Meeting not found" };
   const uniqueTags = [...new Set(parsed.data.tagIds)];
-  if (!(await ownedTagIds(userId, uniqueTags))) {
+  if (!(await ownedTagIds(userId, uniqueTags, "meeting"))) {
     return { ok: false, error: "Unknown tag" };
   }
   await db.delete(meetingTags).where(eq(meetingTags.meetingId, meetingId));

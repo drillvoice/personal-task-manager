@@ -56,6 +56,15 @@ export function weekLabel(weekStartIsoDate: string): string {
   return formatInTimeZone(new Date(`${weekStartIsoDate}T00:00:00`), APP_TZ, "d MMM");
 }
 
+/**
+ * "Wed, 9 Jul" — for rendering a stored instant (e.g. a review's completedAt).
+ * Anchored to APP_TZ so it reads the same regardless of the viewer's browser
+ * timezone; safe to call from client components.
+ */
+export function dayLabel(date: Date): string {
+  return formatInTimeZone(date, APP_TZ, "EEE, d MMM");
+}
+
 export function isToday(dateIso: string, now: Date = new Date()): boolean {
   const target = new Date(`${dateIso}T00:00:00`);
   return isSameDay(toZonedTime(target, APP_TZ), toZonedTime(now, APP_TZ));

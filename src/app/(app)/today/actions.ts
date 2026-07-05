@@ -1,13 +1,14 @@
 "use server";
 
-import { and, count, eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { db } from "@/lib/db";
-import { PRIORITY_TASK_CAP, dailyPlanItems, tasks } from "@/lib/db/schema";
+import { db, isUniqueViolation } from "@/lib/db";
+import { dailyPlanItems, tasks } from "@/lib/db/schema";
 import { requireUserId } from "@/lib/server/session";
 import {
   PriorityCapExceededError,
   ensureDailyPlan,
+  reserveDailySlot,
 } from "@/lib/server/priority-cap";
 import { loadEligibleForPlan } from "@/lib/server/today";
 import { todayIso, tomorrowIso } from "@/lib/time";
@@ -27,17 +28,33 @@ async function addToPlanForDate(
   const userId = await requireUserId();
   await assertOwnsTask(userId, taskId);
   const planId = await ensureDailyPlan(userId, dateIso);
-  const [existing] = await db
-    .select({ value: count() })
-    .from(dailyPlanItems)
-    .where(eq(dailyPlanItems.dailyPlanId, planId));
-  if (existing.value >= PRIORITY_TASK_CAP) {
-    return { ok: false, error: new PriorityCapExceededError("daily").message };
+
+  let slot: number;
+  try {
+    slot = await reserveDailySlot(planId);
+  } catch (err) {
+    if (err instanceof PriorityCapExceededError) {
+      return { ok: false, error: err.message };
+    }
+    throw err;
   }
-  await db
-    .insert(dailyPlanItems)
-    .values({ dailyPlanId: planId, taskId, sortOrder: existing.value })
-    .onConflictDoNothing();
+
+  try {
+    await db
+      .insert(dailyPlanItems)
+      .values({ dailyPlanId: planId, taskId, sortOrder: slot })
+      // Re-adding a task already in the plan is a no-op, not an error.
+      .onConflictDoNothing({
+        target: [dailyPlanItems.dailyPlanId, dailyPlanItems.taskId],
+      });
+  } catch (err) {
+    // A concurrent add took this slot first (the (plan, sort_order) unique
+    // index fired). The plan state changed under us — ask the user to retry.
+    if (isUniqueViolation(err)) {
+      return { ok: false, error: "The plan just changed — try adding again." };
+    }
+    throw err;
+  }
   revalidatePath("/today");
   return { ok: true };
 }

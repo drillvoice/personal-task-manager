@@ -1,13 +1,12 @@
 "use server";
 
-import { and, count, eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { db } from "@/lib/db";
+import { db, isUniqueViolation } from "@/lib/db";
 import {
   projects,
   tasks,
-  WEEKLY_PRIORITY_CAP,
   weeklyPriorities,
   weeklyReviews,
 } from "@/lib/db/schema";
@@ -15,27 +14,15 @@ import { requireUserId } from "@/lib/server/session";
 import {
   PriorityCapExceededError,
   ensureWeeklyReview,
+  reserveWeeklySlot,
 } from "@/lib/server/priority-cap";
+import { assertOwnsProject, assertOwnsTask } from "@/lib/server/ownership";
 import { weekStartIso } from "@/lib/time";
+
+const notesField = z.string().max(50000);
 
 async function currentReviewId(userId: string): Promise<string> {
   return ensureWeeklyReview(userId, weekStartIso());
-}
-
-async function assertOwnsProject(userId: string, projectId: string) {
-  const [row] = await db
-    .select({ id: projects.id })
-    .from(projects)
-    .where(and(eq(projects.id, projectId), eq(projects.userId, userId)));
-  if (!row) throw new Error("Project not found");
-}
-
-async function assertOwnsTask(userId: string, taskId: string) {
-  const [row] = await db
-    .select({ id: tasks.id })
-    .from(tasks)
-    .where(and(eq(tasks.id, taskId), eq(tasks.userId, userId)));
-  if (!row) throw new Error("Task not found");
 }
 
 export async function updateReviewFlag(
@@ -55,29 +42,37 @@ export async function updateReviewFlag(
   revalidatePath("/review");
 }
 
-export async function updateReflection(text: string): Promise<void> {
+export async function updateReflection(
+  text: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
   const userId = await requireUserId();
+  const parsed = notesField.safeParse(text);
+  if (!parsed.success) return { ok: false, error: "Reflection is too long" };
   const reviewId = await currentReviewId(userId);
   await db
     .update(weeklyReviews)
-    .set({ reflectionNotes: text })
+    .set({ reflectionNotes: parsed.data })
     .where(eq(weeklyReviews.id, reviewId));
   revalidatePath("/review");
+  return { ok: true };
 }
 
 export async function updateProjectNotes(
   projectId: string,
   notes: string,
-): Promise<void> {
+): Promise<{ ok: true } | { ok: false; error: string }> {
   const userId = await requireUserId();
+  const parsed = notesField.safeParse(notes);
+  if (!parsed.success) return { ok: false, error: "Notes are too long" };
   const [updated] = await db
     .update(projects)
-    .set({ notes, updatedAt: new Date() })
+    .set({ notes: parsed.data, updatedAt: new Date() })
     .where(and(eq(projects.id, projectId), eq(projects.userId, userId)))
     .returning({ id: projects.id });
-  if (!updated) throw new Error("Project not found");
+  if (!updated) return { ok: false, error: "Project not found" };
   revalidatePath("/review");
   revalidatePath("/tasks");
+  return { ok: true };
 }
 
 const quickAddSchema = z.object({
@@ -133,18 +128,29 @@ export async function toggleWeeklyPriority(
     return { ok: true };
   }
 
-  const [existingCount] = await db
-    .select({ value: count() })
-    .from(weeklyPriorities)
-    .where(eq(weeklyPriorities.weeklyReviewId, reviewId));
-  if (existingCount.value >= WEEKLY_PRIORITY_CAP) {
-    return { ok: false, error: new PriorityCapExceededError("weekly").message };
+  let slot: number;
+  try {
+    slot = await reserveWeeklySlot(reviewId);
+  } catch (err) {
+    if (err instanceof PriorityCapExceededError) {
+      return { ok: false, error: err.message };
+    }
+    throw err;
   }
-  await db.insert(weeklyPriorities).values({
-    weeklyReviewId: reviewId,
-    taskId,
-    sortOrder: existingCount.value,
-  });
+
+  try {
+    await db.insert(weeklyPriorities).values({
+      weeklyReviewId: reviewId,
+      taskId,
+      sortOrder: slot,
+    });
+  } catch (err) {
+    // Lost a race: another toggle already added this task or took the slot.
+    if (isUniqueViolation(err)) {
+      return { ok: false, error: "Priorities just changed — try again." };
+    }
+    throw err;
+  }
   revalidatePath("/review");
   return { ok: true };
 }

@@ -1,12 +1,16 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useOptimistic, useState, useTransition } from "react";
 import { Check, Users } from "lucide-react";
 import { DueLabel } from "@/components/due-label";
 import { PriorityBadge } from "@/components/priority-badge";
 import { TagChip } from "@/components/tag-chip";
 import { EntityPicker } from "@/components/entity-picker";
 import type { PickerOption } from "@/components/entity-picker";
+import {
+  EditFormActions,
+  editInputStyle,
+} from "@/components/edit-form-actions";
 import { createProject } from "@/app/(app)/projects/actions";
 import { createPerson } from "@/app/(app)/people/actions";
 import type { ProjectSelectOption as ProjectOption } from "@/lib/server/projects";
@@ -57,7 +61,6 @@ function EditTaskForm({
   );
   const [priority, setPriority] = useState<1 | 2 | 3>(task.priority);
   const [dueDate, setDueDate] = useState(task.dueDate ?? "");
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -111,10 +114,6 @@ function EditTaskForm({
   };
 
   const del = () => {
-    if (!confirmDelete) {
-      setConfirmDelete(true);
-      return;
-    }
     startTransition(async () => {
       await deleteTask(task.id);
       onDone();
@@ -130,11 +129,7 @@ function EditTaskForm({
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         className="mb-2 w-full border p-2 text-[13px] outline-none"
-        style={{
-          background: "transparent",
-          borderColor: "var(--color-line)",
-          color: "var(--color-ink)",
-        }}
+        style={editInputStyle}
         autoFocus
         onKeyDown={(e) => {
           if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); save(); }
@@ -185,11 +180,7 @@ function EditTaskForm({
             }
           }}
           className="w-full border p-2 text-[13px] outline-none sm:w-[160px]"
-          style={{
-            background: "transparent",
-            borderColor: "var(--color-line)",
-            color: "var(--color-ink)",
-          }}
+          style={editInputStyle}
         />
         <div className="grid grid-cols-3 gap-1 sm:flex">
           {([1, 2, 3] as const).map((p) => {
@@ -212,55 +203,15 @@ function EditTaskForm({
           })}
         </div>
       </div>
-      {error && (
-        <p className="font-mono mb-2 text-[11px]" style={{ color: "var(--color-danger)" }}>
-          {error}
-        </p>
-      )}
-      <div className="flex items-center justify-between">
-        <button
-          type="button"
-          onClick={del}
-          disabled={pending}
-          className="font-mono text-[11px]"
-          style={{ color: confirmDelete ? "var(--color-danger)" : "var(--color-ink-soft)" }}
-        >
-          {confirmDelete ? "Confirm delete?" : "Delete task"}
-        </button>
-        {confirmDelete && (
-          <button
-            type="button"
-            onClick={() => setConfirmDelete(false)}
-            className="font-mono ml-2 text-[11px]"
-            style={{ color: "var(--color-ink-soft)" }}
-          >
-            Keep
-          </button>
-        )}
-        <div className="ml-auto flex gap-2">
-          <button
-            type="button"
-            onClick={onDone}
-            className="font-mono px-3 py-1.5 text-[12px]"
-            style={{ color: "var(--color-ink-soft)" }}
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={save}
-            disabled={pending || !title.trim()}
-            className="font-mono px-3 py-1.5 text-[12px] font-semibold"
-            style={{
-              background: "var(--color-ink)",
-              color: "var(--color-paper)",
-              opacity: pending || !title.trim() ? 0.6 : 1,
-            }}
-          >
-            Save
-          </button>
-        </div>
-      </div>
+      <EditFormActions
+        deleteLabel="Delete task"
+        onDelete={del}
+        onCancel={onDone}
+        onSave={save}
+        canSave={!!title.trim()}
+        pending={pending}
+        error={error}
+      />
     </div>
   );
 }
@@ -275,12 +226,15 @@ export function TaskRow({
 }: TaskRowProps) {
   const [pending, startTransition] = useTransition();
   const [editing, setEditing] = useState(false);
-  const done = task.status === "done";
+  // Optimistic so the checkmark flips instantly; it reverts automatically if
+  // the server action rejects, and reconciles from props on revalidation.
+  const [done, setDone] = useOptimistic(task.status === "done");
   const assigneeNames = (task.assignees ?? []).map((a) => a.name);
   const tags = task.tags ?? [];
 
   const toggle = () => {
     startTransition(async () => {
+      setDone(!done);
       await setTaskDone(task.id, !done);
     });
   };
