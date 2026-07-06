@@ -44,6 +44,11 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
   `src/lib/time.ts`.
 
 ### Added
+- Weekly review quick-capture and "Add a next action" inputs now support
+  inline `#tag` syntax: `ring matthew #p1` creates a task titled "ring
+  matthew" tagged with `p1` (an existing task tag is reused if the name
+  matches, otherwise a new one is created). Multiple hashtags per line are
+  all applied.
 - Weekly review "Get clear" checklist now includes two more items: reviewing
   last week's calendar and reviewing this week's calendar, alongside the
   existing inbox-to-zero and open-loops checks.

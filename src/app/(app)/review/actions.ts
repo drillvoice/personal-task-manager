@@ -1,12 +1,14 @@
 "use server";
 
-import { and, count, eq } from "drizzle-orm";
+import { and, count, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import {
   projectWeeklyNotes,
   projects,
+  tags,
+  taskTags,
   tasks,
   WEEKLY_PRIORITY_CAP,
   weeklyPriorities,
@@ -89,6 +91,45 @@ export async function updateProjectNotes(
   revalidatePath("/projects");
 }
 
+// Inline "#tag" tokens in a quick-capture title (e.g. "ring matthew #p1")
+// are pulled out as task tags rather than left in the title.
+const HASHTAG_RE = /#([a-zA-Z0-9_-]+)/g;
+
+function extractHashtags(rawTitle: string): {
+  title: string;
+  tagNames: string[];
+} {
+  const tagNames = [...rawTitle.matchAll(HASHTAG_RE)].map((m) => m[1]);
+  const title = rawTitle.replace(HASHTAG_RE, "").replace(/\s+/g, " ").trim();
+  return { title, tagNames: [...new Set(tagNames)] };
+}
+
+async function findOrCreateTaskTagIds(
+  userId: string,
+  names: string[],
+): Promise<string[]> {
+  if (names.length === 0) return [];
+  const existing = await db
+    .select({ id: tags.id, name: tags.name })
+    .from(tags)
+    .where(
+      and(
+        eq(tags.userId, userId),
+        eq(tags.kind, "task"),
+        inArray(tags.name, names),
+      ),
+    );
+  const existingNames = new Set(existing.map((t) => t.name));
+  const missing = names.filter((n) => !existingNames.has(n));
+  const inserted = missing.length
+    ? await db
+        .insert(tags)
+        .values(missing.map((name) => ({ userId, name, kind: "task" as const })))
+        .returning({ id: tags.id, name: tags.name })
+    : [];
+  return [...existing, ...inserted].map((t) => t.id);
+}
+
 const quickAddSchema = z.object({
   title: z.string().trim().min(1).max(200),
   projectId: z.string().uuid().nullable(),
@@ -99,18 +140,28 @@ export async function quickAddTask(input: {
   projectId: string | null;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   const userId = await requireUserId();
-  const parsed = quickAddSchema.safeParse(input);
+  const { title, tagNames } = extractHashtags(input.title);
+  const parsed = quickAddSchema.safeParse({ title, projectId: input.projectId });
   if (!parsed.success) return { ok: false, error: "Invalid title" };
   if (parsed.data.projectId) {
     await assertOwnsProject(userId, parsed.data.projectId);
   }
-  await db.insert(tasks).values({
-    userId,
-    title: parsed.data.title,
-    projectId: parsed.data.projectId,
-    priority: 3,
-    status: parsed.data.projectId ? "next_action" : "inbox",
-  });
+  const [row] = await db
+    .insert(tasks)
+    .values({
+      userId,
+      title: parsed.data.title,
+      projectId: parsed.data.projectId,
+      priority: 3,
+      status: parsed.data.projectId ? "next_action" : "inbox",
+    })
+    .returning({ id: tasks.id });
+  const tagIds = await findOrCreateTaskTagIds(userId, tagNames);
+  if (tagIds.length > 0) {
+    await db
+      .insert(taskTags)
+      .values(tagIds.map((tagId) => ({ taskId: row.id, tagId })));
+  }
   revalidatePath("/review");
   revalidatePath("/tasks");
   revalidatePath("/today");

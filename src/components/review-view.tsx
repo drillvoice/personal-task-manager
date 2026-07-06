@@ -321,7 +321,7 @@ function GetClear({
             }
           }}
           disabled={pending}
-          placeholder="Quick capture something you just remembered…"
+          placeholder="Quick capture something you just remembered… (#tag adds a tag)"
           className="flex-1 bg-transparent text-[13px] outline-none"
           style={{ color: "var(--color-ink)" }}
         />
@@ -489,7 +489,7 @@ function ReviewProjectCard({
                 }
               }}
               disabled={pending}
-              placeholder="Add a next action…"
+              placeholder="Add a next action… (#tag adds a tag)"
               className="flex-1 bg-transparent text-[13px] outline-none"
               style={{ color: "var(--color-ink)" }}
             />
