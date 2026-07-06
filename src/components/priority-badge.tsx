@@ -6,7 +6,12 @@ const styles: Record<Priority, { bg: string; fg: string }> = {
   3: { bg: "var(--color-p3-soft)", fg: "var(--color-p3)" },
 };
 
-export function PriorityBadge({ priority }: { priority: Priority }) {
+/**
+ * Priority is a p1/p2/p3 tag, not a required field — a task with none of
+ * those tags has no priority signal and renders no badge.
+ */
+export function PriorityBadge({ priority }: { priority: Priority | null }) {
+  if (priority === null) return null;
   const { bg, fg } = styles[priority];
   return (
     <span

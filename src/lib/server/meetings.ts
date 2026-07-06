@@ -12,6 +12,7 @@ import {
   taskTags,
   tasks,
 } from "@/lib/db/schema";
+import { isPriorityTagName, priorityFromTagNames } from "@/lib/priority";
 import type { TasksViewTask } from "@/lib/server/tasks";
 
 export type MeetingListItem = {
@@ -196,17 +197,20 @@ export async function loadMeetingDetail(
     meetingNotes: meetingRow.meetingNotes,
     attendees: attendeeRows.map((a) => ({ id: a.personId, name: a.personName })),
     tags: tagRows.map((t) => ({ id: t.tagId, name: t.name, color: t.color })),
-    tasks: taskRows.map((r) => ({
-      id: r.task.id,
-      title: r.task.title,
-      priority: r.task.priority as 1 | 2 | 3,
-      status: r.task.status,
-      dueDate: r.task.dueDate,
-      projectId: r.task.projectId,
-      projectName: r.projectName ?? null,
-      assignees: assigneesByTask.get(r.task.id) ?? [],
-      tags: tagsByTask.get(r.task.id) ?? [],
-    })),
+    tasks: taskRows.map((r) => {
+      const allTags = tagsByTask.get(r.task.id) ?? [];
+      return {
+        id: r.task.id,
+        title: r.task.title,
+        priority: priorityFromTagNames(allTags.map((tg) => tg.name)),
+        status: r.task.status,
+        dueDate: r.task.dueDate,
+        projectId: r.task.projectId,
+        projectName: r.projectName ?? null,
+        assignees: assigneesByTask.get(r.task.id) ?? [],
+        tags: allTags.filter((tg) => !isPriorityTagName(tg.name)),
+      };
+    }),
   };
 }
 

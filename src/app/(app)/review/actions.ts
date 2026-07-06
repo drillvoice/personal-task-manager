@@ -152,7 +152,6 @@ export async function quickAddTask(input: {
       userId,
       title: parsed.data.title,
       projectId: parsed.data.projectId,
-      priority: 3,
       status: parsed.data.projectId ? "next_action" : "inbox",
     })
     .returning({ id: tasks.id });

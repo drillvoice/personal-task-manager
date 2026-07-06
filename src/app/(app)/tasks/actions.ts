@@ -47,7 +47,6 @@ const createSchema = z.object({
   assigneeIds,
   tagIds,
   meetingId: nullableUuid.default(null),
-  priority: z.union([z.literal(1), z.literal(2), z.literal(3)]),
   dueDate: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD")
@@ -66,8 +65,7 @@ export async function createTask(input: CreateTaskInput): Promise<
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid" };
   }
-  const { title, projectId, meetingId, priority, dueDate, status } =
-    parsed.data;
+  const { title, projectId, meetingId, dueDate, status } = parsed.data;
   const uniqueAssignees = [...new Set(parsed.data.assigneeIds)];
   if (!(await ownedPersonIds(userId, uniqueAssignees))) {
     return { ok: false, error: "Unknown assignee" };
@@ -83,7 +81,6 @@ export async function createTask(input: CreateTaskInput): Promise<
       title,
       projectId: projectId ?? null,
       meetingId: meetingId ?? null,
-      priority,
       dueDate: dueDate ?? null,
       status,
     })
@@ -110,7 +107,6 @@ const updateSchema = z.object({
   projectId: nullableUuid,
   assigneeIds,
   tagIds,
-  priority: z.union([z.literal(1), z.literal(2), z.literal(3)]),
   dueDate: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD")
@@ -141,7 +137,6 @@ export async function updateTask(
     .set({
       title: parsed.data.title,
       projectId: parsed.data.projectId,
-      priority: parsed.data.priority,
       dueDate: parsed.data.dueDate,
     })
     .where(and(eq(tasks.id, parsed.data.id), eq(tasks.userId, userId)))

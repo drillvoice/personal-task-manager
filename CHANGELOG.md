@@ -6,11 +6,20 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 ## [Unreleased]
 
 ### Changed
+- **Priority is now a tag, not a field.** The dedicated `priority` column
+  (and its P1/P2/P3 picker buttons on the add/edit task forms) is gone —
+  prioritizing a task means attaching a `p1`, `p2`, or `p3` tag, same as any
+  other tag (via the tag picker, or inline `#p1` in quick-capture). Existing
+  tasks were migrated automatically: each task's prior priority value became
+  a matching tag, so no prioritization was lost. The P1/P2/P3 badge still
+  shows wherever it did before, now derived from tags — a task with none of
+  the three tags shows no badge and sorts after everything that has one.
+  Sorting in Today, Tasks, and Review all updated to match. See
+  `src/lib/priority.ts` and `CLAUDE.md`.
 - Tasks can now be **tagged**: the task add/edit forms have a tag picker (the
   same type-to-select control), so you can attach existing task tags or create
   new ones inline. Tags show as chips on the task row and are filterable via
-  the existing smart-search tag chips. (Priority remains its own required
-  P1/P2/P3 field — unchanged.)
+  the existing smart-search tag chips.
 - All tag / person / project selectors are now a single shared type-to-select
   picker: type to filter existing items, press Enter to select (or to create a
   new one if nothing matches), and selected items show as chips. Removing a

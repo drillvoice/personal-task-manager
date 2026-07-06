@@ -19,7 +19,7 @@ export type TaskRowProps = {
   task: {
     id: string;
     title: string;
-    priority: 1 | 2 | 3;
+    priority: 1 | 2 | 3 | null;
     status: "inbox" | "next_action" | "waiting_on" | "done";
     dueDate: string | null;
     projectId?: string | null;
@@ -55,7 +55,6 @@ function EditTaskForm({
   const [tagIds, setTagIds] = useState<string[]>(
     task.tags?.map((t) => t.id) ?? [],
   );
-  const [priority, setPriority] = useState<1 | 2 | 3>(task.priority);
   const [dueDate, setDueDate] = useState(task.dueDate ?? "");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -99,7 +98,6 @@ function EditTaskForm({
         projectId,
         assigneeIds,
         tagIds,
-        priority,
         dueDate,
       });
       if (res.ok) {
@@ -141,7 +139,7 @@ function EditTaskForm({
           if (e.key === "Escape") onDone();
         }}
       />
-      <div className="mb-2 grid grid-cols-1 gap-2 sm:grid-cols-[minmax(220px,1fr)_160px_auto] sm:items-start">
+      <div className="mb-2 grid grid-cols-1 gap-2 sm:grid-cols-[minmax(220px,1fr)_160px] sm:items-start">
         <div className="min-w-0">
           <EntityPicker
             mode="single"
@@ -191,26 +189,6 @@ function EditTaskForm({
             color: "var(--color-ink)",
           }}
         />
-        <div className="grid grid-cols-3 gap-1 sm:flex">
-          {([1, 2, 3] as const).map((p) => {
-            const active = priority === p;
-            return (
-              <button
-                key={p}
-                type="button"
-                onClick={() => setPriority(p)}
-                className="font-mono border px-2.5 py-1.5 text-[11px] font-semibold"
-                style={{
-                  borderColor: active ? `var(--color-p${p})` : "var(--color-line)",
-                  background: active ? `var(--color-p${p})` : "transparent",
-                  color: active ? "var(--color-paper-raised)" : "var(--color-ink-soft)",
-                }}
-              >
-                P{p}
-              </button>
-            );
-          })}
-        </div>
       </div>
       {error && (
         <p className="font-mono mb-2 text-[11px]" style={{ color: "var(--color-danger)" }}>

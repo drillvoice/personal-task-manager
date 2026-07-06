@@ -10,7 +10,9 @@ import {
   taskTags,
   tasks,
 } from "@/lib/db/schema";
+import { isPriorityTagName, priorityFromTagNames } from "@/lib/priority";
 import { weekStartIso } from "@/lib/time";
+import type { Priority } from "@/lib/types";
 
 export type TasksViewProject = {
   id: string | null; // null = Inbox pseudo-project
@@ -23,7 +25,7 @@ export type TasksViewProject = {
 export type TasksViewTask = {
   id: string;
   title: string;
-  priority: 1 | 2 | 3;
+  priority: Priority | null;
   status: "inbox" | "next_action" | "waiting_on" | "done";
   dueDate: string | null;
   projectId: string | null;
@@ -136,16 +138,17 @@ export async function loadTasksData(userId: string) {
   };
 
   for (const r of taskRows) {
+    const allTags = tagsByTask.get(r.task.id) ?? [];
     const t: TasksViewTask = {
       id: r.task.id,
       title: r.task.title,
-      priority: r.task.priority as 1 | 2 | 3,
+      priority: priorityFromTagNames(allTags.map((tg) => tg.name)),
       status: r.task.status,
       dueDate: r.task.dueDate,
       projectId: r.task.projectId,
       projectName: r.projectName ?? null,
       assignees: assigneesByTask.get(r.task.id) ?? [],
-      tags: tagsByTask.get(r.task.id) ?? [],
+      tags: allTags.filter((tg) => !isPriorityTagName(tg.name)),
     };
     if (r.task.projectId) {
       const p = projectsById.get(r.task.projectId);

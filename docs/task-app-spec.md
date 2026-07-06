@@ -49,7 +49,7 @@ Single row realistically, but modeled properly.
 - `project_id` (nullable — null means it lives in Inbox)
 - `status`: `inbox | next_action | waiting_on | done`
 - `due_date` (nullable)
-- `priority`: `1 | 2 | 3` — **required, defaults to 3**. 1 is highest. This is distinct from tags: a single-select urgency ranking rather than a freeform label. Every task always has a priority; there is no "unset" state.
+- Priority is **not** a field — it's expressed via `p1`/`p2`/`p3` task tags (see `task_tags` below), so all prioritizing goes through one system. 1 is highest. A task with no `p1`/`p2`/`p3` tag has no priority signal: no badge, sorts last. If more than one is present, the highest wins.
 - `context` (optional single-select, e.g. `@computer`, `@calls`, `@errands`, `@home` — classic GTD context tag)
 - `order` (int, for manual sorting within a list)
 - `created_at`, `completed_at`
@@ -101,9 +101,9 @@ Two modes, toggled at the top of the same screen:
 - **By project** — projects shown as collapsible cards (active/someday/all filter), each expandable to its notes + tasks. Includes the Inbox pseudo-project for standalone tasks.
 - **All tasks** — flat list across every project, each row tagged with its project name.
 
-Both modes share one **smart search/filter bar**: a free-text search over task titles, plus combinable toggle chips for **priority** (P1/P2/P3, color-coded), **status** (Next action / Waiting on), and **tag** (dynamically generated from tags in use). All filters AND together. In "By project" mode, an active filter collapses out non-matching projects and auto-expands matching ones to show just the relevant tasks.
+Both modes share one **smart search/filter bar**: a free-text search over task titles, plus combinable toggle chips for **priority** (P1/P2/P3, color-coded — these filter by the `p1`/`p2`/`p3` tag, same underlying data as the tag chips below), **status** (Next action / Waiting on), and **tag** (dynamically generated from tags in use, excluding the priority tags already surfaced as their own chips). All filters AND together. In "By project" mode, an active filter collapses out non-matching projects and auto-expands matching ones to show just the relevant tasks.
 
-A **"+ New task"** action opens an inline form (title, project dropdown incl. Inbox, tag, due date, priority — defaults to P3) without leaving the page.
+A **"+ New task"** action opens an inline form (title, project dropdown incl. Inbox, due date, tag picker) without leaving the page. There is no separate priority control — set it by picking (or typing) a `p1`/`p2`/`p3` tag, same as any other tag.
 
 ### C. Project Notes
 Not a separate module structurally — it's the current `notes` field on each project — a first-class, roomy writing surface (markdown-friendly) for the "state of the project" narrative. Distinct from the weekly snapshots in `project_weekly_notes`, which are historical and don't change once a week has passed.
@@ -151,12 +151,12 @@ A working interactive mockup (`task-app-mockup.jsx`) covers all four core screen
 
 **Design language:** a cool-paper, index-card/ledger aesthetic rather than a generic SaaS dashboard — reflects the physical-tray metaphor of GTD without being twee about it. Deliberately avoids the "warm cream + serif + terracotta" look that's become an AI-design cliché.
 
-- **Color tokens:** paper (`#EEEEE7`) / paper-raised (`#F8F8F2`) backgrounds, near-black warm ink (`#1C1E1B`) text, hairline dividers (`#D6D5C8`). One signal accent, a burnt orange (`#E15A2B`), reserved specifically for "today/priority" emphasis — not used decoratively elsewhere. A muted teal (`#2E5F5C`) for tags/secondary UI. Priority has its own three-color scale, distinct from the accent: P1 red (`#B23A2E`), P2 amber (`#B8791E`), P3 green (`#2E6B52`) — every task always shows one of these badges.
+- **Color tokens:** paper (`#EEEEE7`) / paper-raised (`#F8F8F2`) backgrounds, near-black warm ink (`#1C1E1B`) text, hairline dividers (`#D6D5C8`). One signal accent, a burnt orange (`#E15A2B`), reserved specifically for "today/priority" emphasis — not used decoratively elsewhere. A muted teal (`#2E5F5C`) for tags/secondary UI. Priority has its own three-color scale, distinct from the accent: P1 red (`#B23A2E`), P2 amber (`#B8791E`), P3 green (`#2E6B52`) — shown whenever a task carries the matching `p1`/`p2`/`p3` tag; a task with none of those tags shows no priority badge.
 - **Typography:** Space Grotesk for display/headers, Inter for body, IBM Plex Mono for all metadata (dates, tags, priority badges, counts) — the monospace treatment for metadata is a deliberate "index card annotation" signature, distinct from task titles.
 - **Signature element:** Today's three priority slots are rendered as physical-feeling numbered cards, with unfilled slots shown as dashed placeholders rather than being hidden — this is the one place the "exactly 3" constraint is made visually unavoidable.
 
 **Key decisions baked into the mockup that the spec text alone wouldn't convey:**
-- Priority (P1/P2/P3) is a required, always-visible badge — not an optional tag. Default is P3.
+- Priority (P1/P2/P3) is expressed via a `p1`/`p2`/`p3` task tag, not a dedicated field — all prioritizing goes through the one tag system. Default sort order is p1, p2, p3, then untagged (no badge shown) last.
 - The Tasks view's filter bar unifies free-text search with tag/priority/status chips rather than using separate dropdowns — all combinable.
 - Projects (history table) is where projects get created; Tasks is where tasks get created. New projects immediately become available in the task-creation project dropdown.
 - Inbox is a permanent pseudo-project for standalone tasks, visible in Tasks but deliberately excluded from the Projects history table.
@@ -169,7 +169,7 @@ Calibrated for a **solo, single-user project with real data that gets relied on 
 
 **Adopt:**
 - **TypeScript throughout**, as the primary correctness net. Full test-driven development (writing tests before every line of code) is too much ceremony for a solo project and will slow iteration more than it helps; TypeScript catches a large share of the same class of mistakes for near-zero added friction.
-- **Targeted tests, not full coverage.** Write tests specifically for the handful of places a silent bug would actually cause harm: the "exactly 3" priority/weekly-priority cap logic, week-bucketing date math for the history table, review streak calculation, and priority defaulting. Skip testing simple CRUD and UI rendering.
+- **Targeted tests, not full coverage.** Write tests specifically for the handful of places a silent bug would actually cause harm: the "exactly 3" daily/weekly-priority cap logic, week-bucketing date math for the history table, and review streak calculation. Skip testing simple CRUD and UI rendering.
 - **Database migrations, checked into git, always.** No hand-altering the schema directly, in dev or prod. Every schema change goes through a Drizzle migration file, committed alongside the code that needs it.
 - **Separate dev/prod databases**, ideally via branching (Neon supports this natively), paired with Vercel preview deployments — so day-to-day iteration never risks live task data.
 - **Automated backups / point-in-time recovery** on the production database from day one, given this holds real daily-use data almost immediately after launch.

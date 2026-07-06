@@ -378,7 +378,7 @@ function ReviewProjectCard({
   tasks: {
     id: string;
     title: string;
-    priority: 1 | 2 | 3;
+    priority: 1 | 2 | 3 | null;
   }[];
   weeklyOn: Set<string>;
   togglePriority: (id: string) => void;
