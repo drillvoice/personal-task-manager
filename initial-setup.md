@@ -189,16 +189,12 @@ empty the first time you sign in:
 pnpm db:seed
 ```
 
-**Only run this once, before you have any real data.** The script wipes and
-reinserts your user's projects/tasks every time it runs — fine for the very
-first run against an empty database, destructive against a database you've
-since been using for real. Its guard (`src/db/seed.ts`) only checks
-`NODE_ENV === "production"`, which protects a genuine dev/prod split; it
-does **not** protect this project's actual setup, where local and
-production share the one database (§2) — running `pnpm db:seed` locally
-after that first run would wipe your real tasks and projects, since
-`NODE_ENV` is not `"production"` locally regardless of which database
-`DATABASE_URL` points at.
+The script wipes and reinserts your user's projects/tasks every time it
+runs, so it refuses to run at all if your user already has any project —
+there's no separate dev database to check against instead (§2), so "already
+has a project" is the guard for "this is real data, don't touch it." If you
+genuinely want to wipe and reset to an empty account, rerun with
+`SEED_FORCE=1 pnpm db:seed`.
 
 ---
 

@@ -5,6 +5,14 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 
 ## [Unreleased]
 
+### Fixed
+- `pnpm db:seed` now refuses to run if the user already has any project,
+  requiring `SEED_FORCE=1` to override. Its old guard only checked
+  `NODE_ENV === "production"`, which assumed a separate dev database that
+  this project never actually set up — local and every Vercel environment
+  share one Neon database, so the old guard did nothing to stop a local
+  `pnpm db:seed` from wiping real data. See `initial-setup.md` §2 and §8.
+
 ### Changed
 - **Priority is now a tag, not a field.** The dedicated `priority` column
   (and its P1/P2/P3 picker buttons on the add/edit task forms) is gone —

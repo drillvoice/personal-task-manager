@@ -6,14 +6,16 @@ import * as schema from "@/lib/db/schema";
 import { recentWeekStarts, weekStartIso } from "@/lib/time";
 
 /**
- * Seeds the dev database with the mockup's fixture projects & tasks so the
- * app is populated on first boot. Idempotent: rerunning wipes and reinserts
- * the seed user's data. Guarded against running in production.
+ * Seeds the database with the mockup's fixture projects & tasks so the app
+ * is populated on first boot. Wipes and reinserts the seed user's data, so
+ * it's only safe to run against an empty account — see the "already has
+ * projects" guard below. There's no separate dev database to check against
+ * (local and every Vercel environment share one Neon database, per
+ * initial-setup.md §2), so NODE_ENV alone can't tell "safe to wipe" apart
+ * from "this is real data": it's never "production" when run from a local
+ * shell, regardless of which database DATABASE_URL points at.
  */
 async function run() {
-  if (process.env.NODE_ENV === "production") {
-    throw new Error("Refusing to seed against a production database.");
-  }
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error("DATABASE_URL is not set");
   const email = process.env.ALLOWED_EMAIL;
@@ -35,6 +37,20 @@ async function run() {
         .values({ email, name: "Joel" })
         .returning()
     )[0];
+
+  const [existingProject] = await db
+    .select({ id: schema.projects.id })
+    .from(schema.projects)
+    .where(eq(schema.projects.userId, user.id));
+  if (existingProject && process.env.SEED_FORCE !== "1") {
+    throw new Error(
+      "Refusing to seed: this user already has at least one project, which " +
+        "almost certainly means real data — this script deletes and " +
+        "reinserts every project/task for the user. If you're certain you " +
+        "want to wipe it (e.g. resetting to an empty account on purpose), " +
+        "rerun with SEED_FORCE=1.",
+    );
+  }
 
   console.log(`→ seeding as ${user.email} (${user.id})`);
 
