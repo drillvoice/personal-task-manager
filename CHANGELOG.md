@@ -6,11 +6,20 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 ## [Unreleased]
 
 ### Changed
+- **Priority is now a tag, not a field.** The dedicated `priority` column
+  (and its P1/P2/P3 picker buttons on the add/edit task forms) is gone —
+  prioritizing a task means attaching a `p1`, `p2`, or `p3` tag, same as any
+  other tag (via the tag picker, or inline `#p1` in quick-capture). Existing
+  tasks were migrated automatically: each task's prior priority value became
+  a matching tag, so no prioritization was lost. The P1/P2/P3 badge still
+  shows wherever it did before, now derived from tags — a task with none of
+  the three tags shows no badge and sorts after everything that has one.
+  Sorting in Today, Tasks, and Review all updated to match. See
+  `src/lib/priority.ts` and `CLAUDE.md`.
 - Tasks can now be **tagged**: the task add/edit forms have a tag picker (the
   same type-to-select control), so you can attach existing task tags or create
   new ones inline. Tags show as chips on the task row and are filterable via
-  the existing smart-search tag chips. (Priority remains its own required
-  P1/P2/P3 field — unchanged.)
+  the existing smart-search tag chips.
 - All tag / person / project selectors are now a single shared type-to-select
   picker: type to filter existing items, press Enter to select (or to create a
   new one if nothing matches), and selected items show as chips. Removing a
@@ -25,8 +34,40 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 - Meeting detail: the linked-task rows are stacked (title on its own row,
   metadata beneath) so they read cleanly in the tasks column, and the in-meeting
   add-task form gives the date its own full-width row.
+- Weekly review now uses the wide desktop layout (matching Tasks/Projects/
+  Meetings) instead of the narrow mobile-first column. Each project's review
+  card is two-column: a bigger, resizable notes textarea on the left, open
+  tasks in a parallel column on the right. The notes field now writes to the
+  same per-week `project_weekly_notes` table the Projects history table reads
+  from — previously it wrote to a separate, non-versioned `projects.notes`
+  field — and the card shows the most recent past week's note (read-only)
+  above this week's textarea when one exists.
+
+### Fixed
+- Weekly review: selecting/unselecting weekly priorities (and the analogous
+  Today's-three / Tomorrow's-three slot picking) could crash the page with a
+  server error. Two stale, untracked constraints on `weekly_priorities` and
+  `daily_plan_items` (`wp_review_slot_uniq`/`dpi_plan_slot_uniq` uniqueness
+  and `wp_slot_range`/`dpi_slot_range` a 0–2 range check) — leftovers from an
+  earlier fixed-slot design, never declared in `schema.ts` or created by a
+  tracked migration — collided with `sort_order` values that were computed
+  from a stale row *count* rather than a value guaranteed to be free. Dropped
+  the constraints (migrations 0008/0009) and fixed the insert logic to use
+  `max(sort_order) + 1`.
+- Weekly review: the "last completed" date in the streak header no longer
+  triggers a hydration mismatch. It was formatted with
+  `toLocaleDateString(undefined, …)`, which resolves to whatever locale the
+  runtime defaults to — server (Node) and browser can disagree, producing
+  different text ("Mon 6 Jul" vs "Mon, Jul 6") on first render. Now formatted
+  with a fixed `date-fns` pattern via a new `shortDateLabel` helper in
+  `src/lib/time.ts`.
 
 ### Added
+- Weekly review quick-capture and "Add a next action" inputs now support
+  inline `#tag` syntax: `ring matthew #p1` creates a task titled "ring
+  matthew" tagged with `p1` (an existing task tag is reused if the name
+  matches, otherwise a new one is created). Multiple hashtags per line are
+  all applied.
 - Weekly review "Get clear" checklist now includes two more items: reviewing
   last week's calendar and reviewing this week's calendar, alongside the
   existing inbox-to-zero and open-loops checks.

@@ -12,6 +12,7 @@ import {
   updateReviewFlag,
 } from "@/app/(app)/review/actions";
 import type { ReviewData } from "@/lib/server/review";
+import { shortDateLabel } from "@/lib/time";
 
 const WEEKLY_CAP = 3;
 
@@ -69,6 +70,8 @@ export function ReviewView({ data }: { data: ReviewData }) {
             projectId={p.id}
             name={p.name}
             defaultNotes={p.notes}
+            previousNotes={p.previousNotes}
+            previousWeekLabel={p.previousWeekLabel}
             tasks={p.tasks}
             weeklyOn={selected}
             togglePriority={togglePriority}
@@ -166,11 +169,7 @@ function StreakHeader({ data }: { data: ReviewData }) {
   const line = [
     data.streak > 0 ? `${data.streak}-week streak` : null,
     data.lastCompletedAt
-      ? `last completed ${data.lastCompletedAt.toLocaleDateString(undefined, {
-          weekday: "short",
-          day: "numeric",
-          month: "short",
-        })}`
+      ? `last completed ${shortDateLabel(data.lastCompletedAt)}`
       : null,
   ]
     .filter(Boolean)
@@ -322,7 +321,7 @@ function GetClear({
             }
           }}
           disabled={pending}
-          placeholder="Quick capture something you just remembered…"
+          placeholder="Quick capture something you just remembered… (#tag adds a tag)"
           className="flex-1 bg-transparent text-[13px] outline-none"
           style={{ color: "var(--color-ink)" }}
         />
@@ -365,6 +364,8 @@ function ReviewProjectCard({
   projectId,
   name,
   defaultNotes,
+  previousNotes,
+  previousWeekLabel,
   tasks,
   weeklyOn,
   togglePriority,
@@ -372,10 +373,12 @@ function ReviewProjectCard({
   projectId: string;
   name: string;
   defaultNotes: string;
+  previousNotes: string | null;
+  previousWeekLabel: string | null;
   tasks: {
     id: string;
     title: string;
-    priority: 1 | 2 | 3;
+    priority: 1 | 2 | 3 | null;
   }[];
   weeklyOn: Set<string>;
   togglePriority: (id: string) => void;
@@ -408,65 +411,90 @@ function ReviewProjectCard({
       }}
     >
       <h3 className="font-display mb-2 text-[15px] font-semibold">{name}</h3>
-      <textarea
-        value={notes}
-        onChange={(e) => setNotes(e.target.value)}
-        onBlur={saveNotes}
-        rows={2}
-        placeholder="Any update? What's the state of this project?"
-        className="mb-2 w-full border bg-transparent p-2 text-[13px] outline-none"
-        style={{
-          borderColor: "var(--color-line)",
-          color: "var(--color-ink)",
-        }}
-      />
-      {tasks.length === 0 && (
-        <p
-          className="py-1 text-[12px]"
-          style={{ color: "var(--color-ink-soft)" }}
-        >
-          No open tasks.
-        </p>
-      )}
-      {tasks.map((t) => (
-        <div
-          key={t.id}
-          className="flex items-center gap-2 border-b px-1 py-2 text-[13px]"
-          style={{ borderColor: "var(--color-line)" }}
-        >
-          <PriorityBadge priority={t.priority} />
-          <span className="flex-1">{t.title}</span>
-          <button
-            type="button"
-            onClick={() => togglePriority(t.id)}
-            disabled={pending}
-            className="font-mono text-[11px]"
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_minmax(220px,300px)]">
+        <div>
+          {previousNotes && (
+            <div className="mb-2">
+              <p
+                className="font-mono mb-1 text-[10px] tracking-wide uppercase"
+                style={{ color: "var(--color-ink-soft)" }}
+              >
+                From {previousWeekLabel}
+              </p>
+              <p
+                className="rounded-[4px] border border-dashed p-2 text-[13px] leading-relaxed whitespace-pre-wrap"
+                style={{
+                  borderColor: "var(--color-line)",
+                  color: "var(--color-ink-soft)",
+                }}
+              >
+                {previousNotes}
+              </p>
+            </div>
+          )}
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            onBlur={saveNotes}
+            rows={6}
+            placeholder="Any update? What's the state of this project?"
+            className="w-full resize-y border bg-transparent p-3 text-[13px] leading-relaxed outline-none"
             style={{
-              color: weeklyOn.has(t.id)
-                ? "var(--color-accent)"
-                : "var(--color-ink-soft)",
+              borderColor: "var(--color-line)",
+              color: "var(--color-ink)",
             }}
-          >
-            {weeklyOn.has(t.id) ? "★ priority" : "☆ pick"}
-          </button>
+          />
         </div>
-      ))}
-      <div className="mt-2 flex items-center gap-2 pt-2">
-        <Plus size={14} style={{ color: "var(--color-ink-soft)" }} />
-        <input
-          value={action}
-          onChange={(e) => setAction(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              submitAction();
-            }
-          }}
-          disabled={pending}
-          placeholder="Add a next action…"
-          className="flex-1 bg-transparent text-[13px] outline-none"
-          style={{ color: "var(--color-ink)" }}
-        />
+        <div>
+          {tasks.length === 0 && (
+            <p
+              className="py-1 text-[12px]"
+              style={{ color: "var(--color-ink-soft)" }}
+            >
+              No open tasks.
+            </p>
+          )}
+          {tasks.map((t) => (
+            <div
+              key={t.id}
+              className="flex items-center gap-2 border-b px-1 py-2 text-[13px]"
+              style={{ borderColor: "var(--color-line)" }}
+            >
+              <PriorityBadge priority={t.priority} />
+              <span className="flex-1">{t.title}</span>
+              <button
+                type="button"
+                onClick={() => togglePriority(t.id)}
+                disabled={pending}
+                className="font-mono text-[11px]"
+                style={{
+                  color: weeklyOn.has(t.id)
+                    ? "var(--color-accent)"
+                    : "var(--color-ink-soft)",
+                }}
+              >
+                {weeklyOn.has(t.id) ? "★ priority" : "☆ pick"}
+              </button>
+            </div>
+          ))}
+          <div className="mt-2 flex items-center gap-2 pt-2">
+            <Plus size={14} style={{ color: "var(--color-ink-soft)" }} />
+            <input
+              value={action}
+              onChange={(e) => setAction(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  submitAction();
+                }
+              }}
+              disabled={pending}
+              placeholder="Add a next action… (#tag adds a tag)"
+              className="flex-1 bg-transparent text-[13px] outline-none"
+              style={{ color: "var(--color-ink)" }}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

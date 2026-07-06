@@ -100,8 +100,17 @@ properties in `src/app/globals.css` inside `@theme`. Do not add new one-off
 hex codes in components — reach for the token, or add a new token if the palette
 genuinely needs one.
 
-**Priority is required, defaults to 3.** Every task always has a P1/P2/P3
-badge. Never hide it. See `src/components/priority-badge.tsx`.
+**Priority is a tag, not a field.** There is no `tasks.priority` column —
+priority is expressed as a `p1`/`p2`/`p3` task tag, same as any other tag.
+`src/lib/priority.ts` derives a task's effective priority from its tag names
+(`priorityFromTagNames`, case-insensitive; highest wins if more than one is
+present) and provides the sort comparator (`comparePriority`, untagged sorts
+last). Views that already load a task's full tag list (Tasks, Meetings)
+derive priority from it directly; views that don't (Today, Review) use
+`src/lib/server/task-priority.ts#loadTaskPriorities`. A task with no priority
+tag has no badge — `src/components/priority-badge.tsx` renders nothing for
+`null`. Quick-capture's inline `#tag` syntax (see review actions) is the
+normal way to set it, e.g. `ring matthew #p1`.
 
 **Inbox is a pseudo-project** (`projectId = null`). It appears in the Tasks
 view but is *excluded* from the Projects history table. See

@@ -9,13 +9,16 @@ import {
   weeklyPriorities,
   weeklyReviews,
 } from "@/lib/db/schema";
+import { comparePriority } from "@/lib/priority";
 import { todayIso, tomorrowIso, weekStartIso } from "@/lib/time";
+import type { Priority } from "@/lib/types";
 import { ensureDailyPlan } from "./priority-cap";
+import { loadTaskPriorities } from "./task-priority";
 
 export type TodayTask = {
   id: string;
   title: string;
-  priority: 1 | 2 | 3;
+  priority: Priority | null;
   status: "inbox" | "next_action" | "waiting_on" | "done";
   dueDate: string | null;
   projectId: string | null;
@@ -40,11 +43,12 @@ export type TodayData = {
 function toTask(
   task: typeof tasks.$inferSelect,
   projectName: string | null,
+  priority: Priority | null,
 ): TodayTask {
   return {
     id: task.id,
     title: task.title,
-    priority: task.priority as 1 | 2 | 3,
+    priority,
     status: task.status,
     dueDate: task.dueDate,
     projectId: task.projectId,
@@ -78,9 +82,11 @@ async function loadPlanSlots(
 
   const slots: TodaySlot[] = [1, 2, 3].map((n) => {
     const row = slotTasks[n - 1];
+    // Priority is filled in by the caller once the priority-tag map has
+    // resolved — see `withPriority` in loadTodayData.
     return {
       slot: n as 1 | 2 | 3,
-      task: row ? toTask(row.task, row.projectName ?? null) : null,
+      task: row ? toTask(row.task, row.projectName ?? null, null) : null,
     };
   });
 
@@ -91,9 +97,11 @@ export async function loadTodayData(userId: string): Promise<TodayData> {
   const dateIso = todayIso();
   const tomorrowDateIso = tomorrowIso();
 
-  // Today's plan, tomorrow's plan, and the also-due list all run in
-  // parallel — this page renders on every app open, so roundtrips matter.
-  const [todayPlan, tomorrowPlan, alsoDueRows] = await Promise.all([
+  // Today's plan, tomorrow's plan, the also-due list, and priority tags all
+  // run in parallel — this page renders on every app open, so roundtrips
+  // matter.
+  const [priorities, todayPlan, tomorrowPlan, alsoDueRows] = await Promise.all([
+    loadTaskPriorities(userId),
     loadPlanSlots(userId, dateIso),
     loadPlanSlots(userId, tomorrowDateIso),
     db
@@ -107,34 +115,48 @@ export async function loadTodayData(userId: string): Promise<TodayData> {
           lte(tasks.dueDate, dateIso),
         ),
       )
-      .orderBy(asc(tasks.dueDate), asc(tasks.priority)),
+      .orderBy(asc(tasks.dueDate)),
   ]);
+
+  // loadPlanSlots ran before `priorities` resolved above, so re-derive slot
+  // priorities from the map now that we have it.
+  const withPriority = (slots: TodaySlot[]): TodaySlot[] =>
+    slots.map((s) => ({
+      ...s,
+      task: s.task
+        ? { ...s.task, priority: priorities.get(s.task.id) ?? null }
+        : null,
+    }));
 
   const inPlanIds = new Set(todayPlan.taskIds);
 
   return {
     planId: todayPlan.planId,
     dateIso,
-    slots: todayPlan.slots,
+    slots: withPriority(todayPlan.slots),
     tomorrowPlanId: tomorrowPlan.planId,
     tomorrowDateIso,
-    tomorrowSlots: tomorrowPlan.slots,
+    tomorrowSlots: withPriority(tomorrowPlan.slots),
     alsoDue: alsoDueRows
       .filter((r) => !inPlanIds.has(r.task.id))
-      .map((r) => toTask(r.task, r.projectName ?? null)),
+      .map((r) =>
+        toTask(r.task, r.projectName ?? null, priorities.get(r.task.id) ?? null),
+      )
+      .sort((a, b) => comparePriority(a.priority, b.priority)),
   };
 }
 
 /**
  * Tasks eligible for adding to today's plan, ranked by
- * (is-weekly-priority desc, due-date asc null-last, priority asc).
+ * (is-weekly-priority desc, due-date asc null-last, priority tag asc).
  */
 export async function loadEligibleForPlan(
   userId: string,
   excludeTaskIds: string[],
 ): Promise<TodayTask[]> {
   const weekStart = weekStartIso();
-  const [reviewRows, rows] = await Promise.all([
+  const [priorities, reviewRows, rows] = await Promise.all([
+    loadTaskPriorities(userId),
     db
       .select({ id: weeklyReviews.id })
       .from(weeklyReviews)
@@ -173,7 +195,11 @@ export async function loadEligibleForPlan(
 
   return rows
     .map((r) => ({
-      task: toTask(r.task, r.projectName ?? null),
+      task: toTask(
+        r.task,
+        r.projectName ?? null,
+        priorities.get(r.task.id) ?? null,
+      ),
       weekly: weekPrioIds.has(r.task.id),
     }))
     .sort((a, b) => {
@@ -183,7 +209,7 @@ export async function loadEligibleForPlan(
       if (aDue && !bDue) return -1;
       if (!aDue && bDue) return 1;
       if (aDue && bDue && aDue !== bDue) return aDue < bDue ? -1 : 1;
-      return a.task.priority - b.task.priority;
+      return comparePriority(a.task.priority, b.task.priority);
     })
     .map((x) => x.task);
 }

@@ -64,7 +64,10 @@ export function TasksView({
     ) {
       return false;
     }
-    if (filters.priorities.size && !filters.priorities.has(t.priority)) {
+    if (
+      filters.priorities.size &&
+      (t.priority === null || !filters.priorities.has(t.priority))
+    ) {
       return false;
     }
     if (filters.statuses.size) {

@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "@/lib/db/schema";
@@ -40,6 +40,35 @@ async function run() {
 
   await db.delete(schema.projects).where(eq(schema.projects.userId, user.id));
 
+  // Priority is a p1/p2/p3 task tag rather than a dedicated field — find or
+  // create the tag for this user so seed tasks can be attached to it.
+  const priorityTagIds = new Map<number, string>();
+  async function priorityTagId(priority: 1 | 2 | 3): Promise<string> {
+    const cached = priorityTagIds.get(priority);
+    if (cached) return cached;
+    const name = `p${priority}`;
+    const [existing] = await db
+      .select()
+      .from(schema.tags)
+      .where(
+        and(
+          eq(schema.tags.userId, user.id),
+          eq(schema.tags.kind, "task"),
+          eq(schema.tags.name, name),
+        ),
+      );
+    const id =
+      existing?.id ??
+      (
+        await db
+          .insert(schema.tags)
+          .values({ userId: user.id, name, kind: "task" })
+          .returning()
+      )[0].id;
+    priorityTagIds.set(priority, id);
+    return id;
+  }
+
   const weeks = recentWeekStarts(4);
 
   const seed = [
@@ -58,12 +87,12 @@ async function run() {
         {
           title: "Draft Q3 impact report outline",
           status: "next_action" as const,
-          priority: 2,
+          priority: 2 as const,
         },
         {
           title: "Follow up with Tara Cheyne's office",
           status: "waiting_on" as const,
-          priority: 1,
+          priority: 1 as const,
         },
       ],
     },
@@ -82,12 +111,12 @@ async function run() {
         {
           title: "Approve pipe repair invoice",
           status: "next_action" as const,
-          priority: 1,
+          priority: 1 as const,
         },
         {
           title: "Chase gate repair quote",
           status: "waiting_on" as const,
-          priority: 3,
+          priority: 3 as const,
         },
       ],
     },
@@ -105,7 +134,7 @@ async function run() {
         {
           title: "Confirm building & pest inspection date",
           status: "next_action" as const,
-          priority: 1,
+          priority: 1 as const,
         },
       ],
     },
@@ -123,7 +152,7 @@ async function run() {
         {
           title: "Read draft standard v3",
           status: "next_action" as const,
-          priority: 3,
+          priority: 3 as const,
         },
       ],
     },
@@ -138,7 +167,7 @@ async function run() {
         {
           title: "Read outpost rules before next session",
           status: "next_action" as const,
-          priority: 3,
+          priority: 3 as const,
         },
       ],
     },
@@ -156,12 +185,18 @@ async function run() {
       .returning();
 
     for (const t of p.tasks) {
-      await db.insert(schema.tasks).values({
-        userId: user.id,
-        projectId: project.id,
-        title: t.title,
-        status: t.status,
-        priority: t.priority,
+      const [task] = await db
+        .insert(schema.tasks)
+        .values({
+          userId: user.id,
+          projectId: project.id,
+          title: t.title,
+          status: t.status,
+        })
+        .returning();
+      await db.insert(schema.taskTags).values({
+        taskId: task.id,
+        tagId: await priorityTagId(t.priority),
       });
     }
 

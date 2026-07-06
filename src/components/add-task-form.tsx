@@ -36,7 +36,6 @@ export function AddTaskForm({
       ? (defaultProjectId ?? "")
       : (projects.find((p) => p.id !== null)?.id ?? ""),
   );
-  const [priority, setPriority] = useState<1 | 2 | 3>(3);
   const [dueDate, setDueDate] = useState("");
   const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
   const [tagIds, setTagIds] = useState<string[]>([]);
@@ -81,7 +80,6 @@ export function AddTaskForm({
         assigneeIds,
         tagIds,
         meetingId: meetingId ?? null,
-        priority,
         dueDate: dueDate || null,
         status: "next_action",
       });
@@ -119,31 +117,6 @@ export function AddTaskForm({
     />
   );
 
-  const priorityButtons = (
-    <div className="grid grid-cols-3 items-center gap-1 sm:flex">
-      {[1, 2, 3].map((p) => {
-        const active = priority === p;
-        return (
-          <button
-            key={p}
-            type="button"
-            onClick={() => setPriority(p as 1 | 2 | 3)}
-            className="font-mono border px-2.5 py-2 text-[11px] font-semibold"
-            style={{
-              borderColor: active ? `var(--color-p${p})` : "var(--color-line)",
-              background: active ? `var(--color-p${p})` : "transparent",
-              color: active
-                ? "var(--color-paper-raised)"
-                : "var(--color-ink-soft)",
-            }}
-          >
-            P{p}
-          </button>
-        );
-      })}
-    </div>
-  );
-
   return (
     <div
       className="mb-4 rounded-[4px] border p-4"
@@ -172,23 +145,20 @@ export function AddTaskForm({
       />
       {meetingId ? (
         <>
-          <div className="mb-2 grid grid-cols-1 gap-2 sm:grid-cols-[minmax(220px,1fr)_auto] sm:items-start">
-            <div className="min-w-0">
-              <EntityPicker
-                mode="single"
-                options={projectOptions}
-                selectedIds={projectId ? [projectId] : []}
-                onChange={(ids) => setProjectId(ids[0] ?? "")}
-                onCreate={createProjectOption}
-                placeholder="Inbox (no project)"
-              />
-            </div>
-            {priorityButtons}
+          <div className="mb-2">
+            <EntityPicker
+              mode="single"
+              options={projectOptions}
+              selectedIds={projectId ? [projectId] : []}
+              onChange={(ids) => setProjectId(ids[0] ?? "")}
+              onCreate={createProjectOption}
+              placeholder="Inbox (no project)"
+            />
           </div>
           <div className="mb-3">{dateInput}</div>
         </>
       ) : (
-        <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-[minmax(220px,1fr)_160px_auto] sm:items-start">
+        <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-[minmax(220px,1fr)_160px] sm:items-start">
           <div className="min-w-0">
             <EntityPicker
               mode="single"
@@ -200,7 +170,6 @@ export function AddTaskForm({
             />
           </div>
           {dateInput}
-          {priorityButtons}
         </div>
       )}
       <div className="mb-3 sm:max-w-[320px]">

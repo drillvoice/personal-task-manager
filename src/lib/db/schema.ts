@@ -198,7 +198,6 @@ export const tasks = pgTable(
     }),
     title: text("title").notNull(),
     status: taskStatus("status").notNull().default("next_action"),
-    priority: integer("priority").notNull().default(3),
     context: taskContext("context"),
     dueDate: date("due_date"),
     sortOrder: integer("sort_order").notNull().default(0),
@@ -209,7 +208,7 @@ export const tasks = pgTable(
   },
   (t) => [
     index("tasks_user_status_idx").on(t.userId, t.status),
-    index("tasks_user_due_priority_idx").on(t.userId, t.dueDate, t.priority),
+    index("tasks_user_due_idx").on(t.userId, t.dueDate),
     index("tasks_user_sort_created_idx").on(
       t.userId,
       t.sortOrder,
