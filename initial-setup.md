@@ -5,13 +5,13 @@ the first time. Follow top to bottom. Estimated total time: **45–60 minutes**,
 plus DNS propagation if you want a custom domain.
 
 - [ ] **§1** Push the repo to GitHub
-- [ ] **§2** Create the Neon Postgres project (dev + prod branches)
+- [ ] **§2** Create the Neon Postgres project
 - [ ] **§3** Register the GitHub OAuth App
 - [ ] **§4** Create the Vercel project and link the GitHub repo
-- [ ] **§5** Fill in environment variables (dev locally, prod in Vercel)
+- [ ] **§5** Fill in environment variables
 - [ ] **§6** Add PWA icons (optional but recommended before shipping)
 - [ ] **§7** Run the first database migration
-- [ ] **§8** Seed the dev database (optional)
+- [ ] **§8** Seed the database (optional)
 - [ ] **§9** Deploy and smoke-test end to end
 
 ---
@@ -31,9 +31,17 @@ If the repo already exists on GitHub, skip the `git remote add` line.
 
 ## §2 · Create the Neon Postgres project
 
-We're on Neon because it supports **native database branching** — a preview
-branch per Vercel preview deployment, cleanly isolated from prod. This is the
-spec's §8 recommendation.
+**This project runs on a single Neon database, shared by local dev and every
+Vercel environment (Production, Preview, Development) — there is no separate
+dev/prod branch split.** Neon supports native branching and that's a
+reasonable thing to add later if you want preview deployments isolated from
+real data, but it isn't set up here: `.env.local` and Vercel's `DATABASE_URL`
+all point at the same connection string, pooled or not. Practically, that
+means anything you do locally — including running migrations, or clicking
+around while testing a branch — touches your real daily-use data directly.
+Keep that in mind before running destructive commands (`db:migrate` against
+a schema change that drops data, manual `DELETE`s, etc.) against
+`.env.local`'s `DATABASE_URL`.
 
 1. Sign up at <https://neon.tech> (GitHub sign-in works).
 2. Create a new project. Region: pick the one closest to Vercel's default
@@ -45,15 +53,14 @@ spec's §8 recommendation.
    own auth product; we're doing auth in-app via Auth.js + GitHub OAuth,
    so a parallel Neon Auth user store would be dead weight.
 5. When Neon offers to name the default branch, keep it `main`.
-6. In the Neon dashboard, note two things:
-   - **Connection string** for the `main` (production) branch — you'll paste
-     this into Vercel later. Use the **pooled** connection string
-     (`...-pooler.<region>.neon.tech`). It's tagged in the dashboard.
-   - Create a second branch called `dev` from `main`. Copy its pooled
-     connection string for your local `.env.local`.
+6. In the Neon dashboard, copy the **pooled** connection string
+   (`...-pooler.<region>.neon.tech`, tagged in the dashboard) for the `main`
+   branch. You'll use this exact same string everywhere — `.env.local` and
+   all three Vercel environments.
 7. In `Settings → General`, enable **Point-in-time restore** (Neon does this
    for you on Free but keep the retention at the default 7 days — extend if
-   you want more).
+   you want more). With only one database, this is your only safety net
+   against a bad migration or an accidental delete.
 
 > Cost: the Neon Free tier is enough for a single-user daily-use app for a
 > long time. Upgrade only if you exceed 0.5 GB storage or 190 compute-hours
@@ -114,24 +121,22 @@ expiring magic links.
 ## §5 · Environment variables
 
 Copy `.env.example` → `.env.local` in your local repo, then fill in the
-values for dev. In Vercel, set the same keys under
+values. In Vercel, set the same keys under
 `Project → Settings → Environment Variables` for **Production**, **Preview**,
-and **Development** — usually with the prod Neon connection string for
-Production and the dev Neon branch string for Preview/Development.
+and **Development**.
 
 | Variable | What it is | Where it comes from |
 |---|---|---|
-| `DATABASE_URL` | Neon Postgres pooled connection string | Neon dashboard → the pooled URL for `main` (prod) or `dev` (local) |
+| `DATABASE_URL` | Neon Postgres pooled connection string | Neon dashboard → the pooled URL for `main`. Same value everywhere — local `.env.local` and all three Vercel environments (see §2's callout on the single shared database) |
 | `AUTH_SECRET` | Session cookie signing key | Generate: `openssl rand -base64 32` |
 | `AUTH_URL` | Base URL Auth.js redirects back to | **Local only** — set to `http://localhost:3000` in `.env.local`. **Do not set in Vercel Production or Preview** — Auth.js auto-detects from `VERCEL_URL`. Setting `http://localhost:3000` in prod will send every OAuth callback to your laptop |
 | `AUTH_GITHUB_ID` | GitHub OAuth App Client ID | From §3, the OAuth App page |
 | `AUTH_GITHUB_SECRET` | GitHub OAuth App Client Secret | From §3, "Generate a new client secret" |
 | `ALLOWED_EMAIL` | The single email that's allowed to sign in | Your email address (case-insensitive) |
 
-**In Vercel:** for each of the three environments (Production, Preview,
-Development), set the same keys. It's fine for all three to share the same
-GitHub OAuth credentials and `AUTH_SECRET`; the `DATABASE_URL` should
-differ (prod ↔ dev Neon branch).
+**In Vercel:** set identical keys and values across all three environments
+(Production, Preview, Development) — including `DATABASE_URL`, since it's
+the same database everywhere.
 
 > **Cleanup from earlier setup:** if you had `AUTH_RESEND_KEY` and
 > `AUTH_EMAIL_FROM` set from the magic-link days, delete them from all
@@ -157,37 +162,43 @@ the `icons` array in `manifest.ts` — see the comment in that file.
 ## §7 · Run the first migration
 
 The migration file is already committed at
-`src/db/migrations/0000_*.sql`. To apply it:
+`src/db/migrations/0000_*.sql`. Apply it once, from your local shell —
+there's no separate prod step, since it's the same database `.env.local`
+already points at:
 
-**Locally (against the dev Neon branch):**
 ```bash
 pnpm install
 pnpm db:migrate
 ```
 
-**Against production (first-time deploy):**
-Run the same command from your local shell with `DATABASE_URL` temporarily
-pointed at the prod connection string:
-```bash
-DATABASE_URL="postgres://…main.neon.tech/…" pnpm db:migrate
-```
-For future migrations you can run it from Vercel's function shell or add a
-one-off script — but for the first one, doing it locally is safest.
+Run `pnpm db:migrate` again any time a new migration file lands in
+`src/db/migrations/` (each PR that changes the schema should include one) —
+there's no CI or build-time hook that applies migrations automatically,
+so this is a manual step you run from your local shell before or right
+after merging.
 
 ---
 
-## §8 · Seed the dev database (optional)
+## §8 · Seed the database (optional, first-time setup only)
 
-Populate the dev database with the mockup's fixture projects so the app
-isn't empty when you first sign in:
+Populate the database with the mockup's fixture projects so the app isn't
+empty the first time you sign in:
 
 ```bash
 # .env.local must have DATABASE_URL and ALLOWED_EMAIL set
 pnpm db:seed
 ```
 
-The seed script is idempotent — rerunning wipes and reinserts your user's
-data. It refuses to run against production (`NODE_ENV=production`).
+**Only run this once, before you have any real data.** The script wipes and
+reinserts your user's projects/tasks every time it runs — fine for the very
+first run against an empty database, destructive against a database you've
+since been using for real. Its guard (`src/db/seed.ts`) only checks
+`NODE_ENV === "production"`, which protects a genuine dev/prod split; it
+does **not** protect this project's actual setup, where local and
+production share the one database (§2) — running `pnpm db:seed` locally
+after that first run would wipe your real tasks and projects, since
+`NODE_ENV` is not `"production"` locally regardless of which database
+`DATABASE_URL` points at.
 
 ---
 
