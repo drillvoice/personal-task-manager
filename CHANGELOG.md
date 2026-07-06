@@ -44,6 +44,16 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
   above this week's textarea when one exists.
 
 ### Fixed
+- Weekly review: selecting/unselecting weekly priorities (and the analogous
+  Today's-three / Tomorrow's-three slot picking) could crash the page with a
+  server error. Two stale, untracked constraints on `weekly_priorities` and
+  `daily_plan_items` (`wp_review_slot_uniq`/`dpi_plan_slot_uniq` uniqueness
+  and `wp_slot_range`/`dpi_slot_range` a 0–2 range check) — leftovers from an
+  earlier fixed-slot design, never declared in `schema.ts` or created by a
+  tracked migration — collided with `sort_order` values that were computed
+  from a stale row *count* rather than a value guaranteed to be free. Dropped
+  the constraints (migrations 0008/0009) and fixed the insert logic to use
+  `max(sort_order) + 1`.
 - Weekly review: the "last completed" date in the streak header no longer
   triggers a hydration mismatch. It was formatted with
   `toLocaleDateString(undefined, …)`, which resolves to whatever locale the

@@ -1,6 +1,6 @@
 "use server";
 
-import { and, count, eq, inArray } from "drizzle-orm";
+import { and, count, eq, inArray, max } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
@@ -192,17 +192,23 @@ export async function toggleWeeklyPriority(
     return { ok: true };
   }
 
-  const [existingCount] = await db
-    .select({ value: count() })
+  const [agg] = await db
+    .select({
+      count: count(),
+      // sort_order isn't read anywhere today, but a removed priority leaves
+      // a gap — reusing count() as the next value can collide with a slot
+      // that's still in use. max()+1 always lands on an unused value.
+      maxSortOrder: max(weeklyPriorities.sortOrder),
+    })
     .from(weeklyPriorities)
     .where(eq(weeklyPriorities.weeklyReviewId, reviewId));
-  if (existingCount.value >= WEEKLY_PRIORITY_CAP) {
+  if (agg.count >= WEEKLY_PRIORITY_CAP) {
     return { ok: false, error: new PriorityCapExceededError("weekly").message };
   }
   await db.insert(weeklyPriorities).values({
     weeklyReviewId: reviewId,
     taskId,
-    sortOrder: existingCount.value,
+    sortOrder: (agg.maxSortOrder ?? -1) + 1,
   });
   revalidatePath("/review");
   return { ok: true };
