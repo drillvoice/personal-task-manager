@@ -3,8 +3,9 @@
 import { useState, useTransition } from "react";
 import { Plus } from "lucide-react";
 import { PersonRow } from "@/components/person-row";
-import { OrgDropdown } from "@/components/org-dropdown";
+import { EntityPicker } from "@/components/entity-picker";
 import {
+  createOrganisation,
   createPerson,
   deleteOrganisation,
   updateOrganisation,
@@ -83,7 +84,17 @@ function AddPersonForm({
           style={inputStyle}
           onKeyDown={keyHandler}
         />
-        <OrgDropdown orgs={orgs} value={orgId} onChange={setOrgId} />
+        <EntityPicker
+          mode="single"
+          options={orgs}
+          selectedIds={orgId ? [orgId] : []}
+          onChange={(ids) => setOrgId(ids[0] ?? "")}
+          onCreate={async (name) => {
+            const res = await createOrganisation({ name });
+            return res.ok ? { id: res.id, name } : null;
+          }}
+          placeholder="Organisation…"
+        />
         <input
           value={email}
           onChange={(e) => setEmail(e.target.value)}

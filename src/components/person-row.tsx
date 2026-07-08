@@ -2,9 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { Mail, Phone } from "lucide-react";
-import { OrgDropdown } from "@/components/org-dropdown";
-import type { OrgOption } from "@/components/org-dropdown";
-import { deletePerson, updatePerson } from "@/app/(app)/people/actions";
+import { EntityPicker } from "@/components/entity-picker";
+import type { PickerOption } from "@/components/entity-picker";
+import { createOrganisation, deletePerson, updatePerson } from "@/app/(app)/people/actions";
 import type { PersonWithOrg } from "@/lib/server/people";
 
 function PersonEditForm({
@@ -13,7 +13,7 @@ function PersonEditForm({
   onDone,
 }: {
   person: PersonWithOrg;
-  orgs: OrgOption[];
+  orgs: PickerOption[];
   onDone: () => void;
 }) {
   const [name, setName] = useState(person.name);
@@ -91,7 +91,17 @@ function PersonEditForm({
           style={inputStyle}
           onKeyDown={keyHandler}
         />
-        <OrgDropdown orgs={orgs} value={orgId} onChange={setOrgId} />
+        <EntityPicker
+          mode="single"
+          options={orgs}
+          selectedIds={orgId ? [orgId] : []}
+          onChange={(ids) => setOrgId(ids[0] ?? "")}
+          onCreate={async (name) => {
+            const res = await createOrganisation({ name });
+            return res.ok ? { id: res.id, name } : null;
+          }}
+          placeholder="Organisation…"
+        />
         <input
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -187,7 +197,7 @@ export function PersonRow({
   orgs,
 }: {
   person: PersonWithOrg;
-  orgs: OrgOption[];
+  orgs: PickerOption[];
 }) {
   const [editing, setEditing] = useState(false);
 
