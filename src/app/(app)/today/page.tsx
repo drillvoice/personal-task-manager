@@ -69,7 +69,7 @@ export default async function TodayPage() {
           </p>
         ) : (
           <div
-            className="rounded-[4px] border p-1"
+            className="rounded-[4px] border p-1 [&>*:last-child]:border-b-0"
             style={{
               background: "var(--color-paper-raised)",
               borderColor: "var(--color-line)",
