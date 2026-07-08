@@ -5,6 +5,13 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 
 ## [Unreleased]
 
+### Added
+- Each project section in the **Tasks** view (By project) now has an inline
+  "Add a task…" input beneath its task list, so you can add a task already
+  linked to that project without opening the New task form. Supports inline
+  `#tag` syntax (e.g. `#p1`), mirroring the Review screen's add-a-next-action
+  control.
+
 ### Fixed
 - `pnpm db:seed` now refuses to run if the user already has any project,
   requiring `SEED_FORCE=1` to override. Its old guard only checked

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { useState, useTransition } from "react";
+import { ChevronDown, ChevronRight, Plus } from "lucide-react";
 import { TaskRow } from "@/components/task-row";
+import { quickAddTask } from "@/app/(app)/review/actions";
 import type { ProjectSelectOption as ProjectOption } from "@/lib/server/projects";
 import type { ContactOption } from "@/lib/server/people";
 import type {
@@ -29,7 +30,18 @@ export function ProjectCard({
   tagOptions?: TagOption[];
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  const [action, setAction] = useState("");
+  const [pending, startTransition] = useTransition();
   const activeCount = project.tasks.filter((t) => t.status !== "done").length;
+
+  const submitAction = () => {
+    const title = action.trim();
+    if (!title) return;
+    startTransition(async () => {
+      const res = await quickAddTask({ title, projectId: project.id });
+      if (res.ok) setAction("");
+    });
+  };
 
   return (
     <div
@@ -86,6 +98,24 @@ export function ProjectCard({
               tagOptions={tagOptions}
             />
           ))}
+          <div className="flex items-center gap-2 px-1 py-3">
+
+            <Plus size={14} style={{ color: "var(--color-ink-soft)" }} />
+            <input
+              value={action}
+              onChange={(e) => setAction(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  submitAction();
+                }
+              }}
+              disabled={pending}
+              placeholder="Add a task… (#tag adds a tag)"
+              className="flex-1 bg-transparent text-[13px] outline-none"
+              style={{ color: "var(--color-ink)" }}
+            />
+          </div>
         </div>
       )}
     </div>
