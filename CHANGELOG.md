@@ -5,6 +5,13 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 
 ## [Unreleased]
 
+### Added
+- Each project section in the **Tasks** view (By project) now has an inline
+  "Add a task…" input beneath its task list, so you can add a task already
+  linked to that project without opening the New task form. Supports inline
+  `#tag` syntax (e.g. `#p1`), mirroring the Review screen's add-a-next-action
+  control.
+
 ### Fixed
 - `pnpm db:seed` now refuses to run if the user already has any project,
   requiring `SEED_FORCE=1` to override. Its old guard only checked
@@ -14,6 +21,9 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
   `pnpm db:seed` from wiping real data. See `initial-setup.md` §2 and §8.
 
 ### Changed
+- The **New task** form no longer preselects a project — it opens with the
+  project field empty (Inbox / no project) instead of defaulting to the first
+  project in the list.
 - **Priority is now a tag, not a field.** The dedicated `priority` column
   (and its P1/P2/P3 picker buttons on the add/edit task forms) is gone —
   prioritizing a task means attaching a `p1`, `p2`, or `p3` tag, same as any

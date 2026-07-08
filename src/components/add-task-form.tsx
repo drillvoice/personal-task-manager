@@ -29,13 +29,7 @@ export function AddTaskForm({
   meetingId?: string;
 }) {
   const [title, setTitle] = useState("");
-  // defaultProjectId: undefined = no preference (first real project),
-  // null = explicitly Inbox.
-  const [projectId, setProjectId] = useState<string>(
-    defaultProjectId !== undefined
-      ? (defaultProjectId ?? "")
-      : (projects.find((p) => p.id !== null)?.id ?? ""),
-  );
+  const [projectId, setProjectId] = useState<string>(defaultProjectId ?? "");
   const [dueDate, setDueDate] = useState("");
   const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
   const [tagIds, setTagIds] = useState<string[]>([]);
