@@ -14,6 +14,9 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
   `pnpm db:seed` from wiping real data. See `initial-setup.md` §2 and §8.
 
 ### Changed
+- The **New task** form no longer preselects a project — it opens with the
+  project field empty (Inbox / no project) instead of defaulting to the first
+  project in the list.
 - **Priority is now a tag, not a field.** The dedicated `priority` column
   (and its P1/P2/P3 picker buttons on the add/edit task forms) is gone —
   prioritizing a task means attaching a `p1`, `p2`, or `p3` tag, same as any
