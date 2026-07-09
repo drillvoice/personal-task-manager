@@ -85,7 +85,7 @@ export function EntityPicker({
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
+    if (e.key === "Enter" && !e.metaKey && !e.ctrlKey) {
       e.preventDefault();
       const hl = suggestions[highlight];
       if (hl) applySelection(hl.id);
@@ -175,7 +175,7 @@ export function EntityPicker({
             setOpen(true);
             setHighlight(0);
           }}
-          onFocus={() => setOpen(true)}
+          onBlur={() => setOpen(false)}
           onKeyDown={onKeyDown}
           placeholder={selected.length === 0 ? placeholder : ""}
           className="min-w-[80px] flex-1 bg-transparent text-[13px] outline-none"
@@ -190,11 +190,13 @@ export function EntityPicker({
             background: "var(--color-paper-raised)",
             borderColor: "var(--color-line)",
           }}
+          onMouseDown={(e) => e.preventDefault()}
         >
           {suggestions.map((o, i) => (
             <button
               key={o.id}
               type="button"
+              tabIndex={-1}
               onMouseEnter={() => setHighlight(i)}
               onClick={() => applySelection(o.id)}
               className="block w-full px-3 py-2 text-left text-[13px]"
@@ -210,6 +212,7 @@ export function EntityPicker({
           {canCreate && (
             <button
               type="button"
+              tabIndex={-1}
               onMouseEnter={() => setHighlight(suggestions.length)}
               onClick={create}
               disabled={pending}

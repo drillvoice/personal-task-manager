@@ -21,6 +21,11 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
   `pnpm db:seed` from wiping real data. See `initial-setup.md` §2 and §8.
 
 ### Changed
+- The organisation/tag/people combobox (`EntityPicker`, used across People,
+  Tasks, Meetings, and the New task form) is now keyboard-friendly: the
+  suggestion list only opens once you start typing (or press ↓), closes as
+  soon as focus leaves the field, and its options are skipped by Tab so
+  Tab always moves to the next field instead of walking the dropdown.
 - The **People** view now uses the wide (900px) desktop surface instead of the
   narrow mobile column. The add/edit person forms lay Role, Organisation,
   Email, and Phone across a single row (4-up at ≥768px), and each person's
