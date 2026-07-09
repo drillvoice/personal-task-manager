@@ -1,5 +1,5 @@
 import { AppFrame } from "@/components/app-frame";
-import { TopNav } from "@/components/bottom-nav";
+import { AppNav } from "@/components/app-nav";
 
 export default function AppLayout({
   children,
@@ -7,9 +7,11 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   return (
-    <AppFrame>
-      <TopNav />
-      <main className="flex-1 pt-[52px]">{children}</main>
-    </AppFrame>
+    <div className="md:pl-[208px]">
+      <AppNav />
+      <AppFrame>
+        <main className="flex-1 pt-[52px] md:pt-0">{children}</main>
+      </AppFrame>
+    </div>
   );
 }

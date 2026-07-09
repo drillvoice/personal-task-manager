@@ -21,6 +21,11 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
   `pnpm db:seed` from wiping real data. See `initial-setup.md` §2 and §8.
 
 ### Changed
+- On desktop (≥768px) the top navigation now sits as a vertical sidebar on
+  the left, using the previously under-utilised horizontal space and freeing
+  vertical room for the task lists. On smaller screens it stays the horizontal
+  top bar. The active item gains a subtle `accent-soft` background pill in the
+  sidebar.
 - The **New task** form no longer preselects a project — it opens with the
   project field empty (Inbox / no project) instead of defaulting to the first
   project in the list.
