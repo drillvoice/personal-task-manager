@@ -54,8 +54,18 @@ function AddPersonForm({
   };
 
   const keyHandler = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); }
+    if (e.key === "Enter" && !e.shiftKey && !e.metaKey && !e.ctrlKey) {
+      e.preventDefault();
+      submit();
+    }
     if (e.key === "Escape") onDone();
+  };
+
+  const formKeyHandler = (e: React.KeyboardEvent) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+      e.preventDefault();
+      submit();
+    }
   };
 
   return (
@@ -65,6 +75,7 @@ function AddPersonForm({
         background: "var(--color-paper-raised)",
         borderColor: "var(--color-line)",
       }}
+      onKeyDown={formKeyHandler}
     >
       <input
         value={name}
@@ -75,7 +86,7 @@ function AddPersonForm({
         autoFocus
         onKeyDown={keyHandler}
       />
-      <div className="mb-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+      <div className="mb-2 grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-4">
         <input
           value={role}
           onChange={(e) => setRole(e.target.value)}
@@ -136,14 +147,6 @@ function AddPersonForm({
       <div className="flex justify-end gap-2">
         <button
           type="button"
-          onClick={onDone}
-          className="font-mono px-3 py-1.5 text-[12px]"
-          style={{ color: "var(--color-ink-soft)" }}
-        >
-          Cancel
-        </button>
-        <button
-          type="button"
           onClick={submit}
           disabled={pending || !name.trim()}
           className="font-mono px-3 py-1.5 text-[12px] font-semibold"
@@ -154,6 +157,14 @@ function AddPersonForm({
           }}
         >
           Add person
+        </button>
+        <button
+          type="button"
+          onClick={onDone}
+          className="font-mono px-3 py-1.5 text-[12px]"
+          style={{ color: "var(--color-ink-soft)" }}
+        >
+          Cancel
         </button>
       </div>
     </div>

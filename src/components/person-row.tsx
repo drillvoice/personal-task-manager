@@ -82,7 +82,7 @@ function PersonEditForm({
         autoFocus
         onKeyDown={keyHandler}
       />
-      <div className="mb-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+      <div className="mb-2 grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-4">
         <input
           value={role}
           onChange={(e) => setRole(e.target.value)}
@@ -212,6 +212,7 @@ export function PersonRow({
   }
 
   const meta = [person.role, person.orgName].filter(Boolean).join(" · ");
+  const hasDetails = meta || person.email || person.phone;
 
   return (
     <div
@@ -219,24 +220,22 @@ export function PersonRow({
       style={{ borderColor: "var(--color-line)" }}
       onClick={() => setEditing(true)}
     >
-      <div className="flex flex-wrap items-baseline gap-2">
-        <span
-          className="font-display text-[14px] font-semibold"
-          style={{ color: "var(--color-ink)" }}
-        >
-          {person.name}
-        </span>
-        {meta && (
-          <span
-            className="font-mono text-[11px]"
-            style={{ color: "var(--color-ink-soft)" }}
-          >
-            {meta}
-          </span>
-        )}
-      </div>
-      {(person.email || person.phone) && (
-        <div className="mt-1 flex flex-wrap gap-3">
+      <span
+        className="font-display text-[14px] font-semibold"
+        style={{ color: "var(--color-ink)" }}
+      >
+        {person.name}
+      </span>
+      {hasDetails && (
+        <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          {meta && (
+            <span
+              className="font-mono text-[11px]"
+              style={{ color: "var(--color-ink-soft)" }}
+            >
+              {meta}
+            </span>
+          )}
           {person.email && (
             <span
               className="font-mono flex items-center gap-1 text-[11px]"

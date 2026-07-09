@@ -14,6 +14,7 @@ export function AppFrame({ children }: { children: React.ReactNode }) {
     pathname.startsWith("/projects") ||
     pathname.startsWith("/tasks") ||
     pathname.startsWith("/meetings") ||
+    pathname.startsWith("/people") ||
     pathname.startsWith("/review");
   return (
     <div

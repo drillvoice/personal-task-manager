@@ -6,6 +6,9 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 ## [Unreleased]
 
 ### Added
+- The **New person** form submits on ⌘/Ctrl+Enter from any field (name, role,
+  organisation, email, phone, or notes), so you can save without reaching for
+  the mouse or tabbing to the button.
 - Each project section in the **Tasks** view (By project) now has an inline
   "Add a task…" input beneath its task list, so you can add a task already
   linked to that project without opening the New task form. Supports inline
@@ -21,6 +24,22 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
   `pnpm db:seed` from wiping real data. See `initial-setup.md` §2 and §8.
 
 ### Changed
+- The organisation/tag/people combobox (`EntityPicker`, used across People,
+  Tasks, Meetings, and the New task form) is now keyboard-friendly: the
+  suggestion list only opens once you start typing (or press ↓), closes as
+  soon as focus leaves the field, and its options are skipped by Tab so
+  Tab always moves to the next field instead of walking the dropdown.
+- The **People** view now uses the wide (900px) desktop surface instead of the
+  narrow mobile column. The add/edit person forms lay Role, Organisation,
+  Email, and Phone across a single row (4-up at ≥768px), and each person's
+  read row now shows the name on its own line with role · org · email · phone
+  collapsed onto one details line below — more compact vertically. Everything
+  reflows to a single column on mobile.
+- On desktop (≥768px) the top navigation now sits as a vertical sidebar on
+  the left, using the previously under-utilised horizontal space and freeing
+  vertical room for the task lists. On smaller screens it stays the horizontal
+  top bar. The active item gains a subtle `accent-soft` background pill in the
+  sidebar.
 - The **New task** form no longer preselects a project — it opens with the
   project field empty (Inbox / no project) instead of defaulting to the first
   project in the list.
