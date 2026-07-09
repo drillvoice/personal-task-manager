@@ -75,7 +75,7 @@ function AddPersonForm({
         autoFocus
         onKeyDown={keyHandler}
       />
-      <div className="mb-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+      <div className="mb-2 grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-4">
         <input
           value={role}
           onChange={(e) => setRole(e.target.value)}

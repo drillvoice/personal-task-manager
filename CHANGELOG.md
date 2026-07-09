@@ -21,6 +21,12 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
   `pnpm db:seed` from wiping real data. See `initial-setup.md` §2 and §8.
 
 ### Changed
+- The **People** view now uses the wide (900px) desktop surface instead of the
+  narrow mobile column. The add/edit person forms lay Role, Organisation,
+  Email, and Phone across a single row (4-up at ≥768px), and each person's
+  read row now shows the name on its own line with role · org · email · phone
+  collapsed onto one details line below — more compact vertically. Everything
+  reflows to a single column on mobile.
 - On desktop (≥768px) the top navigation now sits as a vertical sidebar on
   the left, using the previously under-utilised horizontal space and freeing
   vertical room for the task lists. On smaller screens it stays the horizontal
