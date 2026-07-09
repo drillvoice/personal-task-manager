@@ -6,6 +6,9 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 ## [Unreleased]
 
 ### Added
+- The **New person** form submits on ⌘/Ctrl+Enter from any field (name, role,
+  organisation, email, phone, or notes), so you can save without reaching for
+  the mouse or tabbing to the button.
 - Each project section in the **Tasks** view (By project) now has an inline
   "Add a task…" input beneath its task list, so you can add a task already
   linked to that project without opening the New task form. Supports inline
