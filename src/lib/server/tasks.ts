@@ -28,6 +28,7 @@ export type TasksViewTask = {
   priority: Priority | null;
   status: "inbox" | "next_action" | "waiting_on" | "done";
   dueDate: string | null;
+  notes: string;
   projectId: string | null;
   projectName: string | null;
   assignees: { id: string; name: string }[];
@@ -145,6 +146,7 @@ export async function loadTasksData(userId: string) {
       priority: priorityFromTagNames(allTags.map((tg) => tg.name)),
       status: r.task.status,
       dueDate: r.task.dueDate,
+      notes: r.task.notes,
       projectId: r.task.projectId,
       projectName: r.projectName ?? null,
       assignees: assigneesByTask.get(r.task.id) ?? [],

@@ -6,6 +6,8 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 ## [Unreleased]
 
 ### Added
+- Tasks have a free-text **notes** field (links, context, working detail),
+  editable from the new detail panel with autosave.
 - The **Today** slot picker now has a filter box at the top: type to narrow
   the eligible-task list by title or project name instead of scrolling. It also
   stays open after you pick a task, so you can fill several empty slots in one
@@ -28,6 +30,13 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
   `pnpm db:seed` from wiping real data. See `initial-setup.md` §2 and §8.
 
 ### Changed
+- **Tasks view (desktop):** clicking anywhere on a task row now opens a
+  detail panel in a permanently reserved right-hand column (dashed empty
+  slot when nothing is selected), replacing the inline edit form. All edits
+  autosave per field — title on blur/Enter, pickers and due date on change,
+  notes debounced. Esc, the ✕, or re-clicking the row closes the panel;
+  completing or deleting the task closes it automatically. Mobile keeps the
+  previous inline editing. Meeting detail is unchanged.
 - The **Today** view now uses the wide (900px) desktop surface instead of the
   narrow mobile column, so the slot picker's task rows no longer wrap or scroll
   horizontally.

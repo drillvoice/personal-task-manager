@@ -20,6 +20,8 @@ export function ProjectCard({
   projects,
   people,
   tagOptions,
+  selectedTaskId,
+  onSelectTask,
 }: {
   project: TasksViewProject;
   visibleTasks: TasksViewTask[];
@@ -28,6 +30,8 @@ export function ProjectCard({
   projects?: ProjectOption[];
   people?: ContactOption[];
   tagOptions?: TagOption[];
+  selectedTaskId?: string | null;
+  onSelectTask?: (id: string) => void;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const [action, setAction] = useState("");
@@ -96,6 +100,8 @@ export function ProjectCard({
               projects={projects}
               people={people}
               tagOptions={tagOptions}
+              selected={t.id === selectedTaskId}
+              onSelect={onSelectTask ? () => onSelectTask(t.id) : undefined}
             />
           ))}
           <div className="flex items-center gap-2 px-1 py-3">

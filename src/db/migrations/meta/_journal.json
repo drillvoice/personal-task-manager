@@ -71,6 +71,13 @@
       "when": 1783305571095,
       "tag": "0009_drop_stale_slot_range_checks",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1783660778553,
+      "tag": "0010_long_vector",
+      "breakpoints": true
     }
   ]
 }

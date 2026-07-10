@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import dynamic from "next/dynamic";
 import { Plus } from "lucide-react";
 import { ProjectCard } from "@/components/project-card";
 import { TaskRow } from "@/components/task-row";
+import { TaskDetailPanel } from "@/components/task-detail-panel";
 import {
   SmartSearchBar,
   hasActiveFilters,
@@ -20,6 +21,21 @@ import type {
 
 type Mode = "by_project" | "all_tasks";
 type ProjectFilter = "active" | "someday_maybe" | "all";
+
+// The detail panel is desktop-only; below md, rows keep inline editing.
+const DESKTOP_QUERY = "(min-width: 768px)";
+
+function useIsDesktop(): boolean {
+  return useSyncExternalStore(
+    (onChange) => {
+      const mql = window.matchMedia(DESKTOP_QUERY);
+      mql.addEventListener("change", onChange);
+      return () => mql.removeEventListener("change", onChange);
+    },
+    () => window.matchMedia(DESKTOP_QUERY).matches,
+    () => false,
+  );
+}
 
 const AddTaskForm = dynamic(() =>
   import("@/components/add-task-form").then((mod) => mod.AddTaskForm),
@@ -38,11 +54,32 @@ export function TasksView({
   const [projectFilter, setProjectFilter] = useState<ProjectFilter>("active");
   const [filters, setFilters] = useState<SmartFilters>(makeEmptyFilters());
   const [showAdd, setShowAdd] = useState(false);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const isDesktop = useIsDesktop();
 
   const allTasksFlat = useMemo(
     () => projects.flatMap((p) => p.tasks),
     [projects],
   );
+
+  // Derived from server data, so completing or deleting the selected task
+  // (which removes it from the list on revalidation) closes the panel.
+  const selectedTask =
+    selectedTaskId !== null
+      ? (allTasksFlat.find(
+          (t) => t.id === selectedTaskId && t.status !== "done",
+        ) ?? null)
+      : null;
+
+  useEffect(() => {
+    if (selectedTaskId !== null && selectedTask === null) {
+      setSelectedTaskId(null);
+    }
+  }, [selectedTaskId, selectedTask]);
+
+  const onSelectTask = isDesktop
+    ? (id: string) => setSelectedTaskId((prev) => (prev === id ? null : id))
+    : undefined;
 
   const availableTags = useMemo(
     () =>
@@ -102,7 +139,8 @@ export function TasksView({
   }));
 
   return (
-    <div className="p-4 pb-24">
+    <div className="p-4 pb-24 md:grid md:grid-cols-[minmax(0,1fr)_minmax(320px,380px)] md:items-start md:gap-6">
+      <div className="min-w-0">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h1 className="font-display text-xl font-bold">Tasks</h1>
         <div className="flex items-center gap-2">
@@ -200,6 +238,8 @@ export function TasksView({
                 projects={projectOptions}
                 people={people}
                 tagOptions={tagOptions}
+                selectedTaskId={selectedTaskId}
+                onSelectTask={onSelectTask}
               />
             ))}
         </>
@@ -230,6 +270,8 @@ export function TasksView({
                 projects={projectOptions}
                 people={people}
                 tagOptions={tagOptions}
+                selectedTaskId={selectedTaskId}
+                onSelectTask={onSelectTask}
               />
             ));
           })()}
@@ -264,11 +306,39 @@ export function TasksView({
                 projects={projectOptions}
                 people={people}
                 tagOptions={tagOptions}
+                selected={t.id === selectedTaskId}
+                onSelect={onSelectTask ? () => onSelectTask(t.id) : undefined}
               />
             ));
           })()}
         </div>
       )}
+      </div>
+
+      <div className="hidden md:sticky md:top-4 md:block md:max-h-[calc(100vh-2rem)] md:min-w-0 md:overflow-y-auto">
+        {selectedTask ? (
+          <TaskDetailPanel
+            key={selectedTask.id}
+            task={selectedTask}
+            projects={projectOptions.filter(
+              (p): p is { id: string; name: string } => p.id !== null,
+            )}
+            people={people}
+            tagOptions={tagOptions}
+            onClose={() => setSelectedTaskId(null)}
+          />
+        ) : (
+          <div
+            className="font-mono flex min-h-[220px] items-center justify-center rounded-[4px] border border-dashed text-[11px]"
+            style={{
+              borderColor: "var(--color-line)",
+              color: "var(--color-ink-soft)",
+            }}
+          >
+            Select a task to edit
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -112,6 +112,8 @@ const updateSchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD")
     .nullable()
     .or(z.literal("").transform(() => null)),
+  // Optional so callers that predate notes (inline EditTaskForm) never clobber it.
+  notes: z.string().max(20000).optional(),
 });
 
 export type UpdateTaskInput = z.input<typeof updateSchema>;
@@ -138,6 +140,7 @@ export async function updateTask(
       title: parsed.data.title,
       projectId: parsed.data.projectId,
       dueDate: parsed.data.dueDate,
+      ...(parsed.data.notes !== undefined ? { notes: parsed.data.notes } : {}),
     })
     .where(and(eq(tasks.id, parsed.data.id), eq(tasks.userId, userId)))
     .returning({ id: tasks.id });

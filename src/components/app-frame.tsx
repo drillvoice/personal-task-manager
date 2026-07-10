@@ -17,11 +17,14 @@ export function AppFrame({ children }: { children: React.ReactNode }) {
     pathname.startsWith("/people") ||
     pathname.startsWith("/today") ||
     pathname.startsWith("/review");
+  // Tasks carries a permanently reserved detail-panel column, so it gets
+  // extra width beyond the standard wide surface.
+  const maxWidth = pathname.startsWith("/tasks") ? 1280 : isWide ? 900 : 420;
   return (
     <div
       className="mx-auto flex min-h-screen w-full flex-col"
       style={{
-        maxWidth: isWide ? 900 : 420,
+        maxWidth,
         transition: "max-width 0.15s",
       }}
     >
