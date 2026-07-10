@@ -24,6 +24,11 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
   `pnpm db:seed` from wiping real data. See `initial-setup.md` §2 and §8.
 
 ### Changed
+- The app can be installed as a standalone desktop app from Chrome/Edge
+  (install icon in the address bar → own window, dock icon, opens at
+  `/today`). The web app manifest no longer locks orientation to portrait
+  (wrong for a desktop window) and now declares a stable `id` so the
+  installed app survives future `start_url` changes.
 - The organisation/tag/people combobox (`EntityPicker`, used across People,
   Tasks, Meetings, and the New task form) is now keyboard-friendly: the
   suggestion list only opens once you start typing (or press ↓), closes as

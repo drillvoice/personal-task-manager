@@ -5,10 +5,10 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Task Manager",
     short_name: "Tasks",
     description: "Personal GTD task and project manager.",
+    id: "/",
     start_url: "/today",
     scope: "/",
     display: "standalone",
-    orientation: "portrait",
     background_color: "#eeeee7",
     theme_color: "#eeeee7",
     icons: [
