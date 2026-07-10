@@ -40,7 +40,7 @@ export default async function TodayPage() {
 
       <PlanSlots
         slots={today.slots}
-        pickerLabel="PICK ONE FOR TODAY"
+        pickerLabel="ADD TO TODAY"
         addAction={addToTodayPlan}
         loadEligibleAction={loadEligibleForTodayPlan}
         removeAction={removeFromTodayPlan}
@@ -93,7 +93,7 @@ export default async function TodayPage() {
         </div>
         <PlanSlots
           slots={today.tomorrowSlots}
-          pickerLabel="PICK ONE FOR TOMORROW"
+          pickerLabel="ADD TO TOMORROW"
           addAction={addToTomorrowPlan}
           loadEligibleAction={loadEligibleForTomorrowPlan}
           removeAction={removeFromTomorrowPlan}

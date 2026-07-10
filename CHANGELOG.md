@@ -6,6 +6,10 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 ## [Unreleased]
 
 ### Added
+- The **Today** slot picker now has a filter box at the top: type to narrow
+  the eligible-task list by title or project name instead of scrolling. It also
+  stays open after you pick a task, so you can fill several empty slots in one
+  go — it closes automatically once the last slot is filled.
 - The **New person** form submits on ⌘/Ctrl+Enter from any field (name, role,
   organisation, email, phone, or notes), so you can save without reaching for
   the mouse or tabbing to the button.
@@ -24,6 +28,9 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
   `pnpm db:seed` from wiping real data. See `initial-setup.md` §2 and §8.
 
 ### Changed
+- The **Today** view now uses the wide (900px) desktop surface instead of the
+  narrow mobile column, so the slot picker's task rows no longer wrap or scroll
+  horizontally.
 - The app can be installed as a standalone desktop app from Chrome/Edge
   (install icon in the address bar → own window, dock icon, opens at
   `/today`). The web app manifest no longer locks orientation to portrait
