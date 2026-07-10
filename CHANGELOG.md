@@ -6,6 +6,17 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 ## [Unreleased]
 
 ### Added
+- Tasks have a free-text **notes** field (links, context, working detail),
+  editable from the new detail panel with autosave.
+
+### Changed
+- **Tasks view (desktop):** clicking anywhere on a task row now opens a
+  detail panel in a permanently reserved right-hand column (dashed empty
+  slot when nothing is selected), replacing the inline edit form. All edits
+  autosave per field — title on blur/Enter, pickers and due date on change,
+  notes debounced. Esc, the ✕, or re-clicking the row closes the panel;
+  completing or deleting the task closes it automatically. Mobile keeps the
+  previous inline editing. Meeting detail is unchanged.
 - The **New person** form submits on ⌘/Ctrl+Enter from any field (name, role,
   organisation, email, phone, or notes), so you can save without reaching for
   the mouse or tabbing to the button.

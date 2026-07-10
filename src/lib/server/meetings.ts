@@ -205,6 +205,7 @@ export async function loadMeetingDetail(
         priority: priorityFromTagNames(allTags.map((tg) => tg.name)),
         status: r.task.status,
         dueDate: r.task.dueDate,
+        notes: r.task.notes,
         projectId: r.task.projectId,
         projectName: r.projectName ?? null,
         assignees: assigneesByTask.get(r.task.id) ?? [],

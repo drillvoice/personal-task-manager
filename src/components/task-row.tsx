@@ -32,7 +32,32 @@ export type TaskRowProps = {
   projects?: ProjectOption[];
   people?: ContactOption[];
   tagOptions?: TagOption[];
+  // When provided, the whole row selects the task (detail panel) instead of
+  // swapping to the inline edit form.
+  onSelect?: () => void;
+  selected?: boolean;
 };
+
+export async function createProjectOption(
+  name: string,
+): Promise<PickerOption | null> {
+  const res = await createProject({ name, status: "active" });
+  return res.ok ? { id: res.id, name } : null;
+}
+
+export async function createPersonOption(
+  name: string,
+): Promise<PickerOption | null> {
+  const res = await createPerson({ name });
+  return res.ok ? { id: res.id, name } : null;
+}
+
+export async function createTagOption(
+  name: string,
+): Promise<PickerOption | null> {
+  const res = await createTaskTag({ name });
+  return res.ok ? { id: res.id, name: res.name, color: res.color } : null;
+}
 
 function EditTaskForm({
   task,
@@ -67,27 +92,6 @@ function EditTaskForm({
         .map((p) => ({ id: p.id, name: p.name })),
     [projects],
   );
-
-  const createProjectOption = async (
-    name: string,
-  ): Promise<PickerOption | null> => {
-    const res = await createProject({ name, status: "active" });
-    return res.ok ? { id: res.id, name } : null;
-  };
-
-  const createPersonOption = async (
-    name: string,
-  ): Promise<PickerOption | null> => {
-    const res = await createPerson({ name });
-    return res.ok ? { id: res.id, name } : null;
-  };
-
-  const createTagOption = async (
-    name: string,
-  ): Promise<PickerOption | null> => {
-    const res = await createTaskTag({ name });
-    return res.ok ? { id: res.id, name: res.name, color: res.color } : null;
-  };
 
   const save = () => {
     if (!title.trim()) return;
@@ -250,12 +254,15 @@ export function TaskRow({
   projects,
   people,
   tagOptions,
+  onSelect,
+  selected = false,
 }: TaskRowProps) {
   const [pending, startTransition] = useTransition();
   const [editing, setEditing] = useState(false);
   const done = task.status === "done";
   const assigneeNames = (task.assignees ?? []).map((a) => a.name);
   const tags = task.tags ?? [];
+  const inlineEdit = Boolean(projects) && !onSelect;
 
   const toggle = () => {
     startTransition(async () => {
@@ -263,7 +270,7 @@ export function TaskRow({
     });
   };
 
-  if (editing && projects) {
+  if (editing && projects && inlineEdit) {
     return (
       <EditTaskForm
         task={task}
@@ -277,7 +284,10 @@ export function TaskRow({
 
   const checkbox = (
     <button
-      onClick={toggle}
+      onClick={(e) => {
+        e.stopPropagation();
+        toggle();
+      }}
       disabled={pending}
       aria-pressed={done}
       aria-label={done ? "Mark task incomplete" : "Mark task complete"}
@@ -297,9 +307,9 @@ export function TaskRow({
       style={{
         color: done ? "var(--color-ink-soft)" : "var(--color-ink)",
         textDecoration: done ? "line-through" : "none",
-        cursor: projects ? "pointer" : "default",
+        cursor: inlineEdit ? "pointer" : "default",
       }}
-      onClick={projects ? () => setEditing(true) : undefined}
+      onClick={inlineEdit ? () => setEditing(true) : undefined}
     >
       {task.title}
     </span>
@@ -354,7 +364,25 @@ export function TaskRow({
   return (
     <div
       className="group flex flex-wrap items-center gap-2 border-b px-1 py-2.5"
-      style={{ borderColor: "var(--color-line)" }}
+      style={{
+        borderColor: "var(--color-line)",
+        cursor: onSelect ? "pointer" : undefined,
+        background: selected ? "var(--color-paper)" : undefined,
+        boxShadow: selected ? "inset 2px 0 0 var(--color-accent)" : undefined,
+      }}
+      onClick={onSelect}
+      role={onSelect ? "button" : undefined}
+      tabIndex={onSelect ? 0 : undefined}
+      onKeyDown={
+        onSelect
+          ? (e) => {
+              if (e.key === "Enter" && e.target === e.currentTarget) {
+                e.preventDefault();
+                onSelect();
+              }
+            }
+          : undefined
+      }
     >
       {checkbox}
       <span className="min-w-[120px] flex-1">{titleSpan}</span>
