@@ -114,6 +114,13 @@ function NewMeetingForm({
     });
   };
 
+  const formKeyHandler = (e: React.KeyboardEvent) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+      e.preventDefault();
+      submit();
+    }
+  };
+
   return (
     <div
       className="mb-4 rounded-[4px] border p-4"
@@ -121,6 +128,7 @@ function NewMeetingForm({
         background: "var(--color-paper-raised)",
         borderColor: "var(--color-line)",
       }}
+      onKeyDown={formKeyHandler}
     >
       <input
         value={title}
@@ -134,7 +142,7 @@ function NewMeetingForm({
         }}
         autoFocus
         onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey) {
+          if (e.key === "Enter" && !e.shiftKey && !e.metaKey && !e.ctrlKey) {
             e.preventDefault();
             submit();
           }
@@ -175,14 +183,6 @@ function NewMeetingForm({
       <div className="flex justify-end gap-2">
         <button
           type="button"
-          onClick={onCancel}
-          className="font-mono px-3 py-1.5 text-[12px]"
-          style={{ color: "var(--color-ink-soft)" }}
-        >
-          Cancel
-        </button>
-        <button
-          type="button"
           onClick={submit}
           disabled={pending || !title.trim() || !meetingDate}
           className="font-mono px-3 py-1.5 text-[12px] font-semibold"
@@ -193,6 +193,14 @@ function NewMeetingForm({
           }}
         >
           Create meeting
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="font-mono px-3 py-1.5 text-[12px]"
+          style={{ color: "var(--color-ink-soft)" }}
+        >
+          Cancel
         </button>
       </div>
     </div>
