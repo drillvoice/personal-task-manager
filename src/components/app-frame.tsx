@@ -3,10 +3,10 @@
 import { usePathname } from "next/navigation";
 
 /**
- * Wraps every authenticated page in a max-width container. Today stays
- * close to the mobile-first mockup; Tasks, Projects, Meetings, and Review
- * use the wider desktop surface needed for dense lists, table/editing
- * controls, and two-column notes + tasks layouts.
+ * Wraps every authenticated page in a max-width container. Tasks, Projects,
+ * Meetings, Review, and Today use the wider desktop surface needed for dense
+ * lists, table/editing controls, the task picker, and two-column notes +
+ * tasks layouts.
  */
 export function AppFrame({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -15,6 +15,7 @@ export function AppFrame({ children }: { children: React.ReactNode }) {
     pathname.startsWith("/tasks") ||
     pathname.startsWith("/meetings") ||
     pathname.startsWith("/people") ||
+    pathname.startsWith("/today") ||
     pathname.startsWith("/review");
   // Tasks carries a permanently reserved detail-panel column, so it gets
   // extra width beyond the standard wide surface.
