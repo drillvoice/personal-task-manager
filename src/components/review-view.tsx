@@ -435,7 +435,7 @@ function GetClear({
             }
           }}
           disabled={pending}
-          placeholder="Quick capture something you just remembered… (#tag adds a tag)"
+          placeholder="Quick capture something you just remembered… (#tag, or a due date like 'in 3 days')"
           className="flex-1 bg-transparent text-[13px] outline-none"
           style={{ color: "var(--color-ink)" }}
         />
@@ -603,7 +603,7 @@ function ReviewProjectCard({
                 }
               }}
               disabled={pending}
-              placeholder="Add a next action… (#tag adds a tag)"
+              placeholder="Add a next action… (#tag, or a due date like 'in 3 days')"
               className="flex-1 bg-transparent text-[13px] outline-none"
               style={{ color: "var(--color-ink)" }}
             />

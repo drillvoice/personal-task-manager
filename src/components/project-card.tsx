@@ -149,7 +149,7 @@ export function ProjectCard({
                 }
               }}
               disabled={pending}
-              placeholder="Add a task… (#tag adds a tag)"
+              placeholder="Add a task… (#tag, or a due date like 'in 3 days')"
               className="flex-1 bg-transparent text-[13px] outline-none"
               style={{ color: "var(--color-ink)" }}
             />

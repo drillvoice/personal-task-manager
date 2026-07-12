@@ -68,7 +68,7 @@ export function QuickCapture() {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Quick capture a task"
-        className="fixed right-4 bottom-4 z-50 flex h-12 w-12 items-center justify-center rounded-full shadow-md md:right-6 md:bottom-6"
+        className="fixed right-4 bottom-4 z-50 flex h-12 w-12 items-center justify-center rounded-full shadow-md md:right-6 md:bottom-6 print:hidden"
         style={{
           background: "var(--color-accent)",
           color: "var(--color-paper-raised)",
@@ -81,7 +81,7 @@ export function QuickCapture() {
 
   return (
     <div
-      className="fixed right-4 bottom-4 z-50 w-[min(360px,calc(100vw-2rem))] rounded-[4px] border p-3 shadow-md md:right-6 md:bottom-6"
+      className="fixed right-4 bottom-4 z-50 w-[min(360px,calc(100vw-2rem))] rounded-[4px] border p-3 shadow-md md:right-6 md:bottom-6 print:hidden"
       style={{
         background: "var(--color-paper-raised)",
         borderColor: "var(--color-line)",
@@ -116,7 +116,7 @@ export function QuickCapture() {
           if (e.key === "Escape") setOpen(false);
         }}
         disabled={pending}
-        placeholder="Capture a task… (#tag adds a tag)"
+        placeholder="Capture a task… (#tag, or a due date like 'in 3 days')"
         className="w-full rounded-[4px] border p-2 text-[13px] outline-none"
         style={{
           background: "var(--color-paper)",
