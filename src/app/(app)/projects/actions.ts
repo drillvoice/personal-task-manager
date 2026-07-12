@@ -35,6 +35,32 @@ export async function createProject(input: {
   return { ok: true, id: row.id };
 }
 
+const currentNotesSchema = z.object({
+  projectId: z.string().uuid(),
+  notes: z.string().max(50000),
+});
+
+// The project's *current* narrative (spec §4.C) — distinct from the weekly
+// snapshots. Autosave target: no revalidatePath (same convention as the
+// meetings notes); the textarea's own state is the source of truth while
+// editing, and force-dynamic pages refetch on navigation.
+export async function updateProjectCurrentNotes(
+  input: z.input<typeof currentNotesSchema>,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const userId = await requireUserId();
+  const parsed = currentNotesSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Invalid input" };
+  const [updated] = await db
+    .update(projects)
+    .set({ notes: parsed.data.notes, updatedAt: new Date() })
+    .where(
+      and(eq(projects.id, parsed.data.projectId), eq(projects.userId, userId)),
+    )
+    .returning({ id: projects.id });
+  if (!updated) return { ok: false, error: "Project not found" };
+  return { ok: true };
+}
+
 const noteSchema = z.object({
   projectId: z.string().uuid(),
   weekStartDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -80,7 +106,8 @@ export async function upsertWeeklyNote(input: {
       set: { note: parsed.data.note, updatedAt: new Date() },
     });
 
-  revalidatePath("/projects");
+  // Autosave target (history-table cells): revalidate only the other page
+  // that shows this note, not the /projects page under the cell being edited.
   revalidatePath("/review");
   return { ok: true };
 }

@@ -1,6 +1,6 @@
 "use server";
 
-import { and, count, eq, max } from "drizzle-orm";
+import { and, count, eq, max, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { PRIORITY_TASK_CAP, dailyPlanItems, tasks } from "@/lib/db/schema";
@@ -104,19 +104,34 @@ export async function removeFromTomorrowPlan(taskId: string) {
   return removeFromPlanForDate(taskId, tomorrowIso());
 }
 
-export async function setTaskDone(taskId: string, done: boolean) {
+export async function setTaskDone(
+  taskId: string,
+  done: boolean,
+): Promise<{ ok: true } | { ok: false; error: string }> {
   const userId = await requireUserId();
+  // previous_status remembers what the task was before completion so that
+  // un-completing restores waiting_on/inbox instead of forcing next_action.
+  // Column references in SET read the pre-update row, so this is atomic.
   const [updated] = await db
     .update(tasks)
     .set(
       done
-        ? { status: "done", completedAt: new Date() }
-        : { status: "next_action", completedAt: null },
+        ? {
+            status: "done",
+            completedAt: new Date(),
+            previousStatus: sql`case when ${tasks.status} = 'done' then ${tasks.previousStatus} else ${tasks.status} end`,
+          }
+        : {
+            status: sql`coalesce(${tasks.previousStatus}, 'next_action')`,
+            completedAt: null,
+            previousStatus: null,
+          },
     )
     .where(and(eq(tasks.id, taskId), eq(tasks.userId, userId)))
     .returning({ id: tasks.id, meetingId: tasks.meetingId });
-  if (!updated) throw new Error("Task not found");
+  if (!updated) return { ok: false, error: "Task not found" };
   revalidatePath("/today");
   revalidatePath("/tasks");
   if (updated.meetingId) revalidatePath(`/meetings/${updated.meetingId}`);
+  return { ok: true };
 }

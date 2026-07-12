@@ -210,6 +210,7 @@ export async function loadMeetingDetail(
         projectName: r.projectName ?? null,
         assignees: assigneesByTask.get(r.task.id) ?? [],
         tags: allTags.filter((tg) => !isPriorityTagName(tg.name)),
+        weekly: false,
       };
     }),
   };

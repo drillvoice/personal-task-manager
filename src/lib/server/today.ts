@@ -23,6 +23,8 @@ export type TodayTask = {
   dueDate: string | null;
   projectId: string | null;
   projectName: string | null;
+  // On this week's top-3 (weekly review priorities).
+  weekly: boolean;
 };
 
 export type TodaySlot = {
@@ -44,6 +46,7 @@ function toTask(
   task: typeof tasks.$inferSelect,
   projectName: string | null,
   priority: Priority | null,
+  weekly = false,
 ): TodayTask {
   return {
     id: task.id,
@@ -53,7 +56,26 @@ function toTask(
     dueDate: task.dueDate,
     projectId: task.projectId,
     projectName,
+    weekly,
   };
+}
+
+/** Task ids on the current week's review top-3. */
+async function loadWeeklyPriorityIds(userId: string): Promise<Set<string>> {
+  const rows = await db
+    .select({ taskId: weeklyPriorities.taskId })
+    .from(weeklyPriorities)
+    .innerJoin(
+      weeklyReviews,
+      eq(weeklyPriorities.weeklyReviewId, weeklyReviews.id),
+    )
+    .where(
+      and(
+        eq(weeklyReviews.userId, userId),
+        eq(weeklyReviews.weekStartDate, weekStartIso()),
+      ),
+    );
+  return new Set(rows.map((r) => r.taskId));
 }
 
 async function loadPlanSlots(
@@ -100,8 +122,9 @@ export async function loadTodayData(userId: string): Promise<TodayData> {
   // Today's plan, tomorrow's plan, the also-due list, and priority tags all
   // run in parallel — this page renders on every app open, so roundtrips
   // matter.
-  const [priorities, todayPlan, tomorrowPlan, alsoDueRows] = await Promise.all([
+  const [priorities, weeklyIds, todayPlan, tomorrowPlan, alsoDueRows] = await Promise.all([
     loadTaskPriorities(userId),
+    loadWeeklyPriorityIds(userId),
     loadPlanSlots(userId, dateIso),
     loadPlanSlots(userId, tomorrowDateIso),
     db
@@ -124,7 +147,11 @@ export async function loadTodayData(userId: string): Promise<TodayData> {
     slots.map((s) => ({
       ...s,
       task: s.task
-        ? { ...s.task, priority: priorities.get(s.task.id) ?? null }
+        ? {
+            ...s.task,
+            priority: priorities.get(s.task.id) ?? null,
+            weekly: weeklyIds.has(s.task.id),
+          }
         : null,
     }));
 
@@ -140,7 +167,12 @@ export async function loadTodayData(userId: string): Promise<TodayData> {
     alsoDue: alsoDueRows
       .filter((r) => !inPlanIds.has(r.task.id))
       .map((r) =>
-        toTask(r.task, r.projectName ?? null, priorities.get(r.task.id) ?? null),
+        toTask(
+          r.task,
+          r.projectName ?? null,
+          priorities.get(r.task.id) ?? null,
+          weeklyIds.has(r.task.id),
+        ),
       )
       .sort((a, b) => comparePriority(a.priority, b.priority)),
   };
@@ -199,6 +231,7 @@ export async function loadEligibleForPlan(
         r.task,
         r.projectName ?? null,
         priorities.get(r.task.id) ?? null,
+        weekPrioIds.has(r.task.id),
       ),
       weekly: weekPrioIds.has(r.task.id),
     }))

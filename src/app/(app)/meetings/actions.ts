@@ -141,14 +141,18 @@ export async function setMeetingAttendees(
   if (!(await ownedPersonIds(userId, uniqueAttendees))) {
     return { ok: false, error: "Unknown attendee" };
   }
-  await db
-    .delete(meetingAttendees)
-    .where(eq(meetingAttendees.meetingId, meetingId));
-  if (uniqueAttendees.length > 0) {
-    await db.insert(meetingAttendees).values(
-      uniqueAttendees.map((personId) => ({ meetingId, personId })),
-    );
-  }
+  // Atomic delete + re-insert (single batch transaction) so a mid-write
+  // failure can't strip the meeting's attendees.
+  await db.batch([
+    db.delete(meetingAttendees).where(eq(meetingAttendees.meetingId, meetingId)),
+    ...(uniqueAttendees.length > 0
+      ? [
+          db.insert(meetingAttendees).values(
+            uniqueAttendees.map((personId) => ({ meetingId, personId })),
+          ),
+        ]
+      : []),
+  ]);
   revalidatePath("/meetings");
   return { ok: true };
 }
@@ -232,12 +236,16 @@ export async function setMeetingTags(
   if (!(await ownedTagIds(userId, uniqueTags))) {
     return { ok: false, error: "Unknown tag" };
   }
-  await db.delete(meetingTags).where(eq(meetingTags.meetingId, meetingId));
-  if (uniqueTags.length > 0) {
-    await db.insert(meetingTags).values(
-      uniqueTags.map((tagId) => ({ meetingId, tagId })),
-    );
-  }
+  await db.batch([
+    db.delete(meetingTags).where(eq(meetingTags.meetingId, meetingId)),
+    ...(uniqueTags.length > 0
+      ? [
+          db.insert(meetingTags).values(
+            uniqueTags.map((tagId) => ({ meetingId, tagId })),
+          ),
+        ]
+      : []),
+  ]);
   revalidatePath("/meetings");
   return { ok: true };
 }

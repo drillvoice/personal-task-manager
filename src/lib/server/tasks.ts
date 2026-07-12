@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, ne, or, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   people,
@@ -9,6 +9,8 @@ import {
   taskAssignees,
   taskTags,
   tasks,
+  weeklyPriorities,
+  weeklyReviews,
 } from "@/lib/db/schema";
 import { isPriorityTagName, priorityFromTagNames } from "@/lib/priority";
 import { weekStartIso } from "@/lib/time";
@@ -18,7 +20,10 @@ export type TasksViewProject = {
   id: string | null; // null = Inbox pseudo-project
   name: string;
   status: "active" | "someday_maybe" | "on_hold" | "completed" | "archived";
+  // This week's snapshot from project_weekly_notes (read-only here).
   notes: string;
+  // The project's current narrative (projects.notes) — editable in the card.
+  currentNotes: string;
   tasks: TasksViewTask[];
 };
 
@@ -33,6 +38,8 @@ export type TasksViewTask = {
   projectName: string | null;
   assignees: { id: string; name: string }[];
   tags: { id: string; name: string; color: string }[];
+  // On this week's top-3 (weekly review priorities).
+  weekly: boolean;
 };
 
 export type TagOption = { id: string; name: string; color: string };
@@ -47,7 +54,7 @@ export async function loadTaskTagOptions(userId: string): Promise<TagOption[]> {
 
 export async function loadTasksData(userId: string) {
   const currentWeek = weekStartIso();
-  const [projectRows, taskRows, tagRows, assigneeRows, noteRows] =
+  const [projectRows, taskRows, tagRows, assigneeRows, noteRows, weeklyRows] =
     await Promise.all([
       db
         .select()
@@ -61,7 +68,18 @@ export async function loadTasksData(userId: string) {
         })
         .from(tasks)
         .leftJoin(projects, eq(tasks.projectId, projects.id))
-        .where(eq(tasks.userId, userId))
+        .where(
+          and(
+            eq(tasks.userId, userId),
+            // Done tasks older than 30 days are unreachable from this view
+            // (the Done chip shows recent completions only), so don't ship
+            // an ever-growing archive on every page load.
+            or(
+              ne(tasks.status, "done"),
+              sql`${tasks.completedAt} >= now() - interval '30 days'`,
+            ),
+          ),
+        )
         .orderBy(asc(tasks.sortOrder), asc(tasks.createdAt)),
       db
         .select({
@@ -98,7 +116,22 @@ export async function loadTasksData(userId: string) {
             eq(projectWeeklyNotes.weekStartDate, currentWeek),
           ),
         ),
+      db
+        .select({ taskId: weeklyPriorities.taskId })
+        .from(weeklyPriorities)
+        .innerJoin(
+          weeklyReviews,
+          eq(weeklyPriorities.weeklyReviewId, weeklyReviews.id),
+        )
+        .where(
+          and(
+            eq(weeklyReviews.userId, userId),
+            eq(weeklyReviews.weekStartDate, currentWeek),
+          ),
+        ),
     ]);
+
+  const weeklyIds = new Set(weeklyRows.map((r) => r.taskId));
 
   const notesByProject = new Map(noteRows.map((n) => [n.projectId, n.note]));
 
@@ -126,6 +159,7 @@ export async function loadTasksData(userId: string) {
       name: p.name,
       status: p.status,
       notes: notesByProject.get(p.id) ?? "",
+      currentNotes: p.notes,
       tasks: [],
     });
   }
@@ -135,6 +169,7 @@ export async function loadTasksData(userId: string) {
     name: "Inbox (no project)",
     status: "active",
     notes: "",
+    currentNotes: "",
     tasks: [],
   };
 
@@ -151,6 +186,7 @@ export async function loadTasksData(userId: string) {
       projectName: r.projectName ?? null,
       assignees: assigneesByTask.get(r.task.id) ?? [],
       tags: allTags.filter((tg) => !isPriorityTagName(tg.name)),
+      weekly: weeklyIds.has(r.task.id),
     };
     if (r.task.projectId) {
       const p = projectsById.get(r.task.projectId);

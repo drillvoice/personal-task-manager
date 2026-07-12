@@ -55,8 +55,11 @@ describe("dueLabel", () => {
   it('returns "Tomorrow" for tomorrow', () => {
     expect(dueLabel("2026-07-02", wed)).toBe("Tomorrow");
   });
-  it("returns a weekday name within the next 7 days", () => {
+  it("returns a weekday name within the next 6 days", () => {
     expect(dueLabel("2026-07-05", wed)).toBe("Sun");
+  });
+  it("returns a day-month label for exactly a week out (same weekday as today)", () => {
+    expect(dueLabel("2026-07-08", wed)).toBe("8 Jul");
   });
   it("returns a day-month label further out", () => {
     expect(dueLabel("2026-07-20", wed)).toBe("20 Jul");

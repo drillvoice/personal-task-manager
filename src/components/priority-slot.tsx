@@ -1,12 +1,13 @@
 "use client";
 
-import { useTransition } from "react";
+import { useOptimistic, useTransition } from "react";
 import { Check, Plus, X } from "lucide-react";
 
 type Task = {
   id: string;
   title: string;
   done: boolean;
+  weekly?: boolean;
 };
 
 export function PrioritySlot({
@@ -20,9 +21,11 @@ export function PrioritySlot({
   task: Task | null;
   onOpenPicker: () => void;
   onRemove: (id: string) => Promise<void>;
-  onToggleDone?: (id: string, done: boolean) => Promise<void>;
+  onToggleDone?: (id: string, done: boolean) => Promise<unknown>;
 }) {
   const [pending, startTransition] = useTransition();
+  // Optimistic tick — strike-through lands on click, reverts on failure.
+  const [done, setOptimisticDone] = useOptimistic(task?.done ?? false);
 
   if (!task) {
     return (
@@ -48,8 +51,6 @@ export function PrioritySlot({
     );
   }
 
-  const { done } = task;
-
   return (
     <div
       className="flex w-full items-center gap-3 rounded-[4px] px-4 py-3"
@@ -71,6 +72,7 @@ export function PrioritySlot({
           type="button"
           onClick={() =>
             startTransition(async () => {
+              setOptimisticDone(!done);
               await onToggleDone(task.id, !done);
             })
           }
@@ -95,6 +97,15 @@ export function PrioritySlot({
       >
         {task.title}
       </span>
+      {task.weekly && (
+        <span
+          className="font-mono text-[10px] font-semibold"
+          style={{ color: "var(--color-accent)" }}
+          title="This week's priority"
+        >
+          ★ wk
+        </span>
+      )}
       <button
         type="button"
         onClick={() =>

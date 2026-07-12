@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { people, tags, taskAssignees, taskTags, tasks } from "@/lib/db/schema";
 import { requireUserId } from "@/lib/server/session";
@@ -74,27 +74,35 @@ export async function createTask(input: CreateTaskInput): Promise<
   if (!(await ownedTaskTagIds(userId, uniqueTags))) {
     return { ok: false, error: "Unknown tag" };
   }
-  const [row] = await db
-    .insert(tasks)
-    .values({
+  // Pre-generated id lets the task and its junction rows land in one batch
+  // (a single implicit transaction over neon-http), so a mid-write failure
+  // can't leave a task missing its tags or assignees.
+  const taskId = crypto.randomUUID();
+  await db.batch([
+    db.insert(tasks).values({
+      id: taskId,
       userId,
       title,
       projectId: projectId ?? null,
       meetingId: meetingId ?? null,
       dueDate: dueDate ?? null,
       status,
-    })
-    .returning({ id: tasks.id });
-  if (uniqueAssignees.length > 0) {
-    await db.insert(taskAssignees).values(
-      uniqueAssignees.map((personId) => ({ taskId: row.id, personId })),
-    );
-  }
-  if (uniqueTags.length > 0) {
-    await db.insert(taskTags).values(
-      uniqueTags.map((tagId) => ({ taskId: row.id, tagId })),
-    );
-  }
+    }),
+    ...(uniqueAssignees.length > 0
+      ? [
+          db.insert(taskAssignees).values(
+            uniqueAssignees.map((personId) => ({ taskId, personId })),
+          ),
+        ]
+      : []),
+    ...(uniqueTags.length > 0
+      ? [
+          db.insert(taskTags).values(
+            uniqueTags.map((tagId) => ({ taskId, tagId })),
+          ),
+        ]
+      : []),
+  ]);
   revalidatePath("/tasks");
   revalidatePath("/today");
   if (meetingId) revalidatePath(`/meetings/${meetingId}`);
@@ -145,20 +153,53 @@ export async function updateTask(
     .where(and(eq(tasks.id, parsed.data.id), eq(tasks.userId, userId)))
     .returning({ id: tasks.id });
   if (!updated) return { ok: false, error: "Task not found" };
-  await db.delete(taskAssignees).where(eq(taskAssignees.taskId, updated.id));
-  if (uniqueAssignees.length > 0) {
-    await db.insert(taskAssignees).values(
-      uniqueAssignees.map((personId) => ({ taskId: updated.id, personId })),
-    );
-  }
-  await db.delete(taskTags).where(eq(taskTags.taskId, updated.id));
-  if (uniqueTags.length > 0) {
-    await db.insert(taskTags).values(
-      uniqueTags.map((tagId) => ({ taskId: updated.id, tagId })),
-    );
-  }
+  // Delete + re-insert must be atomic — a failure in between would strip the
+  // task's tags (including its priority). db.batch runs as one transaction.
+  await db.batch([
+    db.delete(taskAssignees).where(eq(taskAssignees.taskId, updated.id)),
+    db.delete(taskTags).where(eq(taskTags.taskId, updated.id)),
+    ...(uniqueAssignees.length > 0
+      ? [
+          db.insert(taskAssignees).values(
+            uniqueAssignees.map((personId) => ({ taskId: updated.id, personId })),
+          ),
+        ]
+      : []),
+    ...(uniqueTags.length > 0
+      ? [
+          db.insert(taskTags).values(
+            uniqueTags.map((tagId) => ({ taskId: updated.id, tagId })),
+          ),
+        ]
+      : []),
+  ]);
   revalidatePath("/tasks");
   revalidatePath("/today");
+  return { ok: true };
+}
+
+const notesSchema = z.object({
+  id: z.string().uuid(),
+  notes: z.string().max(20000),
+});
+
+// Autosave target: no revalidatePath, and independent of the other task
+// fields — a half-edited title can't invalidate a notes save, and the page
+// under the textarea isn't re-rendered on every debounce.
+export async function updateTaskNotes(
+  input: z.input<typeof notesSchema>,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const userId = await requireUserId();
+  const parsed = notesSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid" };
+  }
+  const [updated] = await db
+    .update(tasks)
+    .set({ notes: parsed.data.notes })
+    .where(and(eq(tasks.id, parsed.data.id), eq(tasks.userId, userId)))
+    .returning({ id: tasks.id });
+  if (!updated) return { ok: false, error: "Task not found" };
   return { ok: true };
 }
 
@@ -177,12 +218,18 @@ export async function createTaskTag(
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid" };
   }
+  // Dedupe case-insensitively: priority derivation treats "P1" and "p1" as
+  // the same tag, so creation must too or they become duplicate chips.
   const name = parsed.data.name;
   const [existing] = await db
     .select({ id: tags.id, name: tags.name, color: tags.color })
     .from(tags)
     .where(
-      and(eq(tags.userId, userId), eq(tags.kind, "task"), eq(tags.name, name)),
+      and(
+        eq(tags.userId, userId),
+        eq(tags.kind, "task"),
+        eq(sql`lower(${tags.name})`, name.toLowerCase()),
+      ),
     );
   if (existing) return { ok: true, ...existing };
   const [row] = await db

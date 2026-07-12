@@ -87,8 +87,10 @@ export function dueLabel(dateIso: string, now: Date = new Date()): string {
   const zonedNow = toZonedTime(now, APP_TZ);
   if (isSameDay(zonedTarget, zonedNow)) return "Today";
   if (isSameDay(zonedTarget, addDays(zonedNow, 1))) return "Tomorrow";
-  const inSevenDays = addDays(zonedNow, 7);
-  if (zonedTarget > zonedNow && zonedTarget <= inSevenDays) {
+  // Six-day window, not seven: a date exactly a week out would render as
+  // today's weekday name and read as this week.
+  const inSixDays = addDays(zonedNow, 6);
+  if (zonedTarget > zonedNow && zonedTarget <= inSixDays) {
     return formatInTimeZone(target, APP_TZ, "EEE");
   }
   return formatInTimeZone(target, APP_TZ, "d MMM");

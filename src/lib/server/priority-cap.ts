@@ -45,7 +45,12 @@ export async function assertWeeklyRoomForOne(reviewId: string): Promise<void> {
   }
 }
 
-/** Returns the daily plan id for (user, date), creating one if none exists. */
+/**
+ * Returns the daily plan id for (user, date), creating one if none exists.
+ * select → insert-on-conflict-do-nothing → re-select, so two devices hitting
+ * the same fresh day concurrently both resolve to the one row instead of one
+ * of them throwing a unique violation.
+ */
 export async function ensureDailyPlan(
   userId: string,
   dateIso: string,
@@ -58,8 +63,14 @@ export async function ensureDailyPlan(
   const [row] = await db
     .insert(dailyPlans)
     .values({ userId, date: dateIso })
+    .onConflictDoNothing()
     .returning({ id: dailyPlans.id });
-  return row.id;
+  if (row) return row.id;
+  const [raced] = await db
+    .select({ id: dailyPlans.id })
+    .from(dailyPlans)
+    .where(and(eq(dailyPlans.userId, userId), eq(dailyPlans.date, dateIso)));
+  return raced.id;
 }
 
 /** Returns the open review id for (user, week), creating one if none exists. */
@@ -67,19 +78,24 @@ export async function ensureWeeklyReview(
   userId: string,
   weekStartIsoDate: string,
 ): Promise<string> {
+  const where = and(
+    eq(weeklyReviews.userId, userId),
+    eq(weeklyReviews.weekStartDate, weekStartIsoDate),
+  );
   const [existing] = await db
     .select({ id: weeklyReviews.id })
     .from(weeklyReviews)
-    .where(
-      and(
-        eq(weeklyReviews.userId, userId),
-        eq(weeklyReviews.weekStartDate, weekStartIsoDate),
-      ),
-    );
+    .where(where);
   if (existing) return existing.id;
   const [row] = await db
     .insert(weeklyReviews)
     .values({ userId, weekStartDate: weekStartIsoDate })
+    .onConflictDoNothing()
     .returning({ id: weeklyReviews.id });
-  return row.id;
+  if (row) return row.id;
+  const [raced] = await db
+    .select({ id: weeklyReviews.id })
+    .from(weeklyReviews)
+    .where(where);
+  return raced.id;
 }

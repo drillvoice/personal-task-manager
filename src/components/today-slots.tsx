@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useOptimistic, useState, useTransition } from "react";
 import { Plus } from "lucide-react";
 import { PrioritySlot } from "@/components/priority-slot";
 import { PriorityBadge } from "@/components/priority-badge";
@@ -20,7 +20,7 @@ export function PlanSlots({
   addAction: (id: string) => Promise<{ ok: true } | { ok: false; error: string }>;
   loadEligibleAction: () => Promise<TodayTask[]>;
   removeAction: (id: string) => Promise<void>;
-  onToggleDone?: (id: string, done: boolean) => Promise<void>;
+  onToggleDone?: (id: string, done: boolean) => Promise<unknown>;
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [eligible, setEligible] = useState<TodayTask[] | null>(null);
@@ -28,7 +28,27 @@ export function PlanSlots({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const filled = slots.filter((s) => s.task).length;
+  // Optimistic slot list: picks and removals render immediately and revert
+  // to the server-provided slots if the action fails to revalidate.
+  const [optimisticSlots, applySlots] = useOptimistic(
+    slots,
+    (
+      current: TodaySlot[],
+      action: { type: "remove"; id: string } | { type: "add"; task: TodayTask },
+    ): TodaySlot[] => {
+      const tasks = current.flatMap((s) => (s.task ? [s.task] : []));
+      const next =
+        action.type === "remove"
+          ? tasks.filter((t) => t.id !== action.id)
+          : [...tasks, action.task];
+      return [1, 2, 3].map((n) => ({
+        slot: n as 1 | 2 | 3,
+        task: next[n - 1] ?? null,
+      }));
+    },
+  );
+
+  const filled = optimisticSlots.filter((s) => s.task).length;
   const canAdd = filled < 3;
 
   const filtered = useMemo(() => {
@@ -54,38 +74,56 @@ export function PlanSlots({
   };
 
   const pick = (id: string) => {
+    const picked = eligible?.find((t) => t.id === id);
+    if (!picked) return;
+    // Filling this slot leaves the picker open so the remaining empty
+    // slots can be filled in one go; close once this was the last one.
+    const emptyBefore = optimisticSlots.filter((s) => !s.task).length;
+    setEligible((prev) => prev?.filter((t) => t.id !== id) ?? null);
+    if (emptyBefore <= 1) {
+      setEligible(null);
+      setQuery("");
+      setPickerOpen(false);
+    }
     startTransition(async () => {
+      applySlots({ type: "add", task: picked });
       const res = await addAction(id);
-      if (res.ok) {
-        setEligible((prev) => prev?.filter((t) => t.id !== id) ?? null);
-        // Filling this slot leaves the picker open so the remaining empty
-        // slots can be filled in one go; close once this was the last one.
-        const emptyBefore = slots.filter((s) => !s.task).length;
-        if (emptyBefore <= 1) {
-          setEligible(null);
-          setQuery("");
-          setPickerOpen(false);
-        }
-      } else {
+      if (!res.ok) {
         setError(res.error);
+        setEligible((prev) => (prev ? [picked, ...prev] : prev));
       }
+    });
+  };
+
+  const remove = (id: string) => {
+    return new Promise<void>((resolve) => {
+      startTransition(async () => {
+        applySlots({ type: "remove", id });
+        await removeAction(id);
+        resolve();
+      });
     });
   };
 
   return (
     <>
       <div className="mb-4 flex flex-col gap-2">
-        {slots.map((s) => (
+        {optimisticSlots.map((s) => (
           <PrioritySlot
             key={s.slot}
             number={s.slot}
             task={
               s.task
-                ? { id: s.task.id, title: s.task.title, done: s.task.status === "done" }
+                ? {
+                    id: s.task.id,
+                    title: s.task.title,
+                    done: s.task.status === "done",
+                    weekly: s.task.weekly,
+                  }
                 : null
             }
             onOpenPicker={openPicker}
-            onRemove={removeAction}
+            onRemove={remove}
             onToggleDone={onToggleDone}
           />
         ))}
@@ -171,6 +209,15 @@ export function PlanSlots({
                       >
                         <Plus size={12} style={{ color: "var(--color-ink-soft)" }} />
                         <span className="flex-1">{t.title}</span>
+                        {t.weekly && (
+                          <span
+                            className="font-mono text-[10px] font-semibold"
+                            style={{ color: "var(--color-accent)" }}
+                            title="This week's priority"
+                          >
+                            ★ wk
+                          </span>
+                        )}
                         <PriorityBadge priority={t.priority} />
                         <DueLabel dateIso={t.dueDate} />
                         {t.projectName && (

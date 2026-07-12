@@ -6,6 +6,23 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 ## [Unreleased]
 
 ### Added
+- **Global quick capture:** a floating "+" button on every screen (and the
+  `c` key) opens a one-line capture box that saves straight to the Inbox,
+  with the same inline `#tag` syntax as the Review screen's quick-add.
+- **Weekly-priority markers:** tasks on this week's review top-3 now show a
+  small accent `★ wk` marker in the Today slots, the Also-due list, the slot
+  picker, and every Tasks-view row — making the weekly→daily rhythm visible.
+- **Done chip:** the Tasks filter bar has a new "Done" status chip that shows
+  recently completed tasks (last 30 days), so an accidental completion can be
+  unticked and "what did I finish" is answerable. Done tasks stay hidden
+  everywhere else, as before.
+- **Project notes:** each project card in the Tasks view now has a
+  "Project notes" disclosure — a roomy autosaving surface for the project's
+  current narrative (spec §4.C), distinct from the weekly snapshots. A teal
+  dot on the toggle marks projects that have notes.
+- **Review shows momentum:** the streak header adds "N tasks done this week",
+  and Review history lists each week's three priorities with ✓/○ for whether
+  they were completed.
 - Tasks have a free-text **notes** field (links, context, working detail),
   editable from the new detail panel with autosave.
 - The **Today** slot picker now has a filter box at the top: type to narrow
@@ -22,6 +39,22 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
   control.
 
 ### Fixed
+- Un-completing a task now restores its previous status (e.g. `waiting_on`)
+  instead of forcing it back to `next_action`. Backed by a new
+  `tasks.previous_status` column (migration 0011).
+- The task-notes autosave no longer silently discards a save that the server
+  rejected — the panel shows "Not saved — …" and keeps your text dirty. Notes
+  also save through their own action, so a half-edited title can no longer
+  invalidate a notes save.
+- Task tags now dedupe case-insensitively everywhere (`#P1` reuses `p1`
+  instead of creating a duplicate priority chip).
+- Editing a task's tags/assignees is now atomic (single batched transaction):
+  a mid-write failure can no longer strip a task's tags or priority. Same for
+  meeting attendees/tags, and task creation.
+- Opening Today simultaneously on two devices no longer risks a unique-key
+  error when the day's plan is first created.
+- A due date exactly a week out now shows as "8 Jul" instead of a bare
+  weekday name that read as this week.
 - `pnpm db:seed` now refuses to run if the user already has any project,
   requiring `SEED_FORCE=1` to override. Its old guard only checked
   `NODE_ENV === "production"`, which assumed a separate dev database that
@@ -29,7 +62,20 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
   share one Neon database, so the old guard did nothing to stop a local
   `pnpm db:seed` from wiping real data. See `initial-setup.md` §2 and §8.
 
+### Removed
+- The unused `tasks.context` column and `task_context` enum (migration 0012).
+  GTD contexts were specced but never surfaced in any UI, and no row ever set
+  one — tags (e.g. `#calls`) cover the use case through the one tag system.
+
 ### Changed
+- **Snappier interactions:** completing a task, picking/removing Today slots,
+  and toggling weekly priorities now update the UI immediately (optimistic)
+  and reconcile with the server in the background.
+- Notes autosaves (task notes, review reflection, project weekly notes) no
+  longer re-render the page being typed on with every save, cutting a full
+  data reload per pause/blur.
+- The Tasks view no longer loads the full archive of done tasks — only the
+  last 30 days of completions ship to the browser.
 - **Tasks view (desktop):** clicking anywhere on a task row now opens a
   detail panel in a permanently reserved right-hand column (dashed empty
   slot when nothing is selected), replacing the inline edit form. All edits
