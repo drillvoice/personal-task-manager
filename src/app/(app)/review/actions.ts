@@ -15,6 +15,7 @@ import {
   weeklyReviews,
 } from "@/lib/db/schema";
 import { requireUserId } from "@/lib/server/session";
+import { extractDueDate } from "@/lib/server/parse-due-date";
 import {
   PriorityCapExceededError,
   ensureOpenReview,
@@ -156,7 +157,8 @@ export async function quickAddTask(input: {
   projectId: string | null;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   const userId = await requireUserId();
-  const { title, tagNames } = extractHashtags(input.title);
+  const { title: untagged, tagNames } = extractHashtags(input.title);
+  const { title, dueDate } = extractDueDate(untagged);
   const parsed = quickAddSchema.safeParse({ title, projectId: input.projectId });
   if (!parsed.success) return { ok: false, error: "Invalid title" };
   if (parsed.data.projectId) {
@@ -168,6 +170,7 @@ export async function quickAddTask(input: {
       userId,
       title: parsed.data.title,
       projectId: parsed.data.projectId,
+      dueDate,
       status: parsed.data.projectId ? "next_action" : "inbox",
     })
     .returning({ id: tasks.id });

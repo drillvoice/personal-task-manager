@@ -6,6 +6,7 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { people, tags, taskAssignees, taskTags, tasks } from "@/lib/db/schema";
 import { requireUserId } from "@/lib/server/session";
+import { extractDueDate } from "@/lib/server/parse-due-date";
 
 const nullableUuid = z
   .string()
@@ -65,7 +66,11 @@ export async function createTask(input: CreateTaskInput): Promise<
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid" };
   }
-  const { title, projectId, meetingId, dueDate, status } = parsed.data;
+  const { projectId, meetingId, status } = parsed.data;
+  // An explicit date-picker value wins; only mine the title when it's blank.
+  const { title, dueDate } = parsed.data.dueDate
+    ? { title: parsed.data.title, dueDate: parsed.data.dueDate }
+    : extractDueDate(parsed.data.title);
   const uniqueAssignees = [...new Set(parsed.data.assigneeIds)];
   if (!(await ownedPersonIds(userId, uniqueAssignees))) {
     return { ok: false, error: "Unknown assignee" };

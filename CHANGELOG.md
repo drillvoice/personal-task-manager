@@ -6,6 +6,12 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 ## [Unreleased]
 
 ### Added
+- **Natural-language due dates:** typing a date phrase into any task title —
+  "Reply to John in 14 days", "Submit report tomorrow", "Call the plumber
+  friday" — now sets the due date and strips the phrase from the title, the
+  same way inline `#tags` are extracted. Works in every quick-add and in the
+  full new-task form (an explicit date-picker value still wins). Parsed via
+  `chrono-node`, anchored to Australia/Sydney through `src/lib/time.ts`.
 - **Global quick capture:** a floating "+" button on every screen (and the
   `c` key) opens a one-line capture box that saves straight to the Inbox,
   with the same inline `#tag` syntax as the Review screen's quick-add.
