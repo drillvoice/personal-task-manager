@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, desc, eq, ne } from "drizzle-orm";
+import { and, asc, count, desc, eq, ne, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   projectWeeklyNotes,
@@ -9,7 +9,7 @@ import {
   weeklyReviews,
 } from "@/lib/db/schema";
 import { comparePriority } from "@/lib/priority";
-import { weekLabel, weekStartIso } from "@/lib/time";
+import { APP_TZ, weekLabel, weekStartIso } from "@/lib/time";
 import type { Priority } from "@/lib/types";
 import { ensureWeeklyReview } from "./priority-cap";
 import { computeStreak, lastCompletedReview } from "./streak";
@@ -47,6 +47,7 @@ export type ReviewData = {
   };
   streak: number;
   lastCompletedAt: Date | null;
+  completedThisWeek: number;
   activeProjects: ReviewProject[];
   actionableTasks: ReviewTask[];
   selectedPriorityIds: string[];
@@ -64,6 +65,7 @@ export async function loadReviewData(userId: string): Promise<ReviewData> {
     taskRows,
     priorityRows,
     noteRows,
+    completedRows,
   ] = await Promise.all([
     loadTaskPriorities(userId),
     db.select().from(weeklyReviews).where(eq(weeklyReviews.id, reviewId)),
@@ -99,6 +101,16 @@ export async function loadReviewData(userId: string): Promise<ReviewData> {
       .innerJoin(projects, eq(projectWeeklyNotes.projectId, projects.id))
       .where(and(eq(projects.userId, userId), eq(projects.status, "active")))
       .orderBy(desc(projectWeeklyNotes.weekStartDate)),
+    db
+      .select({ value: count() })
+      .from(tasks)
+      .where(
+        and(
+          eq(tasks.userId, userId),
+          eq(tasks.status, "done"),
+          sql`(${tasks.completedAt} at time zone ${APP_TZ})::date >= ${weekStart}`,
+        ),
+      ),
   ]);
   const [review] = reviewRows;
 
@@ -157,6 +169,7 @@ export async function loadReviewData(userId: string): Promise<ReviewData> {
     },
     streak,
     lastCompletedAt: last?.completedAt ?? null,
+    completedThisWeek: completedRows[0]?.value ?? 0,
     activeProjects: projectRows.map((p) => {
       const entry = notesByProject.get(p.id);
       return {

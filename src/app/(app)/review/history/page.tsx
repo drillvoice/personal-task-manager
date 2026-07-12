@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { desc, eq } from "drizzle-orm";
+import { asc, desc, eq, inArray } from "drizzle-orm";
 import { formatInTimeZone } from "date-fns-tz";
 import { db } from "@/lib/db";
-import { weeklyReviews } from "@/lib/db/schema";
+import { tasks, weeklyPriorities, weeklyReviews } from "@/lib/db/schema";
 import { requireUserId } from "@/lib/server/session";
 import { APP_TZ, weekLabel } from "@/lib/time";
 
@@ -12,6 +12,7 @@ export default async function ReviewHistoryPage() {
   const userId = await requireUserId();
   const rows = await db
     .select({
+      id: weeklyReviews.id,
       weekStartDate: weeklyReviews.weekStartDate,
       startedAt: weeklyReviews.startedAt,
       completedAt: weeklyReviews.completedAt,
@@ -20,6 +21,34 @@ export default async function ReviewHistoryPage() {
     .from(weeklyReviews)
     .where(eq(weeklyReviews.userId, userId))
     .orderBy(desc(weeklyReviews.weekStartDate));
+
+  const priorityRows = rows.length
+    ? await db
+        .select({
+          reviewId: weeklyPriorities.weeklyReviewId,
+          title: tasks.title,
+          done: tasks.status,
+        })
+        .from(weeklyPriorities)
+        .innerJoin(tasks, eq(weeklyPriorities.taskId, tasks.id))
+        .where(
+          inArray(
+            weeklyPriorities.weeklyReviewId,
+            rows.map((r) => r.id),
+          ),
+        )
+        .orderBy(asc(weeklyPriorities.sortOrder))
+    : [];
+
+  const prioritiesByReview = new Map<
+    string,
+    { title: string; done: boolean }[]
+  >();
+  for (const p of priorityRows) {
+    const list = prioritiesByReview.get(p.reviewId) ?? [];
+    list.push({ title: p.title, done: p.done === "done" });
+    prioritiesByReview.set(p.reviewId, list);
+  }
 
   return (
     <div className="p-4 pb-24">
@@ -44,42 +73,75 @@ export default async function ReviewHistoryPage() {
       )}
 
       <ul className="space-y-2">
-        {rows.map((r) => (
-          <li
-            key={r.weekStartDate}
-            className="rounded-[4px] border p-3"
-            style={{
-              background: "var(--color-paper-raised)",
-              borderColor: "var(--color-line)",
-            }}
-          >
-            <div className="mb-1 flex items-center justify-between">
-              <span className="font-display text-[14px] font-semibold">
-                Week of {weekLabel(r.weekStartDate)}
-              </span>
-              <span
-                className="font-mono text-[11px]"
-                style={{ color: "var(--color-ink-soft)" }}
-              >
-                {r.completedAt
-                  ? `completed ${formatInTimeZone(
-                      r.completedAt,
-                      APP_TZ,
-                      "EEE d MMM",
-                    )}`
-                  : "in progress"}
-              </span>
-            </div>
-            {r.reflectionNotes && (
-              <p
-                className="text-[13px]"
-                style={{ color: "var(--color-ink)" }}
-              >
-                {r.reflectionNotes}
-              </p>
-            )}
-          </li>
-        ))}
+        {rows.map((r) => {
+          const priorities = prioritiesByReview.get(r.id) ?? [];
+          return (
+            <li
+              key={r.weekStartDate}
+              className="rounded-[4px] border p-3"
+              style={{
+                background: "var(--color-paper-raised)",
+                borderColor: "var(--color-line)",
+              }}
+            >
+              <div className="mb-1 flex items-center justify-between">
+                <span className="font-display text-[14px] font-semibold">
+                  Week of {weekLabel(r.weekStartDate)}
+                </span>
+                <span
+                  className="font-mono text-[11px]"
+                  style={{ color: "var(--color-ink-soft)" }}
+                >
+                  {r.completedAt
+                    ? `completed ${formatInTimeZone(
+                        r.completedAt,
+                        APP_TZ,
+                        "EEE d MMM",
+                      )}`
+                    : "in progress"}
+                </span>
+              </div>
+              {priorities.length > 0 && (
+                <ul className="mb-1">
+                  {priorities.map((p, i) => (
+                    <li
+                      key={i}
+                      className="flex items-center gap-2 py-0.5 text-[13px]"
+                    >
+                      <span
+                        className="font-mono text-[11px]"
+                        style={{
+                          color: p.done
+                            ? "var(--color-teal)"
+                            : "var(--color-ink-soft)",
+                        }}
+                      >
+                        {p.done ? "✓" : "○"}
+                      </span>
+                      <span
+                        style={{
+                          color: p.done
+                            ? "var(--color-ink-soft)"
+                            : "var(--color-ink)",
+                        }}
+                      >
+                        {p.title}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {r.reflectionNotes && (
+                <p
+                  className="text-[13px]"
+                  style={{ color: "var(--color-ink)" }}
+                >
+                  {r.reflectionNotes}
+                </p>
+              )}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

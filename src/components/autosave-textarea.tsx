@@ -2,6 +2,15 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 
+function isFailure(result: unknown): result is { ok: false; error?: string } {
+  return (
+    typeof result === "object" &&
+    result !== null &&
+    "ok" in result &&
+    (result as { ok: unknown }).ok === false
+  );
+}
+
 export function AutosaveTextarea({
   initialValue,
   onSave,
@@ -14,6 +23,7 @@ export function AutosaveTextarea({
   rows?: number;
 }) {
   const [value, setValue] = useState(initialValue);
+  const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const lastSaved = useRef(initialValue);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -21,7 +31,12 @@ export function AutosaveTextarea({
   const save = (v: string) => {
     if (v === lastSaved.current) return;
     startTransition(async () => {
-      await onSave(v);
+      const result = await onSave(v);
+      if (isFailure(result)) {
+        setError(result.error ?? "Couldn't save");
+        return;
+      }
+      setError(null);
       lastSaved.current = v;
     });
   };
@@ -60,11 +75,15 @@ export function AutosaveTextarea({
       <p
         className="font-mono mt-1 text-right text-[10px]"
         style={{
-          color: "var(--color-ink-soft)",
-          visibility: pending || dirty ? "visible" : "hidden",
+          color: error ? "var(--color-danger)" : "var(--color-ink-soft)",
+          visibility: pending || dirty || error ? "visible" : "hidden",
         }}
       >
-        {pending ? "Saving…" : "Unsaved changes"}
+        {pending
+          ? "Saving…"
+          : error
+            ? `Not saved — ${error}`
+            : "Unsaved changes"}
       </p>
     </div>
   );

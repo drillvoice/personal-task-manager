@@ -92,7 +92,9 @@ export function TasksView({
   const active = hasActiveFilters(filters);
 
   const matches = (t: TasksViewTask): boolean => {
-    if (t.status === "done") {
+    // Done tasks appear only when the Done chip is active (recent
+    // completions only — the loader caps them at 30 days).
+    if (t.status === "done" && !filters.statuses.has("done")) {
       return false;
     }
     if (
@@ -107,15 +109,11 @@ export function TasksView({
     ) {
       return false;
     }
-    if (filters.statuses.size) {
-      if (
-        !(
-          (filters.statuses.has("next_action") && t.status === "next_action") ||
-          (filters.statuses.has("waiting_on") && t.status === "waiting_on")
-        )
-      ) {
-        return false;
-      }
+    if (
+      filters.statuses.size &&
+      !filters.statuses.has(t.status as "next_action" | "waiting_on" | "done")
+    ) {
+      return false;
     }
     if (filters.tags.size) {
       const taskTagNames = new Set(t.tags.map((tg) => tg.name));

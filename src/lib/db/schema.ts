@@ -45,14 +45,6 @@ export const meetingStatus = pgEnum("meeting_status", [
  */
 export const tagKind = pgEnum("tag_kind", ["task", "meeting"]);
 
-export const taskContext = pgEnum("task_context", [
-  "computer",
-  "calls",
-  "errands",
-  "home",
-  "waiting",
-]);
-
 /* ------------------------------------------------------------------ */
 /* Auth.js tables                                                     */
 /* ------------------------------------------------------------------ */
@@ -198,7 +190,9 @@ export const tasks = pgTable(
     }),
     title: text("title").notNull(),
     status: taskStatus("status").notNull().default("next_action"),
-    context: taskContext("context"),
+    // Status the task had before it was marked done, so un-completing can
+    // restore waiting_on/inbox instead of forcing next_action.
+    previousStatus: taskStatus("previous_status"),
     dueDate: date("due_date"),
     notes: text("notes").notNull().default(""),
     sortOrder: integer("sort_order").notNull().default(0),

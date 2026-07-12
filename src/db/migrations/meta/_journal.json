@@ -78,6 +78,20 @@
       "when": 1783660778553,
       "tag": "0010_long_vector",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1783818007761,
+      "tag": "0011_cute_lenny_balinger",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1783832800207,
+      "tag": "0012_real_lizard",
+      "breakpoints": true
     }
   ]
 }

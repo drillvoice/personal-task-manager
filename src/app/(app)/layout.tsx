@@ -1,5 +1,6 @@
 import { AppFrame } from "@/components/app-frame";
 import { AppNav } from "@/components/app-nav";
+import { QuickCapture } from "@/components/quick-capture";
 
 export default function AppLayout({
   children,
@@ -12,6 +13,7 @@ export default function AppLayout({
       <AppFrame>
         <main className="flex-1 pt-[52px] md:pt-0">{children}</main>
       </AppFrame>
+      <QuickCapture />
     </div>
   );
 }

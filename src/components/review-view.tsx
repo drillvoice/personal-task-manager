@@ -26,17 +26,20 @@ export function ReviewView({ data }: { data: ReviewData }) {
   const selectedCount = selected.size;
 
   const togglePriority = (taskId: string) => {
+    // Optimistic: flip locally first, revert only if the server rejects
+    // (e.g. the cap was already full on another device).
+    const flip = (prev: Set<string>) => {
+      const next = new Set(prev);
+      if (next.has(taskId)) next.delete(taskId);
+      else next.add(taskId);
+      return next;
+    };
+    setPriorityError(null);
+    setSelected(flip);
     startTransition(async () => {
       const res = await toggleWeeklyPriority(taskId);
-      if (res.ok) {
-        setSelected((prev) => {
-          const next = new Set(prev);
-          if (next.has(taskId)) next.delete(taskId);
-          else next.add(taskId);
-          return next;
-        });
-        setPriorityError(null);
-      } else {
+      if (!res.ok) {
+        setSelected(flip);
         setPriorityError(res.error);
       }
     });
@@ -170,6 +173,9 @@ function StreakHeader({ data }: { data: ReviewData }) {
     data.streak > 0 ? `${data.streak}-week streak` : null,
     data.lastCompletedAt
       ? `last completed ${shortDateLabel(data.lastCompletedAt)}`
+      : null,
+    data.completedThisWeek > 0
+      ? `${data.completedThisWeek} task${data.completedThisWeek === 1 ? "" : "s"} done this week`
       : null,
   ]
     .filter(Boolean)

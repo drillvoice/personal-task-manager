@@ -4,7 +4,7 @@ import { Search } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
 
 type Priority = 1 | 2 | 3;
-type StatusFilter = "next_action" | "waiting_on";
+type StatusFilter = "next_action" | "waiting_on" | "done";
 
 export type SmartFilters = {
   search: string;
@@ -41,6 +41,7 @@ function toggleInSet<T>(set: Set<T>, value: T): Set<T> {
 const STATUS_LABEL: Record<StatusFilter, string> = {
   next_action: "Next",
   waiting_on: "Waiting",
+  done: "Done",
 };
 
 export function SmartSearchBar({

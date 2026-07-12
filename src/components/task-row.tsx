@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useOptimistic, useState, useTransition } from "react";
 import { Check, Users } from "lucide-react";
 import { DueLabel } from "@/components/due-label";
 import { PriorityBadge } from "@/components/priority-badge";
@@ -26,6 +26,7 @@ export type TaskRowProps = {
     projectName: string | null;
     assignees?: { id: string; name: string }[];
     tags?: { id: string; name: string; color: string }[];
+    weekly?: boolean;
   };
   showProject?: boolean;
   layout?: "inline" | "stacked";
@@ -259,13 +260,16 @@ export function TaskRow({
 }: TaskRowProps) {
   const [pending, startTransition] = useTransition();
   const [editing, setEditing] = useState(false);
-  const done = task.status === "done";
+  // Optimistic: the strike-through lands on click, not after the server
+  // roundtrip; reverts automatically if the action fails to revalidate.
+  const [done, setOptimisticDone] = useOptimistic(task.status === "done");
   const assigneeNames = (task.assignees ?? []).map((a) => a.name);
   const tags = task.tags ?? [];
   const inlineEdit = Boolean(projects) && !onSelect;
 
   const toggle = () => {
     startTransition(async () => {
+      setOptimisticDone(!done);
       await setTaskDone(task.id, !done);
     });
   };
@@ -333,6 +337,15 @@ export function TaskRow({
 
   const tagMeta = (
     <>
+      {task.weekly && (
+        <span
+          className="font-mono text-[10px] font-semibold"
+          style={{ color: "var(--color-accent)" }}
+          title="This week's priority"
+        >
+          ★ wk
+        </span>
+      )}
       <PriorityBadge priority={task.priority} />
       {task.status === "waiting_on" && <TagChip tone="accent">waiting</TagChip>}
       {tags.map((t) => (

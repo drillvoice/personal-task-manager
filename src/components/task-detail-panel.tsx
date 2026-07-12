@@ -12,7 +12,11 @@ import {
 import type { ContactOption } from "@/lib/server/people";
 import type { TagOption, TasksViewTask } from "@/lib/server/tasks";
 import { setTaskDone } from "@/app/(app)/today/actions";
-import { deleteTask, updateTask } from "@/app/(app)/tasks/actions";
+import {
+  deleteTask,
+  updateTask,
+  updateTaskNotes,
+} from "@/app/(app)/tasks/actions";
 
 export function TaskDetailPanel({
   task,
@@ -256,7 +260,7 @@ export function TaskDetailPanel({
         </span>
         <AutosaveTextarea
           initialValue={task.notes}
-          onSave={(v) => updateTask({ id: task.id, ...fieldsRef.current, notes: v })}
+          onSave={(v) => updateTaskNotes({ id: task.id, notes: v })}
           placeholder="Links, context, working detail…"
           rows={6}
         />

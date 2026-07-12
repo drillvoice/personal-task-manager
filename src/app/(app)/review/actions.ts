@@ -1,6 +1,6 @@
 "use server";
 
-import { and, count, eq, inArray, max } from "drizzle-orm";
+import { and, count, eq, inArray, max, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
@@ -58,6 +58,9 @@ export async function updateReviewFlag(
   revalidatePath("/review");
 }
 
+// Autosave target: no revalidatePath — re-rendering /review underneath the
+// textarea the user is typing into costs a full data reload per blur and
+// nothing user-visible goes stale (same convention as the meetings notes).
 export async function updateReflection(text: string): Promise<void> {
   const userId = await requireUserId();
   const reviewId = await currentReviewId(userId);
@@ -65,7 +68,6 @@ export async function updateReflection(text: string): Promise<void> {
     .update(weeklyReviews)
     .set({ reflectionNotes: text })
     .where(eq(weeklyReviews.id, reviewId));
-  revalidatePath("/review");
 }
 
 export async function updateProjectNotes(
@@ -87,7 +89,9 @@ export async function updateProjectNotes(
       target: [projectWeeklyNotes.projectId, projectWeeklyNotes.weekStartDate],
       set: { note: notes, updatedAt: new Date() },
     });
-  revalidatePath("/review");
+  // Autosave target: revalidate only the *other* page that shows this note —
+  // re-rendering /review underneath the textarea being typed into is wasted
+  // work on every blur.
   revalidatePath("/projects");
 }
 
@@ -101,7 +105,14 @@ function extractHashtags(rawTitle: string): {
 } {
   const tagNames = [...rawTitle.matchAll(HASHTAG_RE)].map((m) => m[1]);
   const title = rawTitle.replace(HASHTAG_RE, "").replace(/\s+/g, " ").trim();
-  return { title, tagNames: [...new Set(tagNames)] };
+  const seen = new Set<string>();
+  const unique = tagNames.filter((n) => {
+    const key = n.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  return { title, tagNames: unique };
 }
 
 async function findOrCreateTaskTagIds(
@@ -109,6 +120,8 @@ async function findOrCreateTaskTagIds(
   names: string[],
 ): Promise<string[]> {
   if (names.length === 0) return [];
+  // Case-insensitive match: "#P1" must reuse an existing "p1" tag, since
+  // priority derivation (and the tag chips) treat them as the same tag.
   const existing = await db
     .select({ id: tags.id, name: tags.name })
     .from(tags)
@@ -116,11 +129,14 @@ async function findOrCreateTaskTagIds(
       and(
         eq(tags.userId, userId),
         eq(tags.kind, "task"),
-        inArray(tags.name, names),
+        inArray(
+          sql`lower(${tags.name})`,
+          names.map((n) => n.toLowerCase()),
+        ),
       ),
     );
-  const existingNames = new Set(existing.map((t) => t.name));
-  const missing = names.filter((n) => !existingNames.has(n));
+  const existingNames = new Set(existing.map((t) => t.name.toLowerCase()));
+  const missing = names.filter((n) => !existingNames.has(n.toLowerCase()));
   const inserted = missing.length
     ? await db
         .insert(tags)
