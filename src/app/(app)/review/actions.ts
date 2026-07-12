@@ -17,12 +17,12 @@ import {
 import { requireUserId } from "@/lib/server/session";
 import {
   PriorityCapExceededError,
-  ensureWeeklyReview,
+  ensureOpenReview,
 } from "@/lib/server/priority-cap";
 import { weekStartIso } from "@/lib/time";
 
 async function currentReviewId(userId: string): Promise<string> {
-  return ensureWeeklyReview(userId, weekStartIso());
+  return ensureOpenReview(userId);
 }
 
 async function assertOwnsProject(userId: string, projectId: string) {
@@ -239,4 +239,11 @@ export async function finishReview(): Promise<void> {
     .where(eq(weeklyReviews.id, reviewId));
   revalidatePath("/review");
   revalidatePath("/review/history");
+}
+
+// Files the current (completed) review and opens a fresh blank one.
+export async function startNewReview(): Promise<void> {
+  const userId = await requireUserId();
+  await ensureOpenReview(userId);
+  revalidatePath("/review");
 }

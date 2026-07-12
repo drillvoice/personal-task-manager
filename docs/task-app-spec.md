@@ -95,6 +95,8 @@ This is **one continuous scrollable page**, not a multi-step wizard — all sect
 
 A streak/last-completed indicator ("4-week streak · last completed Mon 22 Jun") sits at the top of the page. A separate history view lists past completed reviews.
 
+A review is a **completable instance**, not a fixed weekly slot. Finishing one files it to history and clears the page; `/review` then shows a "filed ✓" confirmation with a **Start next review** button that opens a fresh blank review. If more than 5 days have passed since the last completion, opening `/review` starts a fresh review automatically. Reviews are therefore no longer strictly one-per-week — at most one is *open* (in-progress) at a time, but a single week can hold more than one completed review. (`project_weekly_notes` remains one-per-week, unchanged.)
+
 ### B. Tasks (the working view)
 Two modes, toggled at the top of the same screen:
 

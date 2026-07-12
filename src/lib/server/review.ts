@@ -1,5 +1,15 @@
 import "server-only";
-import { and, asc, count, desc, eq, ne, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  inArray,
+  isNotNull,
+  ne,
+  sql,
+} from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   projectWeeklyNotes,
@@ -9,11 +19,15 @@ import {
   weeklyReviews,
 } from "@/lib/db/schema";
 import { comparePriority } from "@/lib/priority";
-import { APP_TZ, weekLabel, weekStartIso } from "@/lib/time";
+import { APP_TZ, daysSince, weekLabel, weekStartIso } from "@/lib/time";
 import type { Priority } from "@/lib/types";
-import { ensureWeeklyReview } from "./priority-cap";
+import { ensureOpenReview, getOpenReviewId } from "./priority-cap";
 import { computeStreak, lastCompletedReview } from "./streak";
 import { loadTaskPriorities } from "./task-priority";
+
+// A completed review that's still this recent keeps showing its "filed"
+// confirmation; past this, opening /review starts a fresh one automatically.
+const NEW_REVIEW_AFTER_DAYS = 5;
 
 export type ReviewTask = {
   id: string;
@@ -34,7 +48,14 @@ export type ReviewProject = {
   tasks: ReviewTask[];
 };
 
-export type ReviewData = {
+type StreakHeader = {
+  streak: number;
+  lastCompletedAt: Date | null;
+  completedThisWeek: number;
+};
+
+export type ReviewEditingData = StreakHeader & {
+  mode: "editing";
   review: {
     id: string;
     weekStartDate: string;
@@ -43,32 +64,66 @@ export type ReviewData = {
     lastWeekCalendarReviewed: boolean;
     thisWeekCalendarReviewed: boolean;
     reflectionNotes: string;
-    completedAt: Date | null;
   };
-  streak: number;
-  lastCompletedAt: Date | null;
-  completedThisWeek: number;
   activeProjects: ReviewProject[];
   actionableTasks: ReviewTask[];
   selectedPriorityIds: string[];
 };
 
+export type ReviewCompletedData = StreakHeader & {
+  mode: "completed";
+  completed: {
+    weekStartDate: string;
+    weekLabel: string;
+    completedAt: Date;
+    reflectionNotes: string;
+    priorities: { title: string; done: boolean }[];
+  };
+};
+
+export type ReviewData = ReviewEditingData | ReviewCompletedData;
+
 export async function loadReviewData(userId: string): Promise<ReviewData> {
   const weekStart = weekStartIso();
-  const reviewId = await ensureWeeklyReview(userId, weekStart);
+  const openReviewId = await getOpenReviewId(userId);
 
-  const [
-    priorities,
-    reviewRows,
-    priorReviews,
-    projectRows,
-    taskRows,
-    priorityRows,
-    noteRows,
-    completedRows,
-  ] = await Promise.all([
-    loadTaskPriorities(userId),
-    db.select().from(weeklyReviews).where(eq(weeklyReviews.id, reviewId)),
+  if (!openReviewId) {
+    const [recent] = await db
+      .select({
+        id: weeklyReviews.id,
+        weekStartDate: weeklyReviews.weekStartDate,
+        completedAt: weeklyReviews.completedAt,
+        reflectionNotes: weeklyReviews.reflectionNotes,
+      })
+      .from(weeklyReviews)
+      .where(
+        and(
+          eq(weeklyReviews.userId, userId),
+          isNotNull(weeklyReviews.completedAt),
+        ),
+      )
+      .orderBy(desc(weeklyReviews.completedAt))
+      .limit(1);
+
+    if (recent?.completedAt && daysSince(recent.completedAt) < NEW_REVIEW_AFTER_DAYS) {
+      return loadCompletedData(userId, weekStart, {
+        weekStartDate: recent.weekStartDate,
+        completedAt: recent.completedAt,
+        reflectionNotes: recent.reflectionNotes,
+        reviewId: recent.id,
+      });
+    }
+  }
+
+  const reviewId = openReviewId ?? (await ensureOpenReview(userId));
+  return loadEditingData(userId, weekStart, reviewId);
+}
+
+async function loadStreakHeader(
+  userId: string,
+  weekStart: string,
+): Promise<StreakHeader> {
+  const [priorReviews, completedRows] = await Promise.all([
     db
       .select({
         weekStartDate: weeklyReviews.weekStartDate,
@@ -77,6 +132,78 @@ export async function loadReviewData(userId: string): Promise<ReviewData> {
       .from(weeklyReviews)
       .where(eq(weeklyReviews.userId, userId))
       .orderBy(desc(weeklyReviews.weekStartDate)),
+    db
+      .select({ value: count() })
+      .from(tasks)
+      .where(
+        and(
+          eq(tasks.userId, userId),
+          eq(tasks.status, "done"),
+          sql`(${tasks.completedAt} at time zone ${APP_TZ})::date >= ${weekStart}`,
+        ),
+      ),
+  ]);
+
+  return {
+    streak: computeStreak(priorReviews, weekStart),
+    lastCompletedAt: lastCompletedReview(priorReviews)?.completedAt ?? null,
+    completedThisWeek: completedRows[0]?.value ?? 0,
+  };
+}
+
+async function loadCompletedData(
+  userId: string,
+  weekStart: string,
+  recent: {
+    weekStartDate: string;
+    completedAt: Date;
+    reflectionNotes: string;
+    reviewId: string;
+  },
+): Promise<ReviewCompletedData> {
+  const [header, priorityRows] = await Promise.all([
+    loadStreakHeader(userId, weekStart),
+    db
+      .select({ title: tasks.title, status: tasks.status })
+      .from(weeklyPriorities)
+      .innerJoin(tasks, eq(weeklyPriorities.taskId, tasks.id))
+      .where(eq(weeklyPriorities.weeklyReviewId, recent.reviewId))
+      .orderBy(asc(weeklyPriorities.sortOrder)),
+  ]);
+
+  return {
+    mode: "completed",
+    ...header,
+    completed: {
+      weekStartDate: recent.weekStartDate,
+      weekLabel: weekLabel(recent.weekStartDate),
+      completedAt: recent.completedAt,
+      reflectionNotes: recent.reflectionNotes,
+      priorities: priorityRows.map((p) => ({
+        title: p.title,
+        done: p.status === "done",
+      })),
+    },
+  };
+}
+
+async function loadEditingData(
+  userId: string,
+  weekStart: string,
+  reviewId: string,
+): Promise<ReviewEditingData> {
+  const [
+    header,
+    priorities,
+    reviewRows,
+    projectRows,
+    taskRows,
+    priorityRows,
+    noteRows,
+  ] = await Promise.all([
+    loadStreakHeader(userId, weekStart),
+    loadTaskPriorities(userId),
+    db.select().from(weeklyReviews).where(eq(weeklyReviews.id, reviewId)),
     db
       .select()
       .from(projects)
@@ -101,21 +228,9 @@ export async function loadReviewData(userId: string): Promise<ReviewData> {
       .innerJoin(projects, eq(projectWeeklyNotes.projectId, projects.id))
       .where(and(eq(projects.userId, userId), eq(projects.status, "active")))
       .orderBy(desc(projectWeeklyNotes.weekStartDate)),
-    db
-      .select({ value: count() })
-      .from(tasks)
-      .where(
-        and(
-          eq(tasks.userId, userId),
-          eq(tasks.status, "done"),
-          sql`(${tasks.completedAt} at time zone ${APP_TZ})::date >= ${weekStart}`,
-        ),
-      ),
   ]);
   const [review] = reviewRows;
-
-  const streak = computeStreak(priorReviews, weekStart);
-  const last = lastCompletedReview(priorReviews);
+  const selectedPriorityIds = priorityRows.map((r) => r.taskId);
 
   const notesByProject = new Map<
     string,
@@ -136,20 +251,48 @@ export async function loadReviewData(userId: string): Promise<ReviewData> {
     notesByProject.set(n.projectId, existing);
   }
 
+  const toReviewTask = (
+    task: typeof tasks.$inferSelect,
+    projectName: string | null,
+  ): ReviewTask => ({
+    id: task.id,
+    title: task.title,
+    priority: priorities.get(task.id) ?? null,
+    status: task.status,
+    dueDate: task.dueDate,
+    projectId: task.projectId,
+    projectName,
+  });
+
+  const actionable: ReviewTask[] = taskRows.map((r) =>
+    toReviewTask(r.task, r.projectName ?? null),
+  );
+
+  // A priority task completed mid-review drops out of the open-tasks query but
+  // is still selected — pull those back in so the "x/3" count stays honest and
+  // the selection remains untickable.
+  const actionableIds = new Set(actionable.map((t) => t.id));
+  const missingSelected = selectedPriorityIds.filter(
+    (id) => !actionableIds.has(id),
+  );
+  if (missingSelected.length > 0) {
+    const extra = await db
+      .select({ task: tasks, projectName: projects.name })
+      .from(tasks)
+      .leftJoin(projects, eq(tasks.projectId, projects.id))
+      .where(
+        and(eq(tasks.userId, userId), inArray(tasks.id, missingSelected)),
+      );
+    for (const r of extra) {
+      actionable.push(toReviewTask(r.task, r.projectName ?? null));
+    }
+  }
+
+  actionable.sort((a, b) => comparePriority(a.priority, b.priority));
+
   const tasksByProject = new Map<string, ReviewTask[]>();
-  const actionable: ReviewTask[] = taskRows
-    .map((r): ReviewTask => ({
-      id: r.task.id,
-      title: r.task.title,
-      priority: priorities.get(r.task.id) ?? null,
-      status: r.task.status,
-      dueDate: r.task.dueDate,
-      projectId: r.task.projectId,
-      projectName: r.projectName ?? null,
-    }))
-    .sort((a, b) => comparePriority(a.priority, b.priority));
   for (const t of actionable) {
-    if (t.projectId) {
+    if (t.projectId && t.status !== "done") {
       const list = tasksByProject.get(t.projectId) ?? [];
       list.push(t);
       tasksByProject.set(t.projectId, list);
@@ -157,6 +300,8 @@ export async function loadReviewData(userId: string): Promise<ReviewData> {
   }
 
   return {
+    mode: "editing",
+    ...header,
     review: {
       id: review.id,
       weekStartDate: review.weekStartDate,
@@ -165,11 +310,7 @@ export async function loadReviewData(userId: string): Promise<ReviewData> {
       lastWeekCalendarReviewed: review.lastWeekCalendarReviewed,
       thisWeekCalendarReviewed: review.thisWeekCalendarReviewed,
       reflectionNotes: review.reflectionNotes,
-      completedAt: review.completedAt,
     },
-    streak,
-    lastCompletedAt: last?.completedAt ?? null,
-    completedThisWeek: completedRows[0]?.value ?? 0,
     activeProjects: projectRows.map((p) => {
       const entry = notesByProject.get(p.id);
       return {
@@ -184,6 +325,6 @@ export async function loadReviewData(userId: string): Promise<ReviewData> {
       };
     }),
     actionableTasks: actionable,
-    selectedPriorityIds: priorityRows.map((r) => r.taskId),
+    selectedPriorityIds,
   };
 }

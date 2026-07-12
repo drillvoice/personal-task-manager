@@ -68,6 +68,17 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
   one — tags (e.g. `#calls`) cover the use case through the one tag system.
 
 ### Changed
+- **Weekly review is now a completable instance, not a fixed weekly slot.**
+  Finishing a review files it to history and the page presents a "filed ✓"
+  confirmation with a **Start next review** button that opens a fresh, blank
+  review (0/3 priorities, empty checklist and reflection). If more than 5 days
+  have passed since the last completion, opening `/review` starts a fresh one
+  automatically. Previously a review was keyed one-per-Monday-week, so
+  reopening `/review` later in the same week as a completed review showed that
+  finished review with a dead "Review completed ✓" button and phantom,
+  un-editable priorities — now fixed. At most one review is *open* at a time
+  (migration 0013 swaps the `(user, week)` unique index for a partial unique
+  index on open reviews).
 - **Snappier interactions:** completing a task, picking/removing Today slots,
   and toggling weekly priorities now update the UI immediately (optimistic)
   and reconcile with the server in the background.

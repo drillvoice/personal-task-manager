@@ -1,22 +1,126 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { Check, Flag, Plus } from "lucide-react";
 import { PriorityBadge } from "@/components/priority-badge";
 import {
   finishReview,
   quickAddTask,
+  startNewReview,
   toggleWeeklyPriority,
   updateProjectNotes,
   updateReflection,
   updateReviewFlag,
 } from "@/app/(app)/review/actions";
-import type { ReviewData } from "@/lib/server/review";
+import type {
+  ReviewCompletedData,
+  ReviewData,
+  ReviewEditingData,
+} from "@/lib/server/review";
 import { shortDateLabel } from "@/lib/time";
 
 const WEEKLY_CAP = 3;
 
 export function ReviewView({ data }: { data: ReviewData }) {
+  if (data.mode === "completed") {
+    return <CompletedReview data={data} />;
+  }
+  return <EditingReview data={data} />;
+}
+
+function CompletedReview({ data }: { data: ReviewCompletedData }) {
+  const [pending, startTransition] = useTransition();
+  const start = () => startTransition(async () => await startNewReview());
+  const c = data.completed;
+
+  return (
+    <div className="p-4 pb-24">
+      <StreakHeader data={data} />
+
+      <div
+        className="mb-4 rounded-[4px] border p-4"
+        style={{
+          background: "var(--color-paper-raised)",
+          borderColor: "var(--color-line)",
+        }}
+      >
+        <p
+          className="font-mono mb-1 text-[11px] font-semibold"
+          style={{ color: "var(--color-teal)" }}
+        >
+          ✓ Review filed to history
+        </p>
+        <p
+          className="font-mono mb-3 text-[11px]"
+          style={{ color: "var(--color-ink-soft)" }}
+        >
+          Completed {shortDateLabel(c.completedAt)} · week of {c.weekLabel}
+        </p>
+        {c.priorities.length > 0 && (
+          <ul className="mb-2">
+            {c.priorities.map((p, i) => (
+              <li
+                key={i}
+                className="flex items-center gap-2 py-0.5 text-[13px]"
+              >
+                <span
+                  className="font-mono text-[11px]"
+                  style={{
+                    color: p.done
+                      ? "var(--color-teal)"
+                      : "var(--color-ink-soft)",
+                  }}
+                >
+                  {p.done ? "✓" : "○"}
+                </span>
+                <span
+                  style={{
+                    color: p.done
+                      ? "var(--color-ink-soft)"
+                      : "var(--color-ink)",
+                  }}
+                >
+                  {p.title}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+        {c.reflectionNotes && (
+          <p className="text-[13px]" style={{ color: "var(--color-ink)" }}>
+            {c.reflectionNotes}
+          </p>
+        )}
+      </div>
+
+      <button
+        type="button"
+        onClick={start}
+        disabled={pending}
+        className="font-mono w-full rounded-full px-5 py-3 text-[13px] font-semibold"
+        style={{
+          background: "var(--color-ink)",
+          color: "var(--color-paper)",
+          opacity: pending ? 0.6 : 1,
+        }}
+      >
+        Start next review
+      </button>
+      <div className="mt-3 text-center">
+        <Link
+          href="/review/history"
+          className="font-mono text-[11px]"
+          style={{ color: "var(--color-accent)" }}
+        >
+          View history →
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function EditingReview({ data }: { data: ReviewEditingData }) {
   const [priorityError, setPriorityError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(
     new Set(data.selectedPriorityIds),
@@ -163,12 +267,16 @@ export function ReviewView({ data }: { data: ReviewData }) {
       <SectionHeading n={4} label="REFLECTION" />
       <Reflection defaultValue={data.review.reflectionNotes} />
 
-      <FinishButton completed={!!data.review.completedAt} />
+      <FinishButton />
     </div>
   );
 }
 
-function StreakHeader({ data }: { data: ReviewData }) {
+function StreakHeader({
+  data,
+}: {
+  data: Pick<ReviewData, "streak" | "lastCompletedAt" | "completedThisWeek">;
+}) {
   const line = [
     data.streak > 0 ? `${data.streak}-week streak` : null,
     data.lastCompletedAt
@@ -535,22 +643,22 @@ function Reflection({ defaultValue }: { defaultValue: string }) {
   );
 }
 
-function FinishButton({ completed }: { completed: boolean }) {
+function FinishButton() {
   const [pending, startTransition] = useTransition();
   const submit = () => startTransition(async () => await finishReview());
   return (
     <button
       type="button"
       onClick={submit}
-      disabled={pending || completed}
+      disabled={pending}
       className="font-mono w-full rounded-full px-5 py-3 text-[13px] font-semibold"
       style={{
-        background: completed ? "var(--color-teal)" : "var(--color-ink)",
+        background: "var(--color-ink)",
         color: "var(--color-paper)",
         opacity: pending ? 0.6 : 1,
       }}
     >
-      {completed ? "Review completed ✓" : "Finish review"}
+      Finish review
     </button>
   );
 }

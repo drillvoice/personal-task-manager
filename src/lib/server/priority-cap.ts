@@ -1,5 +1,5 @@
 import "server-only";
-import { and, count, eq } from "drizzle-orm";
+import { and, count, eq, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   PRIORITY_TASK_CAP,
@@ -9,6 +9,7 @@ import {
   weeklyPriorities,
   weeklyReviews,
 } from "@/lib/db/schema";
+import { weekStartIso } from "@/lib/time";
 
 /**
  * Guards the "exactly 3" cap on today's priority slots. Callers should catch
@@ -73,29 +74,35 @@ export async function ensureDailyPlan(
   return raced.id;
 }
 
-/** Returns the open review id for (user, week), creating one if none exists. */
-export async function ensureWeeklyReview(
-  userId: string,
-  weekStartIsoDate: string,
-): Promise<string> {
-  const where = and(
-    eq(weeklyReviews.userId, userId),
-    eq(weeklyReviews.weekStartDate, weekStartIsoDate),
-  );
+/** The user's current in-progress review id, or null if none is open. */
+export async function getOpenReviewId(userId: string): Promise<string | null> {
   const [existing] = await db
     .select({ id: weeklyReviews.id })
     .from(weeklyReviews)
-    .where(where);
-  if (existing) return existing.id;
+    .where(
+      and(eq(weeklyReviews.userId, userId), isNull(weeklyReviews.completedAt)),
+    );
+  return existing?.id ?? null;
+}
+
+/**
+ * Returns the user's open review id, creating a fresh one if none is open.
+ * The `wr_user_open_uniq` partial index guarantees a single open review, so
+ * two concurrent creates resolve to the one row instead of one throwing.
+ */
+export async function ensureOpenReview(userId: string): Promise<string> {
+  const existing = await getOpenReviewId(userId);
+  if (existing) return existing;
   const [row] = await db
     .insert(weeklyReviews)
-    .values({ userId, weekStartDate: weekStartIsoDate })
-    .onConflictDoNothing()
+    .values({ userId, weekStartDate: weekStartIso() })
+    .onConflictDoNothing({
+      target: weeklyReviews.userId,
+      where: isNull(weeklyReviews.completedAt),
+    })
     .returning({ id: weeklyReviews.id });
   if (row) return row.id;
-  const [raced] = await db
-    .select({ id: weeklyReviews.id })
-    .from(weeklyReviews)
-    .where(where);
-  return raced.id;
+  const raced = await getOpenReviewId(userId);
+  if (raced) return raced;
+  throw new Error("Failed to resolve open weekly review");
 }

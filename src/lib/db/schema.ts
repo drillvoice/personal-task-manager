@@ -348,7 +348,12 @@ export const weeklyReviews = pgTable(
       .default(false),
   },
   (t) => [
-    uniqueIndex("wr_user_week_uniq").on(t.userId, t.weekStartDate),
+    // At most one *open* review per user. Reviews are completable instances,
+    // not week slots — a week can hold more than one (finish early, start
+    // another later the same week), so the old (user, week) uniqueness is gone.
+    uniqueIndex("wr_user_open_uniq")
+      .on(t.userId)
+      .where(sql`${t.completedAt} is null`),
   ],
 );
 

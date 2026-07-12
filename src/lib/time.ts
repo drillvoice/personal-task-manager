@@ -1,6 +1,7 @@
 import {
   addDays,
   addWeeks,
+  differenceInCalendarDays,
   formatISO,
   isSameDay,
   startOfDay,
@@ -64,6 +65,14 @@ export function weekLabel(weekStartIsoDate: string): string {
  */
 export function shortDateLabel(date: Date): string {
   return formatInTimeZone(date, APP_TZ, "EEE d MMM");
+}
+
+/**
+ * Whole calendar days from `past` to now, both anchored to the app timezone.
+ * Same-day → 0, yesterday → 1. Used to age out a completed review.
+ */
+export function daysSince(past: Date, now: Date = new Date()): number {
+  return differenceInCalendarDays(toZonedTime(now, APP_TZ), toZonedTime(past, APP_TZ));
 }
 
 export function isToday(dateIso: string, now: Date = new Date()): boolean {
