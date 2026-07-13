@@ -26,7 +26,7 @@ export function AppNav() {
   const pathname = usePathname();
   return (
     <nav
-      className="fixed top-0 right-0 left-0 z-50 border-b py-3 md:right-auto md:bottom-0 md:w-[208px] md:border-r md:border-b-0 md:py-6"
+      className="fixed top-0 right-0 left-0 z-50 border-b py-3 md:right-auto md:bottom-0 md:w-[208px] md:border-r md:border-b-0 md:py-6 print:hidden"
       style={{
         background: "var(--color-paper-raised)",
         borderColor: "var(--color-line)",

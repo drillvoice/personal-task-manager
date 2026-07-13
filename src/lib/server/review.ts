@@ -19,7 +19,13 @@ import {
   weeklyReviews,
 } from "@/lib/db/schema";
 import { comparePriority } from "@/lib/priority";
-import { APP_TZ, daysSince, weekLabel, weekStartIso } from "@/lib/time";
+import {
+  APP_TZ,
+  daysSince,
+  weekBeginningLabel,
+  weekLabel,
+  weekStartIso,
+} from "@/lib/time";
 import type { Priority } from "@/lib/types";
 import { ensureOpenReview, getOpenReviewId } from "./priority-cap";
 import { computeStreak, lastCompletedReview } from "./streak";
@@ -82,6 +88,65 @@ export type ReviewCompletedData = StreakHeader & {
 };
 
 export type ReviewData = ReviewEditingData | ReviewCompletedData;
+
+export type ReviewDetail = {
+  id: string;
+  weekStartDate: string;
+  weekLabel: string;
+  startedAt: Date;
+  completedAt: Date | null;
+  reflectionNotes: string;
+  priorities: { title: string; done: boolean }[];
+  projectNotes: { name: string; note: string }[];
+};
+
+/** Full read-only view of a single review, or null if it isn't the user's. */
+export async function loadReviewDetail(
+  userId: string,
+  reviewId: string,
+): Promise<ReviewDetail | null> {
+  const [review] = await db
+    .select()
+    .from(weeklyReviews)
+    .where(
+      and(eq(weeklyReviews.id, reviewId), eq(weeklyReviews.userId, userId)),
+    );
+  if (!review) return null;
+
+  const [priorityRows, noteRows] = await Promise.all([
+    db
+      .select({ title: tasks.title, status: tasks.status })
+      .from(weeklyPriorities)
+      .innerJoin(tasks, eq(weeklyPriorities.taskId, tasks.id))
+      .where(eq(weeklyPriorities.weeklyReviewId, reviewId))
+      .orderBy(asc(weeklyPriorities.sortOrder)),
+    db
+      .select({ name: projects.name, note: projectWeeklyNotes.note })
+      .from(projectWeeklyNotes)
+      .innerJoin(projects, eq(projectWeeklyNotes.projectId, projects.id))
+      .where(
+        and(
+          eq(projects.userId, userId),
+          eq(projectWeeklyNotes.weekStartDate, review.weekStartDate),
+        ),
+      )
+      .orderBy(asc(projects.name)),
+  ]);
+
+  return {
+    id: review.id,
+    weekStartDate: review.weekStartDate,
+    weekLabel: weekBeginningLabel(review.weekStartDate),
+    startedAt: review.startedAt,
+    completedAt: review.completedAt,
+    reflectionNotes: review.reflectionNotes,
+    priorities: priorityRows.map((p) => ({
+      title: p.title,
+      done: p.status === "done",
+    })),
+    projectNotes: noteRows.filter((n) => n.note.trim().length > 0),
+  };
+}
 
 export async function loadReviewData(userId: string): Promise<ReviewData> {
   const weekStart = weekStartIso();
@@ -176,7 +241,7 @@ async function loadCompletedData(
     ...header,
     completed: {
       weekStartDate: recent.weekStartDate,
-      weekLabel: weekLabel(recent.weekStartDate),
+      weekLabel: weekBeginningLabel(recent.weekStartDate),
       completedAt: recent.completedAt,
       reflectionNotes: recent.reflectionNotes,
       priorities: priorityRows.map((p) => ({
@@ -232,6 +297,12 @@ async function loadEditingData(
   const [review] = reviewRows;
   const selectedPriorityIds = priorityRows.map((r) => r.taskId);
 
+  // Anchor "current" project notes to the review's own week, not necessarily
+  // this calendar week — a reopened past review edits the notes for the week
+  // it covers. (`noteRows` is ordered newest-first, so the first note older
+  // than the review's week is the "previous" one shown for context.)
+  const reviewWeek = review.weekStartDate;
+
   const notesByProject = new Map<
     string,
     { current: string; previous: string; previousWeek: string } | undefined
@@ -242,9 +313,9 @@ async function loadEditingData(
       previous: "",
       previousWeek: "",
     };
-    if (n.weekStartDate === weekStart) {
+    if (n.weekStartDate === reviewWeek) {
       existing.current = n.note;
-    } else if (!existing.previousWeek && n.note.trim()) {
+    } else if (n.weekStartDate < reviewWeek && !existing.previousWeek && n.note.trim()) {
       existing.previous = n.note;
       existing.previousWeek = n.weekStartDate;
     }

@@ -2,6 +2,7 @@
 
 import { and, count, eq, inArray, max, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import {
@@ -19,11 +20,24 @@ import { extractDueDate } from "@/lib/server/parse-due-date";
 import {
   PriorityCapExceededError,
   ensureOpenReview,
+  getOpenReviewId,
 } from "@/lib/server/priority-cap";
 import { weekStartIso } from "@/lib/time";
 
 async function currentReviewId(userId: string): Promise<string> {
   return ensureOpenReview(userId);
+}
+
+// The week the open review covers. Project notes saved during a review file
+// under this week, not necessarily the current calendar week — a reopened past
+// review edits the notes for the week it covers.
+async function currentReviewWeek(userId: string): Promise<string> {
+  const reviewId = await ensureOpenReview(userId);
+  const [row] = await db
+    .select({ weekStartDate: weeklyReviews.weekStartDate })
+    .from(weeklyReviews)
+    .where(eq(weeklyReviews.id, reviewId));
+  return row?.weekStartDate ?? weekStartIso();
 }
 
 async function assertOwnsProject(userId: string, projectId: string) {
@@ -82,7 +96,7 @@ export async function updateProjectNotes(
     .where(and(eq(projects.id, projectId), eq(projects.userId, userId)));
   if (!owned) throw new Error("Project not found");
 
-  const weekStartDate = weekStartIso();
+  const weekStartDate = await currentReviewWeek(userId);
   await db
     .insert(projectWeeklyNotes)
     .values({ projectId, weekStartDate, note: notes })
@@ -249,4 +263,54 @@ export async function startNewReview(): Promise<void> {
   const userId = await requireUserId();
   await ensureOpenReview(userId);
   revalidatePath("/review");
+}
+
+// Reopens a filed review back into the editor by clearing its completion.
+// Only one review can be open at a time (partial unique index), so this is
+// blocked while a different review is still in progress.
+export async function reopenReview(
+  reviewId: string,
+): Promise<{ ok: false; error: string } | void> {
+  const userId = await requireUserId();
+  const [review] = await db
+    .select({
+      id: weeklyReviews.id,
+      completedAt: weeklyReviews.completedAt,
+    })
+    .from(weeklyReviews)
+    .where(
+      and(eq(weeklyReviews.id, reviewId), eq(weeklyReviews.userId, userId)),
+    );
+  if (!review) return { ok: false, error: "Review not found." };
+
+  if (review.completedAt) {
+    const openId = await getOpenReviewId(userId);
+    if (openId && openId !== reviewId) {
+      return {
+        ok: false,
+        error: "Finish your in-progress review before reopening another.",
+      };
+    }
+    await db
+      .update(weeklyReviews)
+      .set({ completedAt: null })
+      .where(eq(weeklyReviews.id, reviewId));
+    revalidatePath("/review/history");
+  }
+  revalidatePath("/review");
+  redirect("/review");
+}
+
+export async function deleteReview(reviewId: string): Promise<void> {
+  const userId = await requireUserId();
+  // Cascades to weekly_priorities; project_weekly_notes are keyed by week, not
+  // by review, so they're intentionally left intact.
+  await db
+    .delete(weeklyReviews)
+    .where(
+      and(eq(weeklyReviews.id, reviewId), eq(weeklyReviews.userId, userId)),
+    );
+  revalidatePath("/review/history");
+  revalidatePath("/review");
+  redirect("/review/history");
 }

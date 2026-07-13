@@ -6,6 +6,13 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 ## [Unreleased]
 
 ### Added
+- **Review history — open, edit, delete, export:** each entry in Review
+  history now links to a full detail view. From there a filed review can be
+  **reopened** back into the editor (blocked only while another review is
+  still in progress), **deleted** (with an inline confirm; its weekly
+  priorities go too, but the week's project notes stay), or **exported** to a
+  clean printable page (browser "Save as PDF") carrying the weekly priorities,
+  each project's note for that week, and the reflection.
 - **Natural-language due dates:** typing a date phrase into any task title —
   "Reply to John in 14 days", "Submit report tomorrow", "Call the plumber
   friday" — now sets the due date and strips the phrase from the title, the
@@ -74,6 +81,13 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
   one — tags (e.g. `#calls`) cover the use case through the one tag system.
 
 ### Changed
+- **Weeks now run Sunday→Saturday, keyed by the Monday inside them.** A review
+  or project note recorded on a Sunday files under the *upcoming* Monday's week
+  (Joel sometimes does the review on the Sunday ahead), rather than the week
+  just ending. Weeks are referred to as "w/b Mon 13 Jul" in Review history, the
+  filed-review card, and the export. Only the week-bucketing in
+  `src/lib/time.ts` changed; existing history rows keep the Monday they were
+  filed under.
 - **Weekly review is now a completable instance, not a fixed weekly slot.**
   Finishing a review files it to history and the page presents a "filed ✓"
   confirmation with a **Start next review** button that opens a fresh, blank

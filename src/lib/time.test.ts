@@ -5,15 +5,17 @@ import {
   isToday,
   recentWeekStarts,
   todayIso,
+  weekBeginningLabel,
   weekStartIso,
 } from "./time";
 
 // All fixtures anchor to Sydney (UTC+10, no DST in July).
-// 2026-07-01 (Wed) is week-start Monday 2026-06-29.
+// Weeks run Sunday→Saturday, keyed by the Monday inside that span.
+// 2026-07-01 (Wed) sits in the Sun 28 Jun–Sat 4 Jul week → Monday 2026-06-29.
 const wed = new Date("2026-07-01T06:00:00Z"); // 4pm Sydney
 
 describe("weekStartIso", () => {
-  it("buckets a Wednesday into the preceding Monday", () => {
+  it("buckets a Wednesday into its week's Monday", () => {
     expect(weekStartIso(wed)).toBe("2026-06-29");
   });
 
@@ -22,10 +24,22 @@ describe("weekStartIso", () => {
     expect(weekStartIso(monMorning)).toBe("2026-06-29");
   });
 
-  it("buckets Sunday-night-Sydney into the current week's Monday", () => {
-    // 11pm Sunday Sydney = 1pm UTC Sunday
+  it("buckets a Sunday into the upcoming Monday's week", () => {
+    // 11pm Sunday 5 Jul Sydney = 1pm UTC Sunday. Sunday starts the
+    // Sun 5–Sat 11 week → keyed by Monday 6 Jul, not the week just ending.
     const sunEve = new Date("2026-07-05T13:00:00Z");
-    expect(weekStartIso(sunEve)).toBe("2026-06-29");
+    expect(weekStartIso(sunEve)).toBe("2026-07-06");
+  });
+
+  it("keeps a Saturday in the same week as the preceding Sunday", () => {
+    const sat = new Date("2026-07-11T02:00:00Z"); // noon Sydney Saturday 11 Jul
+    expect(weekStartIso(sat)).toBe("2026-07-06");
+  });
+});
+
+describe("weekBeginningLabel", () => {
+  it('formats as "w/b Mon d MMM"', () => {
+    expect(weekBeginningLabel("2026-07-13")).toBe("w/b Mon 13 Jul");
   });
 });
 
