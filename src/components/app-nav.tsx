@@ -20,13 +20,17 @@ const items = [
   { href: "/review", label: "Review", Icon: RefreshCw },
 ] as const;
 
+// Desktop rail is icon-only by default and expands on hover. The content
+// offset in the app layout is pinned to the collapsed width, so the expanded
+// rail overlays the page rather than pushing it.
+export const SIDEBAR_COLLAPSED_WIDTH = 64;
 export const SIDEBAR_WIDTH = 208;
 
 export function AppNav() {
   const pathname = usePathname();
   return (
     <nav
-      className="fixed top-0 right-0 left-0 z-50 border-b py-3 md:right-auto md:bottom-0 md:w-[208px] md:border-r md:border-b-0 md:py-6 print:hidden"
+      className="group fixed top-0 right-0 left-0 z-50 border-b py-3 md:right-auto md:bottom-0 md:w-16 md:overflow-hidden md:border-r md:border-b-0 md:py-6 md:transition-[width] md:duration-150 md:ease-out md:hover:w-[208px] md:hover:shadow-lg print:hidden"
       style={{
         background: "var(--color-paper-raised)",
         borderColor: "var(--color-line)",
@@ -39,16 +43,18 @@ export function AppNav() {
             <Link
               key={href}
               href={href}
-              className="flex min-w-[48px] flex-col items-center gap-1 rounded-lg px-1 md:min-w-0 md:flex-row md:gap-3 md:px-3 md:py-2.5 md:aria-[current=page]:bg-[var(--color-accent-soft)]"
+              title={label}
+              className="flex min-w-[48px] flex-col items-center gap-1 rounded-lg px-1 md:min-w-0 md:flex-row md:justify-center md:gap-3 md:px-3 md:py-2.5 md:group-hover:justify-start md:aria-[current=page]:bg-[var(--color-accent-soft)]"
               aria-current={active ? "page" : undefined}
             >
               <Icon
                 size={18}
                 strokeWidth={active ? 2.5 : 1.8}
                 color={active ? "var(--color-accent)" : "var(--color-ink-soft)"}
+                className="shrink-0"
               />
               <span
-                className="font-mono text-[10px] font-medium md:text-[13px]"
+                className="font-mono text-[10px] font-medium md:hidden md:text-[13px] md:whitespace-nowrap md:group-hover:inline"
                 style={{
                   color: active
                     ? "var(--color-accent)"
