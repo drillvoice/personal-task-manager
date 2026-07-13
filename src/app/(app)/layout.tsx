@@ -8,7 +8,7 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="md:pl-[208px] print:pl-0">
+    <div className="md:pl-16 print:pl-0">
       <AppNav />
       <AppFrame>
         <main className="flex-1 pt-[52px] md:pt-0">{children}</main>
