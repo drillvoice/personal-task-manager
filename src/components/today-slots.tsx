@@ -5,6 +5,7 @@ import { Plus } from "lucide-react";
 import { PrioritySlot } from "@/components/priority-slot";
 import { PriorityBadge } from "@/components/priority-badge";
 import { DueLabel } from "@/components/due-label";
+import { useTaskEditor } from "@/components/task-editor-overlay";
 import type { TodaySlot, TodayTask } from "@/lib/server/today";
 
 export function PlanSlots({
@@ -22,6 +23,7 @@ export function PlanSlots({
   removeAction: (id: string) => Promise<void>;
   onToggleDone?: (id: string, done: boolean) => Promise<unknown>;
 }) {
+  const { openEditor } = useTaskEditor();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [eligible, setEligible] = useState<TodayTask[] | null>(null);
   const [query, setQuery] = useState("");
@@ -125,6 +127,7 @@ export function PlanSlots({
             onOpenPicker={openPicker}
             onRemove={remove}
             onToggleDone={onToggleDone}
+            onEdit={s.task ? () => openEditor(s.task!.id) : undefined}
           />
         ))}
       </div>
