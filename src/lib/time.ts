@@ -24,13 +24,24 @@ export function tomorrowIso(now: Date = new Date()): string {
 }
 
 /**
- * Monday-anchored week bucket for the given moment. Returns `yyyy-MM-dd` of the
- * Monday that week belongs to, in the app timezone. Used to key
+ * The Monday that keys the week containing `zoned`. Weeks run **Sunday →
+ * Saturday**, but are keyed (and labelled) by the Monday inside that span.
+ * That means a Sunday belongs to the *upcoming* Monday's week — Joel
+ * sometimes does the weekly review on the Sunday ahead of the week it covers,
+ * and it should file under that week, not the one just ending.
+ */
+function weekAnchorMonday(zoned: Date): Date {
+  const sunday = startOfWeek(startOfDay(zoned), { weekStartsOn: 0 });
+  return addDays(sunday, 1);
+}
+
+/**
+ * Week bucket for the given moment. Returns `yyyy-MM-dd` of the Monday that
+ * keys the week (see `weekAnchorMonday`), in the app timezone. Used to key
  * `weekly_reviews` and `project_weekly_notes`.
  */
 export function weekStartIso(now: Date = new Date()): string {
-  const zoned = toZonedTime(now, APP_TZ);
-  const monday = startOfWeek(startOfDay(zoned), { weekStartsOn: 1 });
+  const monday = weekAnchorMonday(toZonedTime(now, APP_TZ));
   return formatISO(monday, { representation: "date" });
 }
 
@@ -42,9 +53,7 @@ export function weekStartFromIso(dateIso: string): string {
  * Rolling window of the last N Monday-anchored week starts, oldest → newest.
  */
 export function recentWeekStarts(count: number, now: Date = new Date()): string[] {
-  const currentMonday = startOfWeek(startOfDay(toZonedTime(now, APP_TZ)), {
-    weekStartsOn: 1,
-  });
+  const currentMonday = weekAnchorMonday(toZonedTime(now, APP_TZ));
   const out: string[] = [];
   for (let i = count - 1; i >= 0; i--) {
     out.push(formatISO(addWeeks(currentMonday, -i), { representation: "date" }));
@@ -55,6 +64,19 @@ export function recentWeekStarts(count: number, now: Date = new Date()): string[
 /** "9 Jun" style label for the history table columns. */
 export function weekLabel(weekStartIsoDate: string): string {
   return formatInTimeZone(new Date(`${weekStartIsoDate}T00:00:00`), APP_TZ, "d MMM");
+}
+
+/**
+ * "w/b Mon 13 Jul" — a week named by the Monday that keys it. Used wherever a
+ * whole review/week is referred to (history, completed card, export), as
+ * opposed to the compact column label above.
+ */
+export function weekBeginningLabel(weekStartIsoDate: string): string {
+  return `w/b ${formatInTimeZone(
+    new Date(`${weekStartIsoDate}T00:00:00`),
+    APP_TZ,
+    "EEE d MMM",
+  )}`;
 }
 
 /**

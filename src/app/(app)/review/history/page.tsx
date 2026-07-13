@@ -4,7 +4,7 @@ import { formatInTimeZone } from "date-fns-tz";
 import { db } from "@/lib/db";
 import { tasks, weeklyPriorities, weeklyReviews } from "@/lib/db/schema";
 import { requireUserId } from "@/lib/server/session";
-import { APP_TZ, weekLabel } from "@/lib/time";
+import { APP_TZ, weekBeginningLabel } from "@/lib/time";
 
 export const dynamic = "force-dynamic";
 
@@ -76,17 +76,18 @@ export default async function ReviewHistoryPage() {
         {rows.map((r) => {
           const priorities = prioritiesByReview.get(r.id) ?? [];
           return (
-            <li
-              key={r.weekStartDate}
-              className="rounded-[4px] border p-3"
-              style={{
-                background: "var(--color-paper-raised)",
-                borderColor: "var(--color-line)",
-              }}
-            >
+            <li key={r.id}>
+              <Link
+                href={`/review/${r.id}`}
+                className="block rounded-[4px] border p-3 transition-colors hover:border-[var(--color-ink-soft)]"
+                style={{
+                  background: "var(--color-paper-raised)",
+                  borderColor: "var(--color-line)",
+                }}
+              >
               <div className="mb-1 flex items-center justify-between">
                 <span className="font-display text-[14px] font-semibold">
-                  Week of {weekLabel(r.weekStartDate)}
+                  {weekBeginningLabel(r.weekStartDate)}
                 </span>
                 <span
                   className="font-mono text-[11px]"
@@ -139,6 +140,7 @@ export default async function ReviewHistoryPage() {
                   {r.reflectionNotes}
                 </p>
               )}
+              </Link>
             </li>
           );
         })}
