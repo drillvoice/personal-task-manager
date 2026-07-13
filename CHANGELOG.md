@@ -6,6 +6,17 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 ## [Unreleased]
 
 ### Added
+- **Edit tasks from the Today screen:** clicking a task title in Today's three,
+  Tomorrow's three, or Also due today opens the same editor the Tasks view uses
+  (project, people, tags, due date, notes, complete/delete) — here as a modal
+  overlay, since Today has no room for a side panel. Task detail is loaded on
+  demand so the landing page stays lean.
+
+### Changed
+- **Today screen uses sentence case** for the date header, section labels
+  ("Also due today", "Tomorrow's three"), and the add-to-plan picker labels,
+  replacing the previous all-caps text.
+
 - **Review history — open, edit, delete, export:** each entry in Review
   history now links to a full detail view. From there a filed review can be
   **reopened** back into the editor (blocked only while another review is

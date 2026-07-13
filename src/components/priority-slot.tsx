@@ -16,12 +16,14 @@ export function PrioritySlot({
   onOpenPicker,
   onRemove,
   onToggleDone,
+  onEdit,
 }: {
   number: 1 | 2 | 3;
   task: Task | null;
   onOpenPicker: () => void;
   onRemove: (id: string) => Promise<void>;
   onToggleDone?: (id: string, done: boolean) => Promise<unknown>;
+  onEdit?: () => void;
 }) {
   const [pending, startTransition] = useTransition();
   // Optimistic tick — strike-through lands on click, reverts on failure.
@@ -88,15 +90,29 @@ export function PrioritySlot({
           {done && <Check size={12} color="var(--color-paper-raised)" strokeWidth={3} />}
         </button>
       )}
-      <span
-        className="flex-1 text-[14px] font-medium leading-tight"
-        style={{
-          color: onToggleDone && done ? "var(--color-ink-soft)" : "var(--color-ink)",
-          textDecoration: onToggleDone && done ? "line-through" : "none",
-        }}
-      >
-        {task.title}
-      </span>
+      {onEdit ? (
+        <button
+          type="button"
+          onClick={onEdit}
+          className="flex-1 text-left text-[14px] font-medium leading-tight"
+          style={{
+            color: onToggleDone && done ? "var(--color-ink-soft)" : "var(--color-ink)",
+            textDecoration: onToggleDone && done ? "line-through" : "none",
+          }}
+        >
+          {task.title}
+        </button>
+      ) : (
+        <span
+          className="flex-1 text-[14px] font-medium leading-tight"
+          style={{
+            color: onToggleDone && done ? "var(--color-ink-soft)" : "var(--color-ink)",
+            textDecoration: onToggleDone && done ? "line-through" : "none",
+          }}
+        >
+          {task.title}
+        </span>
+      )}
       {task.weekly && (
         <span
           className="font-mono text-[10px] font-semibold"

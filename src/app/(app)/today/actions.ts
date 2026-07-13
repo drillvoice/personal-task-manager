@@ -10,6 +10,13 @@ import {
   ensureDailyPlan,
 } from "@/lib/server/priority-cap";
 import { loadEligibleForPlan } from "@/lib/server/today";
+import { loadContactOptions, type ContactOption } from "@/lib/server/people";
+import {
+  loadTasksData,
+  loadTaskTagOptions,
+  type TagOption,
+  type TasksViewTask,
+} from "@/lib/server/tasks";
 import { todayIso, tomorrowIso } from "@/lib/time";
 
 async function assertOwnsTask(userId: string, taskId: string) {
@@ -102,6 +109,32 @@ export async function loadEligibleForTomorrowPlan() {
 
 export async function removeFromTomorrowPlan(taskId: string) {
   return removeFromPlanForDate(taskId, tomorrowIso());
+}
+
+export type TaskEditData = {
+  task: TasksViewTask;
+  projects: { id: string; name: string }[];
+  people: ContactOption[];
+  tagOptions: TagOption[];
+};
+
+// Loaded on demand when a task on the Today screen is opened for editing —
+// the Today page itself stays lean since it renders on every app open.
+export async function loadTaskEditData(
+  taskId: string,
+): Promise<TaskEditData | null> {
+  const userId = await requireUserId();
+  const [data, contacts, tagOptions] = await Promise.all([
+    loadTasksData(userId),
+    loadContactOptions(userId),
+    loadTaskTagOptions(userId),
+  ]);
+  const task = data.projects.flatMap((p) => p.tasks).find((t) => t.id === taskId);
+  if (!task) return null;
+  const projects = data.projects
+    .map((p) => ({ id: p.id, name: p.name }))
+    .filter((p): p is { id: string; name: string } => p.id !== null);
+  return { task, projects, people: contacts.people, tagOptions };
 }
 
 export async function setTaskDone(
