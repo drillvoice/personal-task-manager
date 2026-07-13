@@ -1,5 +1,9 @@
 # CLAUDE.md — project conventions
 
+> **Keep `AGENTS.md` in sync.** It is a near-identical mirror of this file for
+> other agent tooling. Any change here should be made in `AGENTS.md` too (and
+> vice versa).
+
 This is a personal, single-user GTD task/project app. Solo project, not a
 team codebase — process is lightweight but the app runs against real daily-use
 data, so correctness matters.
@@ -14,13 +18,24 @@ data, so correctness matters.
 
 ## Stack
 - Next.js 16 (App Router), TypeScript strict, Tailwind v4 (CSS-first `@theme`)
-- Drizzle ORM + postgres.js against Neon Postgres
+- Drizzle ORM against Neon Postgres. **The app runtime queries over Neon's
+  HTTP endpoint** (`drizzle-orm/neon-http` + `@neondatabase/serverless`, wired
+  in `src/lib/db/index.ts`) — no TCP pool, no interactive transactions (nothing
+  uses `db.transaction`). **postgres.js is used only by the local CLI scripts**
+  (`src/db/migrate.ts`, `src/db/seed.ts`), which run over TCP. Schema lives at
+  `src/lib/db/schema.ts`; migrations at `src/db/migrations`.
 - Auth.js v5 (beta) with GitHub OAuth, single-user `ALLOWED_EMAIL` allowlist
   gate (the app was briefly on Resend magic-link — swapped out because for a
   single-user app the email path had too many moving parts)
 - date-fns / date-fns-tz — **all "today" and week-bucket logic must go
   through `src/lib/time.ts`** and stay anchored to `Australia/Sydney`
+- chrono-node — natural-language due-date parsing in task titles
+  (`src/lib/server/parse-due-date.ts`); its reference date is anchored to
+  `Australia/Sydney` via `time.ts`, not the runtime's UTC clock
 - vitest for the handful of tests we do keep
+- **Hosting is region-pinned to Australia** — Vercel functions and the Neon
+  Postgres instance both run on Australian (Sydney) servers, matching the
+  app's `Australia/Sydney` time anchoring.
 
 ## Auth architecture — non-obvious constraints
 
@@ -81,6 +96,8 @@ main correctness net; if it fails, the task isn't done.
 
 **Run `pnpm test` after touching:**
 - `src/lib/time.ts` — week bucketing / today / due labels
+- `src/lib/server/parse-due-date.ts` — natural-language due-date extraction
+  (timezone-sensitive; shares `time.ts`'s Sydney anchoring)
 - `src/lib/server/priority-cap.ts` — the "exactly 3" cap enforcement
 - `src/lib/server/streak.ts` — streak calculation
 Any other file with a `*.test.ts` sibling.
@@ -120,7 +137,10 @@ view but is *excluded* from the Projects history table. See
 - No comments explaining *what* code does — well-named identifiers cover it.
   Only add a comment when the *why* is non-obvious (a workaround, a subtle
   invariant, a boundary decision).
-- Prefer editing existing files to adding new ones.
+- Prefer editing an existing file over creating a new one *for the same
+  concern* — but keep the codebase's one-concern-per-file grain; split when a
+  file starts doing two jobs or gets unwieldy, not to avoid touching existing
+  code.
 - Prefer server components + server actions. Client components only for
   interactive state (checkbox toggle, filter chips, textarea autosave).
 
@@ -130,7 +150,8 @@ view but is *excluded* from the Projects history table. See
 
 ## Handoff docs
 - `initial-setup.md` — everything Joel needs to do manually to bring the app up
-  in Vercel + Neon + Resend. If any env var or provisioning step changes, that
-  file needs to change with it.
+  in Vercel + Neon + GitHub OAuth (both Vercel and Neon are region-pinned to
+  Australia). If any env var or provisioning step changes, that file needs to
+  change with it.
 - `CHANGELOG.md` — Keep-a-Changelog style. Add an entry whenever behaviour
   visibly changes. No version tagging discipline is required.
