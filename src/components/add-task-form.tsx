@@ -118,6 +118,12 @@ export function AddTaskForm({
         background: "var(--color-paper-raised)",
         borderColor: "var(--color-line)",
       }}
+      onKeyDown={(e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+          e.preventDefault();
+          submit();
+        }
+      }}
     >
       <input
         value={title}
