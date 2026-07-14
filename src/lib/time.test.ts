@@ -5,6 +5,7 @@ import {
   isToday,
   recentWeekStarts,
   todayIso,
+  tomorrowIso,
   weekBeginningLabel,
   weekStartIso,
 } from "./time";
@@ -34,6 +35,22 @@ describe("weekStartIso", () => {
   it("keeps a Saturday in the same week as the preceding Sunday", () => {
     const sat = new Date("2026-07-11T02:00:00Z"); // noon Sydney Saturday 11 Jul
     expect(weekStartIso(sat)).toBe("2026-07-06");
+  });
+});
+
+describe("tomorrowIso", () => {
+  // Regression: chaining toZonedTime → formatInTimeZone double-applied the tz
+  // offset and returned day+2 on a UTC runtime (Vercel), stranding tasks
+  // added to "tomorrow" a day beyond where they'd roll into Today.
+  it("returns the Sydney calendar day after today", () => {
+    const t = new Date("2026-07-13T05:25:47Z"); // 3:25pm Sydney, 13 Jul
+    expect(todayIso(t)).toBe("2026-07-13");
+    expect(tomorrowIso(t)).toBe("2026-07-14");
+  });
+
+  it("crosses the month boundary", () => {
+    const lastOfMonth = new Date("2026-07-31T06:00:00Z"); // 4pm Sydney, 31 Jul
+    expect(tomorrowIso(lastOfMonth)).toBe("2026-08-01");
   });
 });
 

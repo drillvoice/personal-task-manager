@@ -63,6 +63,12 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
   control.
 
 ### Fixed
+- **"Tomorrow's three" now files tasks one day out, not two.** `tomorrowIso()`
+  chained `toZonedTime` → `formatInTimeZone`, double-applying the Sydney offset
+  and returning day+2 whenever the runtime timezone was UTC (i.e. on Vercel,
+  though not in Sydney-local dev). A task added to Tomorrow landed on the plan
+  two days ahead, so it never rolled into Today the next day. Now computed by
+  adding a calendar day to the Sydney date string.
 - Un-completing a task now restores its previous status (e.g. `waiting_on`)
   instead of forcing it back to `next_action`. Backed by a new
   `tasks.previous_status` column (migration 0011).

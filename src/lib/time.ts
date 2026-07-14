@@ -20,7 +20,12 @@ export function todayIso(now: Date = new Date()): string {
 }
 
 export function tomorrowIso(now: Date = new Date()): string {
-  return formatInTimeZone(addDays(toZonedTime(now, APP_TZ), 1), APP_TZ, "yyyy-MM-dd");
+  // Add the calendar day to the *Sydney* date string, not to the instant.
+  // Chaining toZonedTime → formatInTimeZone double-applies the tz offset and,
+  // on a UTC runtime (Vercel), pushes the result an extra day forward.
+  return formatISO(addDays(new Date(`${todayIso(now)}T00:00:00`), 1), {
+    representation: "date",
+  });
 }
 
 /**
