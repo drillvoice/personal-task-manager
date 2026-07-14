@@ -91,6 +91,7 @@ export function MeetingDetailView({
     setStatus(next);
     startTransition(async () => {
       await setMeetingStatus({ id: meeting.id, status: next });
+      if (next === "completed") router.push("/meetings");
     });
   };
 

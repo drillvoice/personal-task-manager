@@ -18,6 +18,10 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
   demand so the landing page stays lean.
 
 ### Changed
+- **Marking a meeting completed returns to the meetings list.** Clicking "Mark
+  completed" in a meeting now saves the status and navigates back to
+  `/meetings` instead of leaving you on the completed meeting. "Reopen" still
+  keeps you on the meeting.
 - **Today screen uses sentence case** for the date header, section labels
   ("Also due today", "Tomorrow's three"), and the add-to-plan picker labels,
   replacing the previous all-caps text.
