@@ -41,6 +41,12 @@ export function TaskDetailPanel({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  // The checkbox fills the moment it's clicked and stays that way. This is
+  // real local state, not `useOptimistic`, because the panel's `task` prop is
+  // a point-in-time snapshot that `revalidatePath` doesn't refresh — an
+  // optimistic value would snap back to the stale `task.status` after the
+  // action settled. Reverts only if the server rejects the change.
+  const [done, setDone] = useState(task.status === "done");
 
   // Notes autosave fires from a debounced closure; read the latest field
   // values through a ref so a stale snapshot can't overwrite newer edits.
@@ -81,9 +87,15 @@ export function TaskDetailPanel({
     });
   };
 
-  const complete = () => {
+  const toggleDone = () => {
+    const next = !done;
+    setDone(next);
     startTransition(async () => {
-      await setTaskDone(task.id, true);
+      const res = await setTaskDone(task.id, next);
+      if (!res.ok) {
+        setDone(!next);
+        setError(res.error);
+      }
     });
   };
 
@@ -145,18 +157,26 @@ export function TaskDetailPanel({
 
       <button
         type="button"
-        onClick={complete}
+        onClick={toggleDone}
         disabled={pending}
+        aria-pressed={done}
         className="font-mono mb-4 flex items-center gap-2 text-[11px] font-medium"
         style={{ color: "var(--color-ink-soft)" }}
       >
         <span
           className="flex h-[18px] w-[18px] items-center justify-center rounded-[4px] border-[1.5px]"
-          style={{ borderColor: "var(--color-ink-soft)" }}
+          style={{
+            background: done ? "var(--color-teal)" : "transparent",
+            borderColor: done ? "var(--color-teal)" : "var(--color-ink-soft)",
+          }}
         >
-          <Check size={12} color="transparent" strokeWidth={3} />
+          <Check
+            size={12}
+            color={done ? "var(--color-paper-raised)" : "transparent"}
+            strokeWidth={3}
+          />
         </span>
-        Mark complete
+        {done ? "Completed" : "Mark complete"}
       </button>
 
       <div className="mb-3.5">

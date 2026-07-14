@@ -68,6 +68,12 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
   control.
 
 ### Fixed
+- **"Mark complete" in the task editor now works and shows it.** The checkbox
+  in the task detail panel (the Today-screen edit modal and the Tasks-view side
+  panel) was a static, always-empty box: clicking it fired the completion
+  server-side but gave no visual feedback, so it looked like nothing happened.
+  It now fills in immediately, toggles complete/incomplete, and holds its state
+  (kept as local state since the panel's task snapshot isn't revalidated).
 - **"Tomorrow's three" now files tasks one day out, not two.** `tomorrowIso()`
   chained `toZonedTime` → `formatInTimeZone`, double-applying the Sydney offset
   and returning day+2 whenever the runtime timezone was UTC (i.e. on Vercel,
