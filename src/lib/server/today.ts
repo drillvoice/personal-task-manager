@@ -40,6 +40,7 @@ export type TodayData = {
   tomorrowDateIso: string;
   tomorrowSlots: TodaySlot[];
   alsoDue: TodayTask[];
+  weeklyPriorities: TodayTask[];
 };
 
 function toTask(
@@ -60,22 +61,26 @@ function toTask(
   };
 }
 
-/** Task ids on the current week's review top-3. */
-async function loadWeeklyPriorityIds(userId: string): Promise<Set<string>> {
-  const rows = await db
-    .select({ taskId: weeklyPriorities.taskId })
+/** The current week's review top-3, ordered as chosen in the review. */
+async function loadWeeklyPriorityRows(
+  userId: string,
+): Promise<{ task: typeof tasks.$inferSelect; projectName: string | null }[]> {
+  return db
+    .select({ task: tasks, projectName: projects.name })
     .from(weeklyPriorities)
     .innerJoin(
       weeklyReviews,
       eq(weeklyPriorities.weeklyReviewId, weeklyReviews.id),
     )
+    .innerJoin(tasks, eq(weeklyPriorities.taskId, tasks.id))
+    .leftJoin(projects, eq(tasks.projectId, projects.id))
     .where(
       and(
         eq(weeklyReviews.userId, userId),
         eq(weeklyReviews.weekStartDate, weekStartIso()),
       ),
-    );
-  return new Set(rows.map((r) => r.taskId));
+    )
+    .orderBy(asc(weeklyPriorities.sortOrder));
 }
 
 async function loadPlanSlots(
@@ -122,9 +127,9 @@ export async function loadTodayData(userId: string): Promise<TodayData> {
   // Today's plan, tomorrow's plan, the also-due list, and priority tags all
   // run in parallel — this page renders on every app open, so roundtrips
   // matter.
-  const [priorities, weeklyIds, todayPlan, tomorrowPlan, alsoDueRows] = await Promise.all([
+  const [priorities, weeklyRows, todayPlan, tomorrowPlan, alsoDueRows] = await Promise.all([
     loadTaskPriorities(userId),
-    loadWeeklyPriorityIds(userId),
+    loadWeeklyPriorityRows(userId),
     loadPlanSlots(userId, dateIso),
     loadPlanSlots(userId, tomorrowDateIso),
     db
@@ -140,6 +145,8 @@ export async function loadTodayData(userId: string): Promise<TodayData> {
       )
       .orderBy(asc(tasks.dueDate)),
   ]);
+
+  const weeklyIds = new Set(weeklyRows.map((r) => r.task.id));
 
   // loadPlanSlots ran before `priorities` resolved above, so re-derive slot
   // priorities from the map now that we have it.
@@ -175,6 +182,11 @@ export async function loadTodayData(userId: string): Promise<TodayData> {
         ),
       )
       .sort((a, b) => comparePriority(a.priority, b.priority)),
+    // `weekly` is left false here: the section header already frames these as
+    // this week's priorities, so the per-row ★ wk marker would be redundant.
+    weeklyPriorities: weeklyRows.map((r) =>
+      toTask(r.task, r.projectName ?? null, priorities.get(r.task.id) ?? null),
+    ),
   };
 }
 

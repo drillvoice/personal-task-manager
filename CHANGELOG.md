@@ -6,6 +6,11 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 ## [Unreleased]
 
 ### Added
+- **This week's three on Today:** the Today screen now opens with the three
+  top priorities set in the weekly review, sitting above the daily "Today's
+  three". Each is clickable (opens the task editor) and completable inline;
+  when no review has been done for the current week it shows a prompt linking
+  to the weekly review.
 - **Edit tasks from the Today screen:** clicking a task title in Today's three,
   Tomorrow's three, or Also due today opens the same editor the Tasks view uses
   (project, people, tags, due date, notes, complete/delete) — here as a modal

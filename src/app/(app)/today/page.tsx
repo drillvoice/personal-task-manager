@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { formatInTimeZone } from "date-fns-tz";
 import { AlsoDueList } from "@/components/also-due-list";
 import { PlanSlots } from "@/components/today-slots";
@@ -32,18 +33,57 @@ export default async function TodayPage() {
         >
           {dateHeader}
         </p>
-        <h1 className="font-display text-xl font-bold">Today&rsquo;s three</h1>
+        <h1 className="font-display text-xl font-bold">Today</h1>
       </header>
 
       <TaskEditorProvider>
-        <PlanSlots
-          slots={today.slots}
-          pickerLabel="Add to today"
-          addAction={addToTodayPlan}
-          loadEligibleAction={loadEligibleForTodayPlan}
-          removeAction={removeFromTodayPlan}
-          onToggleDone={setTaskDone}
-        />
+        <section className="mb-8">
+          <div className="mb-2 flex items-center justify-between">
+            <h2
+              className="font-mono text-[11px] font-semibold"
+              style={{ color: "var(--color-ink-soft)" }}
+            >
+              This week&rsquo;s three
+            </h2>
+          </div>
+          {today.weeklyPriorities.length === 0 ? (
+            <p
+              className="font-mono rounded-[4px] border p-3 text-[12px]"
+              style={{
+                background: "var(--color-paper-raised)",
+                borderColor: "var(--color-line)",
+                color: "var(--color-ink-soft)",
+              }}
+            >
+              No weekly priorities set.{" "}
+              <Link href="/review" className="underline">
+                Run your weekly review
+              </Link>
+              .
+            </p>
+          ) : (
+            <AlsoDueList tasks={today.weeklyPriorities} />
+          )}
+        </section>
+
+        <section className="mb-8">
+          <div className="mb-2 flex items-center justify-between">
+            <h2
+              className="font-mono text-[11px] font-semibold"
+              style={{ color: "var(--color-ink-soft)" }}
+            >
+              Today&rsquo;s three
+            </h2>
+          </div>
+          <PlanSlots
+            slots={today.slots}
+            pickerLabel="Add to today"
+            addAction={addToTodayPlan}
+            loadEligibleAction={loadEligibleForTodayPlan}
+            removeAction={removeFromTodayPlan}
+            onToggleDone={setTaskDone}
+          />
+        </section>
 
         <section className="mb-8">
           <div className="mb-2 flex items-center justify-between">
