@@ -175,6 +175,38 @@ export const people = pgTable(
   ],
 );
 
+export const groups = pgTable(
+  "groups",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    notes: text("notes").notNull().default(""),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("groups_user_name_idx").on(t.userId, t.name)],
+);
+
+export const personGroups = pgTable(
+  "person_groups",
+  {
+    personId: uuid("person_id")
+      .notNull()
+      .references(() => people.id, { onDelete: "cascade" }),
+    groupId: uuid("group_id")
+      .notNull()
+      .references(() => groups.id, { onDelete: "cascade" }),
+  },
+  (t) => [primaryKey({ columns: [t.personId, t.groupId] })],
+);
+
 export const tasks = pgTable(
   "tasks",
   {
@@ -418,6 +450,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   dailyPlans: many(dailyPlans),
   organisations: many(organisations),
   people: many(people),
+  groups: many(groups),
   meetings: many(meetings),
 }));
 
@@ -440,6 +473,23 @@ export const peopleRelations = relations(people, ({ one, many }) => ({
   }),
   taskAssignees: many(taskAssignees),
   meetingAttendees: many(meetingAttendees),
+  groups: many(personGroups),
+}));
+
+export const groupsRelations = relations(groups, ({ one, many }) => ({
+  user: one(users, { fields: [groups.userId], references: [users.id] }),
+  members: many(personGroups),
+}));
+
+export const personGroupsRelations = relations(personGroups, ({ one }) => ({
+  person: one(people, {
+    fields: [personGroups.personId],
+    references: [people.id],
+  }),
+  group: one(groups, {
+    fields: [personGroups.groupId],
+    references: [groups.id],
+  }),
 }));
 
 export const projectsRelations = relations(projects, ({ one, many }) => ({
@@ -580,6 +630,8 @@ export type Organisation = typeof organisations.$inferSelect;
 export type NewOrganisation = typeof organisations.$inferInsert;
 export type Person = typeof people.$inferSelect;
 export type NewPerson = typeof people.$inferInsert;
+export type Group = typeof groups.$inferSelect;
+export type NewGroup = typeof groups.$inferInsert;
 export type ProjectWeeklyNote = typeof projectWeeklyNotes.$inferSelect;
 export type WeeklyReview = typeof weeklyReviews.$inferSelect;
 export type WeeklyPriority = typeof weeklyPriorities.$inferSelect;

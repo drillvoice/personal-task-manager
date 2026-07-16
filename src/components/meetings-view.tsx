@@ -11,7 +11,7 @@ import type { PickerOption } from "@/components/entity-picker";
 import { TagChip } from "@/components/tag-chip";
 import { DueLabel } from "@/components/due-label";
 import type { MeetingListItem } from "@/lib/server/meetings";
-import type { ContactOption } from "@/lib/server/people";
+import type { ContactOption, GroupOption } from "@/lib/server/people";
 import { todayIso } from "@/lib/time";
 
 function matchesFilters(
@@ -82,10 +82,10 @@ function MeetingRow({ meeting }: { meeting: MeetingListItem }) {
 }
 
 function NewMeetingForm({
-  people,
+  attendeeOptions,
   onCancel,
 }: {
-  people: ContactOption[];
+  attendeeOptions: PickerOption[];
   onCancel: () => void;
 }) {
   const router = useRouter();
@@ -152,7 +152,7 @@ function NewMeetingForm({
         <div className="min-w-0">
           <EntityPicker
             mode="multi"
-            options={people}
+            options={attendeeOptions}
             selectedIds={attendeeIds}
             onChange={setAttendeeIds}
             onCreate={createPersonOption}
@@ -210,11 +210,17 @@ function NewMeetingForm({
 export function MeetingsView({
   meetings,
   people,
+  groups,
 }: {
   meetings: MeetingListItem[];
   people: ContactOption[];
+  groups: GroupOption[];
 }) {
   const [showAdd, setShowAdd] = useState(false);
+  const attendeeOptions = useMemo<PickerOption[]>(
+    () => [...people, ...groups],
+    [people, groups],
+  );
   const [search, setSearch] = useState("");
   const [tagFilter, setTagFilter] = useState<Set<string>>(new Set());
 
@@ -265,7 +271,10 @@ export function MeetingsView({
       </div>
 
       {showAdd && (
-        <NewMeetingForm people={people} onCancel={() => setShowAdd(false)} />
+        <NewMeetingForm
+          attendeeOptions={attendeeOptions}
+          onCancel={() => setShowAdd(false)}
+        />
       )}
 
       <h2

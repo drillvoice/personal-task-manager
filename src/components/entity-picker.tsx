@@ -2,9 +2,16 @@
 
 import { useMemo, useRef, useState, useTransition } from "react";
 import type { LucideIcon } from "lucide-react";
-import { X } from "lucide-react";
+import { Users, X } from "lucide-react";
 
-export type PickerOption = { id: string; name: string; color?: string };
+// `memberIds`, when present, marks an option as an expandable group: selecting
+// it adds its members to the selection instead of the option's own id.
+export type PickerOption = {
+  id: string;
+  name: string;
+  color?: string;
+  memberIds?: string[];
+};
 
 export function EntityPicker({
   mode,
@@ -55,7 +62,13 @@ export function EntityPicker({
   const canCreate = Boolean(onCreate) && q !== "" && !exactMatch;
 
   const applySelection = (id: string) => {
-    onChange(mode === "single" ? [id] : [...selectedIds, id]);
+    const option = allOptions.find((o) => o.id === id);
+    if (option?.memberIds) {
+      // Group option: expand to members rather than adding the group itself.
+      onChange([...new Set([...selectedIds, ...option.memberIds])]);
+    } else {
+      onChange(mode === "single" ? [id] : [...selectedIds, id]);
+    }
     setQuery("");
     setHighlight(0);
     if (mode === "single") setOpen(false);
@@ -199,14 +212,23 @@ export function EntityPicker({
               tabIndex={-1}
               onMouseEnter={() => setHighlight(i)}
               onClick={() => applySelection(o.id)}
-              className="block w-full px-3 py-2 text-left text-[13px]"
+              className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-[13px]"
               style={{
                 background:
                   i === highlight ? "var(--color-paper)" : "transparent",
                 color: "var(--color-ink)",
               }}
             >
-              {o.name}
+              <span>{o.name}</span>
+              {o.memberIds && (
+                <span
+                  className="font-mono flex items-center gap-1 text-[11px]"
+                  style={{ color: "var(--color-ink-soft)" }}
+                >
+                  <Users size={11} />
+                  {o.memberIds.length}
+                </span>
+              )}
             </button>
           ))}
           {canCreate && (
