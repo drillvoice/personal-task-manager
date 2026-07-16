@@ -1,19 +1,26 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Mail, Phone } from "lucide-react";
+import { Mail, Phone, Users } from "lucide-react";
 import { EntityPicker } from "@/components/entity-picker";
 import type { PickerOption } from "@/components/entity-picker";
-import { createOrganisation, deletePerson, updatePerson } from "@/app/(app)/people/actions";
+import {
+  createGroup,
+  createOrganisation,
+  deletePerson,
+  updatePerson,
+} from "@/app/(app)/people/actions";
 import type { PersonWithOrg } from "@/lib/server/people";
 
 function PersonEditForm({
   person,
   orgs,
+  groups,
   onDone,
 }: {
   person: PersonWithOrg;
   orgs: PickerOption[];
+  groups: PickerOption[];
   onDone: () => void;
 }) {
   const [name, setName] = useState(person.name);
@@ -22,6 +29,7 @@ function PersonEditForm({
   const [phone, setPhone] = useState(person.phone);
   const [notes, setNotes] = useState(person.notes);
   const [orgId, setOrgId] = useState(person.orgId ?? "");
+  const [groupIds, setGroupIds] = useState(person.groups.map((g) => g.id));
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -37,6 +45,7 @@ function PersonEditForm({
         phone,
         notes,
         organisationId: orgId,
+        groupIds,
       });
       if (res.ok) {
         onDone();
@@ -121,6 +130,20 @@ function PersonEditForm({
           onKeyDown={keyHandler}
         />
       </div>
+      <div className="mb-2">
+        <EntityPicker
+          mode="multi"
+          options={groups}
+          selectedIds={groupIds}
+          onChange={setGroupIds}
+          onCreate={async (name) => {
+            const res = await createGroup({ name });
+            return res.ok ? { id: res.id, name } : null;
+          }}
+          placeholder="Groups…"
+          icon={Users}
+        />
+      </div>
       <textarea
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
@@ -195,9 +218,11 @@ function PersonEditForm({
 export function PersonRow({
   person,
   orgs,
+  groups,
 }: {
   person: PersonWithOrg;
   orgs: PickerOption[];
+  groups: PickerOption[];
 }) {
   const [editing, setEditing] = useState(false);
 
@@ -206,6 +231,7 @@ export function PersonRow({
       <PersonEditForm
         person={person}
         orgs={orgs}
+        groups={groups}
         onDone={() => setEditing(false)}
       />
     );
@@ -254,6 +280,23 @@ export function PersonRow({
               {person.phone}
             </span>
           )}
+        </div>
+      )}
+      {person.groups.length > 0 && (
+        <div className="mt-1.5 flex flex-wrap items-center gap-1">
+          {person.groups.map((g) => (
+            <span
+              key={g.id}
+              className="font-mono inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
+              style={{
+                background: "var(--color-teal-soft)",
+                color: "var(--color-teal)",
+              }}
+            >
+              <Users size={10} />
+              {g.name}
+            </span>
+          ))}
         </div>
       )}
       {person.notes && (

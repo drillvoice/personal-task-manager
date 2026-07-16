@@ -7,5 +7,7 @@ export const dynamic = "force-dynamic";
 export default async function PeoplePage() {
   const userId = await requireUserId();
   const data = await loadPeopleData(userId);
-  return <PeopleView people={data.people} orgs={data.orgs} />;
+  return (
+    <PeopleView people={data.people} orgs={data.orgs} groups={data.groups} />
+  );
 }

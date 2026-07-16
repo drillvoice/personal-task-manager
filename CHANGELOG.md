@@ -6,6 +6,14 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 ## [Unreleased]
 
 ### Added
+- **People groups for fast attendee entry:** people can now be bundled into
+  named groups (e.g. "Comms Team") from the person edit/add form, alongside
+  their organisation. Groups are many-to-many (a person can be in several) and
+  can span organisations. A new "Groups" section on the People page renames and
+  deletes them. When adding meeting attendees, typing a group name lists it in
+  the picker with a member count; selecting it drops each member in as an
+  individual attendee chip you can then adjust freely (the meeting stores the
+  people, not the group).
 - **This week's three on Today:** the Today screen now opens with the three
   top priorities set in the weekly review, sitting above the daily "Today's
   three". Each is clickable (opens the task editor) and completable inline;

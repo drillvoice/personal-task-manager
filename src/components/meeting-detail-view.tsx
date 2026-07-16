@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Plus, Users } from "lucide-react";
@@ -21,19 +21,21 @@ import { EntityPicker } from "@/components/entity-picker";
 import type { PickerOption } from "@/components/entity-picker";
 import { TaskRow } from "@/components/task-row";
 import type { ProjectSelectOption as ProjectOption } from "@/lib/server/projects";
-import type { ContactOption } from "@/lib/server/people";
+import type { ContactOption, GroupOption } from "@/lib/server/people";
 import type { MeetingDetail, TagOption } from "@/lib/server/meetings";
 import type { TagOption as TaskTagOption } from "@/lib/server/tasks";
 
 export function MeetingDetailView({
   meeting,
   people,
+  groups,
   projects,
   availableTags,
   taskTagOptions,
 }: {
   meeting: MeetingDetail;
   people: ContactOption[];
+  groups: GroupOption[];
   projects: ProjectOption[];
   availableTags: TagOption[];
   taskTagOptions: TaskTagOption[];
@@ -46,6 +48,10 @@ export function MeetingDetailView({
     meeting.attendees.map((a) => a.id),
   );
   const [tagIds, setTagIds] = useState<string[]>(meeting.tags.map((t) => t.id));
+  const attendeeOptions = useMemo<PickerOption[]>(
+    () => [...people, ...groups],
+    [people, groups],
+  );
   const [showAdd, setShowAdd] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [, startTransition] = useTransition();
@@ -166,7 +172,7 @@ export function MeetingDetailView({
       <div className="mb-2 sm:max-w-[420px]">
         <EntityPicker
           mode="multi"
-          options={people}
+          options={attendeeOptions}
           selectedIds={attendeeIds}
           onChange={changeAttendees}
           onCreate={createPersonOption}
