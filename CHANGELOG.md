@@ -6,6 +6,12 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 ## [Unreleased]
 
 ### Added
+- **Person detail panel with recent meetings.** On desktop, clicking a person
+  in the People view now opens a persistent side panel (mirroring the Tasks
+  view) with their edit fields, instead of expanding the row inline. Below the
+  fields, the panel lists the person's most recent meetings (capped at six,
+  newest first), each linking through to the meeting. Below `md`, rows keep the
+  inline edit form.
 - **People groups for fast attendee entry:** people can now be bundled into
   named groups (e.g. "Comms Team") from the person edit/add form, alongside
   their organisation. Groups are many-to-many (a person can be in several) and
