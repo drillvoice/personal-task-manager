@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useSyncExternalStore, useTransition } from "react";
+import { useMemo, useState, useSyncExternalStore, useTransition } from "react";
 import { Plus, Users } from "lucide-react";
 import { PersonRow } from "@/components/person-row";
 import { PersonDetailPanel } from "@/components/person-detail-panel";
@@ -554,8 +554,36 @@ export function PeopleView({
   groups: OrganisationRow[];
 }) {
   const [showAdd, setShowAdd] = useState(false);
+  const [groupByOrg, setGroupByOrg] = useState(false);
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
   const isDesktop = useIsDesktop();
+
+  // People arrive already sorted by name, so each bucket stays name-ordered;
+  // orgs are sorted alphabetically and the unaffiliated bucket trails last.
+  const orgBuckets = useMemo(() => {
+    const byOrg = new Map<
+      string,
+      { id: string; name: string; people: PersonWithOrg[] }
+    >();
+    const noOrg: PersonWithOrg[] = [];
+    for (const p of people) {
+      if (p.orgId && p.orgName) {
+        const bucket = byOrg.get(p.orgId) ?? {
+          id: p.orgId,
+          name: p.orgName,
+          people: [],
+        };
+        bucket.people.push(p);
+        byOrg.set(p.orgId, bucket);
+      } else {
+        noOrg.push(p);
+      }
+    }
+    const sorted = [...byOrg.values()].sort((a, b) =>
+      a.name.localeCompare(b.name),
+    );
+    return { sorted, noOrg };
+  }, [people]);
 
   // Derived from server data, so deleting the selected person (which removes it
   // on revalidation) closes the panel.
@@ -595,6 +623,43 @@ export function PeopleView({
         />
       )}
 
+      {people.length > 0 && (
+        <div className="mb-2 flex justify-end">
+          <div
+            className="flex gap-1 rounded-[4px] border p-0.5"
+            style={{
+              background: "var(--color-paper-raised)",
+              borderColor: "var(--color-line)",
+            }}
+          >
+            {(
+              [
+                ["name", "Alphabetical"],
+                ["org", "By organisation"],
+              ] as const
+            ).map(([value, label]) => {
+              const active = (value === "org") === groupByOrg;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setGroupByOrg(value === "org")}
+                  className="font-mono rounded px-2.5 py-1 text-[11px] font-medium"
+                  style={{
+                    background: active ? "var(--color-ink)" : "transparent",
+                    color: active
+                      ? "var(--color-paper)"
+                      : "var(--color-ink-soft)",
+                  }}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <div
         className="mb-4 rounded-[4px] border p-1 px-3"
         style={{
@@ -610,16 +675,45 @@ export function PeopleView({
             No people yet.
           </p>
         )}
-        {people.map((p) => (
-          <PersonRow
-            key={p.id}
-            person={p}
-            orgs={orgs}
-            groups={groups}
-            selected={p.id === selectedPersonId}
-            onSelect={onSelectPerson ? () => onSelectPerson(p.id) : undefined}
-          />
-        ))}
+        {!groupByOrg &&
+          people.map((p) => (
+            <PersonRow
+              key={p.id}
+              person={p}
+              orgs={orgs}
+              groups={groups}
+              selected={p.id === selectedPersonId}
+              onSelect={onSelectPerson ? () => onSelectPerson(p.id) : undefined}
+            />
+          ))}
+        {groupByOrg &&
+          [
+            ...orgBuckets.sorted,
+            ...(orgBuckets.noOrg.length > 0
+              ? [{ id: "__none__", name: "No organisation", people: orgBuckets.noOrg }]
+              : []),
+          ].map((bucket) => (
+            <div key={bucket.id}>
+              <h3
+                className="font-mono px-1 pt-3 pb-1 text-[11px] font-semibold tracking-wide uppercase"
+                style={{ color: "var(--color-ink-soft)" }}
+              >
+                {bucket.name}
+              </h3>
+              {bucket.people.map((p) => (
+                <PersonRow
+                  key={p.id}
+                  person={p}
+                  orgs={orgs}
+                  groups={groups}
+                  selected={p.id === selectedPersonId}
+                  onSelect={
+                    onSelectPerson ? () => onSelectPerson(p.id) : undefined
+                  }
+                />
+              ))}
+            </div>
+          ))}
       </div>
 
       <h2
