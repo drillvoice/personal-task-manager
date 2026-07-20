@@ -9,7 +9,9 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 - **Group the People list by organisation.** A toggle above the people list
   switches between the alphabetical (by name) view and a by-organisation view
   that buckets people under their organisation, orgs A–Z, with an unaffiliated
-  "No organisation" bucket last.
+  "No organisation" bucket last. Each organisation renders as its own card with
+  a labelled header (name in the display face, an icon, and a member count) so
+  the groupings read clearly at a glance.
 - **Edit group membership from the Groups section.** Clicking a group in the
   People view now shows its members as chips, with an autosuggesting name field
   to add people (the same picker used for meeting attendees) and an ✕ on each

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useSyncExternalStore, useTransition } from "react";
-import { Plus, Users } from "lucide-react";
+import { Building2, Plus, Users } from "lucide-react";
 import { PersonRow } from "@/components/person-row";
 import { PersonDetailPanel } from "@/components/person-detail-panel";
 import { EntityPicker } from "@/components/entity-picker";
@@ -660,23 +660,23 @@ export function PeopleView({
         </div>
       )}
 
-      <div
-        className="mb-4 rounded-[4px] border p-1 px-3"
-        style={{
-          background: "var(--color-paper-raised)",
-          borderColor: "var(--color-line)",
-        }}
-      >
-        {people.length === 0 && (
-          <p
-            className="p-3 text-[13px]"
-            style={{ color: "var(--color-ink-soft)" }}
-          >
-            No people yet.
-          </p>
-        )}
-        {!groupByOrg &&
-          people.map((p) => (
+      {(people.length === 0 || !groupByOrg) && (
+        <div
+          className="mb-4 rounded-[4px] border p-1 px-3"
+          style={{
+            background: "var(--color-paper-raised)",
+            borderColor: "var(--color-line)",
+          }}
+        >
+          {people.length === 0 && (
+            <p
+              className="p-3 text-[13px]"
+              style={{ color: "var(--color-ink-soft)" }}
+            >
+              No people yet.
+            </p>
+          )}
+          {people.map((p) => (
             <PersonRow
               key={p.id}
               person={p}
@@ -686,35 +686,64 @@ export function PeopleView({
               onSelect={onSelectPerson ? () => onSelectPerson(p.id) : undefined}
             />
           ))}
-        {groupByOrg &&
-          [
+        </div>
+      )}
+
+      {people.length > 0 && groupByOrg && (
+        <div className="mb-4 space-y-3">
+          {[
             ...orgBuckets.sorted,
             ...(orgBuckets.noOrg.length > 0
               ? [{ id: "__none__", name: "No organisation", people: orgBuckets.noOrg }]
               : []),
           ].map((bucket) => (
-            <div key={bucket.id}>
-              <h3
-                className="font-mono px-1 pt-3 pb-1 text-[11px] font-semibold tracking-wide uppercase"
-                style={{ color: "var(--color-ink-soft)" }}
+            <div
+              key={bucket.id}
+              className="overflow-hidden rounded-[4px] border"
+              style={{
+                background: "var(--color-paper-raised)",
+                borderColor: "var(--color-line)",
+              }}
+            >
+              <div
+                className="flex items-center gap-1.5 border-b px-3 py-2"
+                style={{
+                  borderColor: "var(--color-line)",
+                  background: "var(--color-paper)",
+                }}
               >
-                {bucket.name}
-              </h3>
-              {bucket.people.map((p) => (
-                <PersonRow
-                  key={p.id}
-                  person={p}
-                  orgs={orgs}
-                  groups={groups}
-                  selected={p.id === selectedPersonId}
-                  onSelect={
-                    onSelectPerson ? () => onSelectPerson(p.id) : undefined
-                  }
-                />
-              ))}
+                <Building2 size={14} style={{ color: "var(--color-ink-soft)" }} />
+                <h3
+                  className="font-display text-[15px] font-bold"
+                  style={{ color: "var(--color-ink)" }}
+                >
+                  {bucket.name}
+                </h3>
+                <span
+                  className="font-mono ml-auto text-[11px]"
+                  style={{ color: "var(--color-ink-soft)" }}
+                >
+                  {bucket.people.length}
+                </span>
+              </div>
+              <div className="px-3 [&>*:last-child]:border-b-0">
+                {bucket.people.map((p) => (
+                  <PersonRow
+                    key={p.id}
+                    person={p}
+                    orgs={orgs}
+                    groups={groups}
+                    selected={p.id === selectedPersonId}
+                    onSelect={
+                      onSelectPerson ? () => onSelectPerson(p.id) : undefined
+                    }
+                  />
+                ))}
+              </div>
             </div>
           ))}
-      </div>
+        </div>
+      )}
 
       <h2
         className="font-mono mb-2 text-[11px] font-semibold tracking-wide uppercase"
@@ -771,11 +800,20 @@ export function PeopleView({
       </div>
 
       <div className="hidden md:block">
-        {/* Spacer mirroring the header row above the list, so the sticky panel
-            top lines up with the top of the people list, not the heading. */}
+        {/* Spacers mirroring the header row and the sort toggle above the list,
+            so the sticky panel top lines up with the top of the people list. */}
         <div aria-hidden className="invisible mb-4">
           <h1 className="font-display text-xl font-bold">People</h1>
         </div>
+        {people.length > 0 && (
+          <div aria-hidden className="invisible mb-2 flex justify-end">
+            <div className="flex gap-1 rounded-[4px] border p-0.5">
+              <span className="font-mono rounded px-2.5 py-1 text-[11px] font-medium">
+                By organisation
+              </span>
+            </div>
+          </div>
+        )}
         <div className="sticky top-4 max-h-[calc(100vh-2rem)] min-w-0 overflow-y-auto">
         {selectedPerson ? (
           <PersonDetailPanel
