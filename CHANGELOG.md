@@ -6,6 +6,11 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 ## [Unreleased]
 
 ### Added
+- **Edit group membership from the Groups section.** Clicking a group in the
+  People view now shows its members as chips, with an autosuggesting name field
+  to add people (the same picker used for meeting attendees) and an ✕ on each
+  chip to remove them. Membership changes save immediately. Each group also
+  shows a member count in its collapsed row.
 - **Person detail panel with recent meetings.** On desktop, clicking a person
   in the People view now opens a persistent side panel (mirroring the Tasks
   view) with their edit fields, instead of expanding the row inline. Below the

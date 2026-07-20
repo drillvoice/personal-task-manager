@@ -6,15 +6,21 @@ import { PersonRow } from "@/components/person-row";
 import { PersonDetailPanel } from "@/components/person-detail-panel";
 import { EntityPicker } from "@/components/entity-picker";
 import {
+  addGroupMember,
   createGroup,
   createOrganisation,
   createPerson,
   deleteGroup,
   deleteOrganisation,
+  removeGroupMember,
   updateGroup,
   updateOrganisation,
 } from "@/app/(app)/people/actions";
-import type { OrganisationRow, PersonWithOrg } from "@/lib/server/people";
+import type {
+  ContactOption,
+  OrganisationRow,
+  PersonWithOrg,
+} from "@/lib/server/people";
 
 const inputStyle = {
   background: "transparent",
@@ -350,13 +356,41 @@ function OrgRow({ org }: { org: OrganisationRow }) {
   );
 }
 
-function GroupRow({ group }: { group: OrganisationRow }) {
+function GroupRow({
+  group,
+  people,
+}: {
+  group: OrganisationRow;
+  people: PersonWithOrg[];
+}) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(group.name);
   const [notes, setNotes] = useState(group.notes);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+
+  const members = people.filter((p) =>
+    p.groups.some((g) => g.id === group.id),
+  );
+  const memberIds = members.map((p) => p.id);
+  const personOptions: ContactOption[] = people.map((p) => ({
+    id: p.id,
+    name: p.name,
+  }));
+
+  const changeMembers = (nextIds: string[]) => {
+    const added = nextIds.filter((id) => !memberIds.includes(id));
+    const removed = memberIds.filter((id) => !nextIds.includes(id));
+    startTransition(async () => {
+      for (const personId of added) {
+        await addGroupMember({ groupId: group.id, personId });
+      }
+      for (const personId of removed) {
+        await removeGroupMember({ groupId: group.id, personId });
+      }
+    });
+  };
 
   const save = () => {
     if (!name.trim()) return;
@@ -387,12 +421,20 @@ function GroupRow({ group }: { group: OrganisationRow }) {
         style={{ borderColor: "var(--color-line)" }}
         onClick={() => setEditing(true)}
       >
-        <span
-          className="font-display text-[14px] font-semibold"
-          style={{ color: "var(--color-ink)" }}
-        >
-          {group.name}
-        </span>
+        <div className="flex items-baseline gap-2">
+          <span
+            className="font-display text-[14px] font-semibold"
+            style={{ color: "var(--color-ink)" }}
+          >
+            {group.name}
+          </span>
+          <span
+            className="font-mono text-[11px]"
+            style={{ color: "var(--color-ink-soft)" }}
+          >
+            {members.length} {members.length === 1 ? "member" : "members"}
+          </span>
+        </div>
         {group.notes && (
           <p
             className="mt-1 text-[12px]"
@@ -421,6 +463,16 @@ function GroupRow({ group }: { group: OrganisationRow }) {
           if (e.key === "Escape") setEditing(false);
         }}
       />
+      <div className="mb-2">
+        <EntityPicker
+          mode="multi"
+          options={personOptions}
+          selectedIds={memberIds}
+          onChange={changeMembers}
+          placeholder="Add member…"
+          icon={Users}
+        />
+      </div>
       <textarea
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
@@ -619,7 +671,7 @@ export function PeopleView({
           </p>
         )}
         {groups.map((g) => (
-          <GroupRow key={g.id} group={g} />
+          <GroupRow key={g.id} group={g} people={people} />
         ))}
       </div>
       </div>
