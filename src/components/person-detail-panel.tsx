@@ -88,6 +88,13 @@ export function PersonDetailPanel({
     });
   };
 
+  const formKeyHandler = (e: React.KeyboardEvent) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+      e.preventDefault();
+      save();
+    }
+  };
+
   return (
     <div
       className="rounded-[4px] border p-4"
@@ -95,6 +102,7 @@ export function PersonDetailPanel({
         background: "var(--color-paper-raised)",
         borderColor: "var(--color-line)",
       }}
+      onKeyDown={formKeyHandler}
     >
       <div className="mb-3 flex items-center justify-between">
         <span

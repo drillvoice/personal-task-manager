@@ -99,6 +99,10 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
   control.
 
 ### Fixed
+- **Cmd/Ctrl+Enter now saves in the person detail panel.** The desktop People
+  edit panel had no keyboard-save shortcut, unlike the other edit interfaces
+  across the app. It now saves on Cmd/Ctrl+Enter from any field, matching the
+  add-person form.
 - **The People detail panel now follows the viewport as you scroll.** The
   desktop "Select a person to edit" panel was `sticky` but pinned to the top of
   a column sized only to its own content, so selecting a person after scrolling
