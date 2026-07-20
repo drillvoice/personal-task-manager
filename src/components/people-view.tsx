@@ -1,20 +1,26 @@
 "use client";
 
-import { useState, useSyncExternalStore, useTransition } from "react";
+import { useMemo, useState, useSyncExternalStore, useTransition } from "react";
 import { Plus, Users } from "lucide-react";
 import { PersonRow } from "@/components/person-row";
 import { PersonDetailPanel } from "@/components/person-detail-panel";
 import { EntityPicker } from "@/components/entity-picker";
 import {
+  addGroupMember,
   createGroup,
   createOrganisation,
   createPerson,
   deleteGroup,
   deleteOrganisation,
+  removeGroupMember,
   updateGroup,
   updateOrganisation,
 } from "@/app/(app)/people/actions";
-import type { OrganisationRow, PersonWithOrg } from "@/lib/server/people";
+import type {
+  ContactOption,
+  OrganisationRow,
+  PersonWithOrg,
+} from "@/lib/server/people";
 
 const inputStyle = {
   background: "transparent",
@@ -350,13 +356,41 @@ function OrgRow({ org }: { org: OrganisationRow }) {
   );
 }
 
-function GroupRow({ group }: { group: OrganisationRow }) {
+function GroupRow({
+  group,
+  people,
+}: {
+  group: OrganisationRow;
+  people: PersonWithOrg[];
+}) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(group.name);
   const [notes, setNotes] = useState(group.notes);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+
+  const members = people.filter((p) =>
+    p.groups.some((g) => g.id === group.id),
+  );
+  const memberIds = members.map((p) => p.id);
+  const personOptions: ContactOption[] = people.map((p) => ({
+    id: p.id,
+    name: p.name,
+  }));
+
+  const changeMembers = (nextIds: string[]) => {
+    const added = nextIds.filter((id) => !memberIds.includes(id));
+    const removed = memberIds.filter((id) => !nextIds.includes(id));
+    startTransition(async () => {
+      for (const personId of added) {
+        await addGroupMember({ groupId: group.id, personId });
+      }
+      for (const personId of removed) {
+        await removeGroupMember({ groupId: group.id, personId });
+      }
+    });
+  };
 
   const save = () => {
     if (!name.trim()) return;
@@ -387,12 +421,20 @@ function GroupRow({ group }: { group: OrganisationRow }) {
         style={{ borderColor: "var(--color-line)" }}
         onClick={() => setEditing(true)}
       >
-        <span
-          className="font-display text-[14px] font-semibold"
-          style={{ color: "var(--color-ink)" }}
-        >
-          {group.name}
-        </span>
+        <div className="flex items-baseline gap-2">
+          <span
+            className="font-display text-[14px] font-semibold"
+            style={{ color: "var(--color-ink)" }}
+          >
+            {group.name}
+          </span>
+          <span
+            className="font-mono text-[11px]"
+            style={{ color: "var(--color-ink-soft)" }}
+          >
+            {members.length} {members.length === 1 ? "member" : "members"}
+          </span>
+        </div>
         {group.notes && (
           <p
             className="mt-1 text-[12px]"
@@ -421,6 +463,16 @@ function GroupRow({ group }: { group: OrganisationRow }) {
           if (e.key === "Escape") setEditing(false);
         }}
       />
+      <div className="mb-2">
+        <EntityPicker
+          mode="multi"
+          options={personOptions}
+          selectedIds={memberIds}
+          onChange={changeMembers}
+          placeholder="Add member…"
+          icon={Users}
+        />
+      </div>
       <textarea
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
@@ -502,8 +554,36 @@ export function PeopleView({
   groups: OrganisationRow[];
 }) {
   const [showAdd, setShowAdd] = useState(false);
+  const [groupByOrg, setGroupByOrg] = useState(false);
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
   const isDesktop = useIsDesktop();
+
+  // People arrive already sorted by name, so each bucket stays name-ordered;
+  // orgs are sorted alphabetically and the unaffiliated bucket trails last.
+  const orgBuckets = useMemo(() => {
+    const byOrg = new Map<
+      string,
+      { id: string; name: string; people: PersonWithOrg[] }
+    >();
+    const noOrg: PersonWithOrg[] = [];
+    for (const p of people) {
+      if (p.orgId && p.orgName) {
+        const bucket = byOrg.get(p.orgId) ?? {
+          id: p.orgId,
+          name: p.orgName,
+          people: [],
+        };
+        bucket.people.push(p);
+        byOrg.set(p.orgId, bucket);
+      } else {
+        noOrg.push(p);
+      }
+    }
+    const sorted = [...byOrg.values()].sort((a, b) =>
+      a.name.localeCompare(b.name),
+    );
+    return { sorted, noOrg };
+  }, [people]);
 
   // Derived from server data, so deleting the selected person (which removes it
   // on revalidation) closes the panel.
@@ -543,6 +623,43 @@ export function PeopleView({
         />
       )}
 
+      {people.length > 0 && (
+        <div className="mb-2 flex justify-end">
+          <div
+            className="flex gap-1 rounded-[4px] border p-0.5"
+            style={{
+              background: "var(--color-paper-raised)",
+              borderColor: "var(--color-line)",
+            }}
+          >
+            {(
+              [
+                ["name", "Alphabetical"],
+                ["org", "By organisation"],
+              ] as const
+            ).map(([value, label]) => {
+              const active = (value === "org") === groupByOrg;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setGroupByOrg(value === "org")}
+                  className="font-mono rounded px-2.5 py-1 text-[11px] font-medium"
+                  style={{
+                    background: active ? "var(--color-ink)" : "transparent",
+                    color: active
+                      ? "var(--color-paper)"
+                      : "var(--color-ink-soft)",
+                  }}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <div
         className="mb-4 rounded-[4px] border p-1 px-3"
         style={{
@@ -558,16 +675,45 @@ export function PeopleView({
             No people yet.
           </p>
         )}
-        {people.map((p) => (
-          <PersonRow
-            key={p.id}
-            person={p}
-            orgs={orgs}
-            groups={groups}
-            selected={p.id === selectedPersonId}
-            onSelect={onSelectPerson ? () => onSelectPerson(p.id) : undefined}
-          />
-        ))}
+        {!groupByOrg &&
+          people.map((p) => (
+            <PersonRow
+              key={p.id}
+              person={p}
+              orgs={orgs}
+              groups={groups}
+              selected={p.id === selectedPersonId}
+              onSelect={onSelectPerson ? () => onSelectPerson(p.id) : undefined}
+            />
+          ))}
+        {groupByOrg &&
+          [
+            ...orgBuckets.sorted,
+            ...(orgBuckets.noOrg.length > 0
+              ? [{ id: "__none__", name: "No organisation", people: orgBuckets.noOrg }]
+              : []),
+          ].map((bucket) => (
+            <div key={bucket.id}>
+              <h3
+                className="font-mono px-1 pt-3 pb-1 text-[11px] font-semibold tracking-wide uppercase"
+                style={{ color: "var(--color-ink-soft)" }}
+              >
+                {bucket.name}
+              </h3>
+              {bucket.people.map((p) => (
+                <PersonRow
+                  key={p.id}
+                  person={p}
+                  orgs={orgs}
+                  groups={groups}
+                  selected={p.id === selectedPersonId}
+                  onSelect={
+                    onSelectPerson ? () => onSelectPerson(p.id) : undefined
+                  }
+                />
+              ))}
+            </div>
+          ))}
       </div>
 
       <h2
@@ -619,12 +765,18 @@ export function PeopleView({
           </p>
         )}
         {groups.map((g) => (
-          <GroupRow key={g.id} group={g} />
+          <GroupRow key={g.id} group={g} people={people} />
         ))}
       </div>
       </div>
 
-      <div className="hidden md:sticky md:top-4 md:block md:max-h-[calc(100vh-2rem)] md:min-w-0 md:overflow-y-auto">
+      <div className="hidden md:block">
+        {/* Spacer mirroring the header row above the list, so the sticky panel
+            top lines up with the top of the people list, not the heading. */}
+        <div aria-hidden className="invisible mb-4">
+          <h1 className="font-display text-xl font-bold">People</h1>
+        </div>
+        <div className="sticky top-4 max-h-[calc(100vh-2rem)] min-w-0 overflow-y-auto">
         {selectedPerson ? (
           <PersonDetailPanel
             key={selectedPerson.id}
@@ -644,6 +796,7 @@ export function PeopleView({
             Select a person to edit
           </div>
         )}
+        </div>
       </div>
     </div>
   );

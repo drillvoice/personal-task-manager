@@ -247,3 +247,74 @@ export async function deleteGroup(
   revalidateContactViews();
   return { ok: true };
 }
+
+const groupMemberSchema = z.object({
+  groupId: z.string().uuid(),
+  personId: z.string().uuid(),
+});
+
+export type GroupMemberInput = z.input<typeof groupMemberSchema>;
+
+// Junction rows carry no userId, so both ends must be confirmed as the user's
+// own before touching the membership.
+async function ownsGroupAndPerson(
+  userId: string,
+  groupId: string,
+  personId: string,
+): Promise<boolean> {
+  const [groupRow, personRow] = await Promise.all([
+    db
+      .select({ id: groups.id })
+      .from(groups)
+      .where(and(eq(groups.id, groupId), eq(groups.userId, userId))),
+    db
+      .select({ id: people.id })
+      .from(people)
+      .where(and(eq(people.id, personId), eq(people.userId, userId))),
+  ]);
+  return groupRow.length === 1 && personRow.length === 1;
+}
+
+export async function addGroupMember(
+  input: GroupMemberInput,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const userId = await requireUserId();
+  const parsed = groupMemberSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid" };
+  }
+  const { groupId, personId } = parsed.data;
+  if (!(await ownsGroupAndPerson(userId, groupId, personId))) {
+    return { ok: false, error: "Unknown group or person" };
+  }
+  await db
+    .insert(personGroups)
+    .values({ groupId, personId })
+    .onConflictDoNothing();
+  revalidateContactViews();
+  return { ok: true };
+}
+
+export async function removeGroupMember(
+  input: GroupMemberInput,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const userId = await requireUserId();
+  const parsed = groupMemberSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid" };
+  }
+  const { groupId, personId } = parsed.data;
+  if (!(await ownsGroupAndPerson(userId, groupId, personId))) {
+    return { ok: false, error: "Unknown group or person" };
+  }
+  await db
+    .delete(personGroups)
+    .where(
+      and(
+        eq(personGroups.groupId, groupId),
+        eq(personGroups.personId, personId),
+      ),
+    );
+  revalidateContactViews();
+  return { ok: true };
+}
