@@ -99,6 +99,12 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
   control.
 
 ### Fixed
+- **The People detail panel now follows the viewport as you scroll.** The
+  desktop "Select a person to edit" panel was `sticky` but pinned to the top of
+  a column sized only to its own content, so selecting a person after scrolling
+  left the panel stranded above the fold. The panel column now stretches to the
+  full grid-row height, giving the sticky panel room to track the scroll
+  position and stay in view.
 - **"Mark complete" in the task editor now works and shows it.** The checkbox
   in the task detail panel (the Today-screen edit modal and the Tasks-view side
   panel) was a static, always-empty box: clicking it fired the completion

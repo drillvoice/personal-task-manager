@@ -799,7 +799,7 @@ export function PeopleView({
       </div>
       </div>
 
-      <div className="hidden md:block">
+      <div className="hidden md:block md:self-stretch">
         {/* Spacers mirroring the header row and the sort toggle above the list,
             so the sticky panel top lines up with the top of the people list. */}
         <div aria-hidden className="invisible mb-4">
