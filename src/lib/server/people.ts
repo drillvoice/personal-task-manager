@@ -1,7 +1,25 @@
 import "server-only";
-import { asc, eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { groups, organisations, people, personGroups } from "@/lib/db/schema";
+import {
+  groups,
+  meetingAttendees,
+  meetings,
+  organisations,
+  people,
+  personGroups,
+} from "@/lib/db/schema";
+
+// Recent meetings shown on a person's detail panel are capped — the panel is a
+// quick reference, not a full history.
+const RECENT_MEETINGS_PER_PERSON = 6;
+
+export type PersonMeeting = {
+  id: string;
+  title: string;
+  meetingDate: string;
+  status: "upcoming" | "completed";
+};
 
 export type PersonWithOrg = {
   id: string;
@@ -13,6 +31,7 @@ export type PersonWithOrg = {
   orgId: string | null;
   orgName: string | null;
   groups: ContactOption[];
+  meetings: PersonMeeting[];
 };
 
 export type OrganisationRow = {
@@ -30,7 +49,8 @@ export async function loadPeopleData(userId: string): Promise<{
   orgs: OrganisationRow[];
   groups: OrganisationRow[];
 }> {
-  const [personRows, orgRows, groupRows, membershipRows] = await Promise.all([
+  const [personRows, orgRows, groupRows, membershipRows, meetingRows] =
+    await Promise.all([
     db
       .select({ person: people, orgName: organisations.name })
       .from(people)
@@ -65,7 +85,33 @@ export async function loadPeopleData(userId: string): Promise<{
       .innerJoin(groups, eq(personGroups.groupId, groups.id))
       .where(eq(groups.userId, userId))
       .orderBy(asc(groups.name)),
+    db
+      .select({
+        personId: meetingAttendees.personId,
+        id: meetings.id,
+        title: meetings.title,
+        meetingDate: meetings.meetingDate,
+        status: meetings.status,
+      })
+      .from(meetingAttendees)
+      .innerJoin(meetings, eq(meetingAttendees.meetingId, meetings.id))
+      .where(eq(meetings.userId, userId))
+      .orderBy(desc(meetings.meetingDate), desc(meetings.createdAt)),
   ]);
+
+  const meetingsByPerson = new Map<string, PersonMeeting[]>();
+  for (const m of meetingRows) {
+    const list = meetingsByPerson.get(m.personId) ?? [];
+    if (list.length < RECENT_MEETINGS_PER_PERSON) {
+      list.push({
+        id: m.id,
+        title: m.title,
+        meetingDate: m.meetingDate,
+        status: m.status,
+      });
+    }
+    meetingsByPerson.set(m.personId, list);
+  }
 
   const groupsByPerson = new Map<string, ContactOption[]>();
   for (const m of membershipRows) {
@@ -85,6 +131,7 @@ export async function loadPeopleData(userId: string): Promise<{
       orgId: r.person.organisationId,
       orgName: r.orgName ?? null,
       groups: groupsByPerson.get(r.person.id) ?? [],
+      meetings: meetingsByPerson.get(r.person.id) ?? [],
     })),
     orgs: orgRows,
     groups: groupRows,

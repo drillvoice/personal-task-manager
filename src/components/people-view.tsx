@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useSyncExternalStore, useTransition } from "react";
 import { Plus, Users } from "lucide-react";
 import { PersonRow } from "@/components/person-row";
+import { PersonDetailPanel } from "@/components/person-detail-panel";
 import { EntityPicker } from "@/components/entity-picker";
 import {
   createGroup,
@@ -20,6 +21,21 @@ const inputStyle = {
   borderColor: "var(--color-line)",
   color: "var(--color-ink)",
 } as const;
+
+// The detail panel is desktop-only; below md, rows keep inline editing.
+const DESKTOP_QUERY = "(min-width: 768px)";
+
+function useIsDesktop(): boolean {
+  return useSyncExternalStore(
+    (onChange) => {
+      const mql = window.matchMedia(DESKTOP_QUERY);
+      mql.addEventListener("change", onChange);
+      return () => mql.removeEventListener("change", onChange);
+    },
+    () => window.matchMedia(DESKTOP_QUERY).matches,
+    () => false,
+  );
+}
 
 function AddPersonForm({
   orgs,
@@ -486,9 +502,24 @@ export function PeopleView({
   groups: OrganisationRow[];
 }) {
   const [showAdd, setShowAdd] = useState(false);
+  const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
+  const isDesktop = useIsDesktop();
+
+  // Derived from server data, so deleting the selected person (which removes it
+  // on revalidation) closes the panel.
+  const selectedPerson =
+    selectedPersonId !== null
+      ? (people.find((p) => p.id === selectedPersonId) ?? null)
+      : null;
+
+  const onSelectPerson = isDesktop
+    ? (id: string) =>
+        setSelectedPersonId((prev) => (prev === id ? null : id))
+    : undefined;
 
   return (
-    <div className="p-4 pb-24">
+    <div className="p-4 pb-24 md:grid md:grid-cols-[minmax(0,1fr)_minmax(320px,380px)] md:items-start md:gap-6">
+      <div className="min-w-0">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h1 className="font-display text-xl font-bold">People</h1>
         <button
@@ -528,7 +559,14 @@ export function PeopleView({
           </p>
         )}
         {people.map((p) => (
-          <PersonRow key={p.id} person={p} orgs={orgs} groups={groups} />
+          <PersonRow
+            key={p.id}
+            person={p}
+            orgs={orgs}
+            groups={groups}
+            selected={p.id === selectedPersonId}
+            onSelect={onSelectPerson ? () => onSelectPerson(p.id) : undefined}
+          />
         ))}
       </div>
 
@@ -583,6 +621,29 @@ export function PeopleView({
         {groups.map((g) => (
           <GroupRow key={g.id} group={g} />
         ))}
+      </div>
+      </div>
+
+      <div className="hidden md:sticky md:top-4 md:block md:max-h-[calc(100vh-2rem)] md:min-w-0 md:overflow-y-auto">
+        {selectedPerson ? (
+          <PersonDetailPanel
+            key={selectedPerson.id}
+            person={selectedPerson}
+            orgs={orgs}
+            groups={groups}
+            onClose={() => setSelectedPersonId(null)}
+          />
+        ) : (
+          <div
+            className="font-mono flex min-h-[220px] items-center justify-center rounded-[4px] border border-dashed text-[11px]"
+            style={{
+              borderColor: "var(--color-line)",
+              color: "var(--color-ink-soft)",
+            }}
+          >
+            Select a person to edit
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { Mail, Phone, Users } from "lucide-react";
+import { useEffect, useState, useTransition } from "react";
+import { CalendarDays, Users, X } from "lucide-react";
+import Link from "next/link";
+import { DueLabel } from "@/components/due-label";
 import { EntityPicker } from "@/components/entity-picker";
 import type { PickerOption } from "@/components/entity-picker";
 import {
@@ -12,16 +14,22 @@ import {
 } from "@/app/(app)/people/actions";
 import type { PersonWithOrg } from "@/lib/server/people";
 
-function PersonEditForm({
+const inputStyle = {
+  background: "transparent",
+  borderColor: "var(--color-line)",
+  color: "var(--color-ink)",
+} as const;
+
+export function PersonDetailPanel({
   person,
   orgs,
   groups,
-  onDone,
+  onClose,
 }: {
   person: PersonWithOrg;
   orgs: PickerOption[];
   groups: PickerOption[];
-  onDone: () => void;
+  onClose: () => void;
 }) {
   const [name, setName] = useState(person.name);
   const [role, setRole] = useState(person.role);
@@ -33,6 +41,20 @@ function PersonEditForm({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) {
+        el.blur();
+        return;
+      }
+      onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
 
   const save = () => {
     if (!name.trim()) return;
@@ -48,7 +70,7 @@ function PersonEditForm({
         groupIds,
       });
       if (res.ok) {
-        onDone();
+        onClose();
       } else {
         setError(res.error);
       }
@@ -62,43 +84,50 @@ function PersonEditForm({
     }
     startTransition(async () => {
       await deletePerson(person.id);
-      onDone();
+      onClose();
     });
-  };
-
-  const inputStyle = {
-    background: "transparent",
-    borderColor: "var(--color-line)",
-    color: "var(--color-ink)",
-  } as const;
-
-  const keyHandler = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); save(); }
-    if (e.key === "Escape") onDone();
   };
 
   return (
     <div
-      className="border-b px-1 py-3"
-      style={{ borderColor: "var(--color-line)" }}
+      className="rounded-[4px] border p-4"
+      style={{
+        background: "var(--color-paper-raised)",
+        borderColor: "var(--color-line)",
+      }}
     >
+      <div className="mb-3 flex items-center justify-between">
+        <span
+          className="font-mono text-[10px] font-semibold tracking-[0.08em] uppercase"
+          style={{ color: "var(--color-ink-soft)" }}
+        >
+          Person
+        </span>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close person panel"
+          className="-m-1 rounded p-1"
+          style={{ color: "var(--color-ink-soft)" }}
+        >
+          <X size={16} />
+        </button>
+      </div>
+
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Name"
         className="mb-2 w-full border p-2 text-[13px] outline-none"
         style={inputStyle}
-        autoFocus
-        onKeyDown={keyHandler}
       />
-      <div className="mb-2 grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-4">
+      <div className="mb-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
         <input
           value={role}
           onChange={(e) => setRole(e.target.value)}
           placeholder="Role"
           className="w-full border p-2 text-[13px] outline-none"
           style={inputStyle}
-          onKeyDown={keyHandler}
         />
         <EntityPicker
           mode="single"
@@ -118,7 +147,6 @@ function PersonEditForm({
           type="email"
           className="w-full border p-2 text-[13px] outline-none"
           style={inputStyle}
-          onKeyDown={keyHandler}
         />
         <input
           value={phone}
@@ -127,7 +155,6 @@ function PersonEditForm({
           type="tel"
           className="w-full border p-2 text-[13px] outline-none"
           style={inputStyle}
-          onKeyDown={keyHandler}
         />
       </div>
       <div className="mb-2">
@@ -151,9 +178,6 @@ function PersonEditForm({
         rows={3}
         className="mb-2 w-full resize-y border p-2 text-[13px] outline-none"
         style={inputStyle}
-        onKeyDown={(e) => {
-          if (e.key === "Escape") onDone();
-        }}
       />
       {error && (
         <p
@@ -190,7 +214,7 @@ function PersonEditForm({
         <div className="ml-auto flex gap-2">
           <button
             type="button"
-            onClick={onDone}
+            onClick={onClose}
             className="font-mono px-3 py-1.5 text-[12px]"
             style={{ color: "var(--color-ink-soft)" }}
           >
@@ -211,111 +235,55 @@ function PersonEditForm({
           </button>
         </div>
       </div>
-    </div>
-  );
-}
 
-export function PersonRow({
-  person,
-  orgs,
-  groups,
-  onSelect,
-  selected,
-}: {
-  person: PersonWithOrg;
-  orgs: PickerOption[];
-  groups: PickerOption[];
-  // When provided (desktop), the row selects the person for the detail panel
-  // instead of swapping to the inline edit form.
-  onSelect?: () => void;
-  selected?: boolean;
-}) {
-  const [editing, setEditing] = useState(false);
-
-  if (editing && !onSelect) {
-    return (
-      <PersonEditForm
-        person={person}
-        orgs={orgs}
-        groups={groups}
-        onDone={() => setEditing(false)}
-      />
-    );
-  }
-
-  const meta = [person.role, person.orgName].filter(Boolean).join(" · ");
-  const hasDetails = meta || person.email || person.phone;
-
-  return (
-    <div
-      className="cursor-pointer border-b px-1 py-2.5"
-      style={{
-        borderColor: "var(--color-line)",
-        background: selected ? "var(--color-paper)" : "transparent",
-      }}
-      onClick={() => (onSelect ? onSelect() : setEditing(true))}
-    >
-      <span
-        className="font-display text-[14px] font-semibold"
-        style={{ color: "var(--color-ink)" }}
+      <div
+        className="mt-4 border-t pt-3"
+        style={{ borderColor: "var(--color-line)" }}
       >
-        {person.name}
-      </span>
-      {hasDetails && (
-        <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          {meta && (
-            <span
-              className="font-mono text-[11px]"
-              style={{ color: "var(--color-ink-soft)" }}
-            >
-              {meta}
-            </span>
-          )}
-          {person.email && (
-            <span
-              className="font-mono flex items-center gap-1 text-[11px]"
-              style={{ color: "var(--color-ink-soft)" }}
-            >
-              <Mail size={11} />
-              {person.email}
-            </span>
-          )}
-          {person.phone && (
-            <span
-              className="font-mono flex items-center gap-1 text-[11px]"
-              style={{ color: "var(--color-ink-soft)" }}
-            >
-              <Phone size={11} />
-              {person.phone}
-            </span>
-          )}
-        </div>
-      )}
-      {person.groups.length > 0 && (
-        <div className="mt-1.5 flex flex-wrap items-center gap-1">
-          {person.groups.map((g) => (
-            <span
-              key={g.id}
-              className="font-mono inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
-              style={{
-                background: "var(--color-teal-soft)",
-                color: "var(--color-teal)",
-              }}
-            >
-              <Users size={10} />
-              {g.name}
-            </span>
-          ))}
-        </div>
-      )}
-      {person.notes && (
-        <p
-          className="mt-1 text-[12px]"
+        <h3
+          className="font-mono mb-2 text-[10px] font-semibold tracking-[0.08em] uppercase"
           style={{ color: "var(--color-ink-soft)" }}
         >
-          {person.notes}
-        </p>
-      )}
+          Recent meetings
+        </h3>
+        {person.meetings.length === 0 ? (
+          <p
+            className="font-mono text-[11px]"
+            style={{ color: "var(--color-ink-soft)" }}
+          >
+            No meetings yet.
+          </p>
+        ) : (
+          <div>
+            {person.meetings.map((m) => (
+              <Link
+                key={m.id}
+                href={`/meetings/${m.id}`}
+                className="flex items-center justify-between gap-2 border-b py-2 last:border-b-0"
+                style={{ borderColor: "var(--color-line)" }}
+              >
+                <span
+                  className="min-w-0 flex-1 truncate text-[13px]"
+                  style={{ color: "var(--color-ink)" }}
+                >
+                  {m.title}
+                </span>
+                {m.status === "upcoming" ? (
+                  <DueLabel dateIso={m.meetingDate} />
+                ) : (
+                  <span
+                    className="font-mono flex items-center gap-1 text-[11px] font-medium whitespace-nowrap"
+                    style={{ color: "var(--color-ink-soft)" }}
+                  >
+                    <CalendarDays size={11} strokeWidth={2} />
+                    {m.meetingDate}
+                  </span>
+                )}
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
