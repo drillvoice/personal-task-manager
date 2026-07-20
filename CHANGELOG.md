@@ -16,7 +16,9 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
   view) with their edit fields, instead of expanding the row inline. Below the
   fields, the panel lists the person's most recent meetings (capped at six,
   newest first), each linking through to the meeting. Below `md`, rows keep the
-  inline edit form.
+  inline edit form. The People view now uses the wider desktop surface (as
+  Tasks does) so list rows no longer wrap their metadata, and the panel top
+  lines up with the top of the people list.
 - **People groups for fast attendee entry:** people can now be bundled into
   named groups (e.g. "Comms Team") from the person edit/add form, alongside
   their organisation. Groups are many-to-many (a person can be in several) and

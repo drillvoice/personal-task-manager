@@ -676,7 +676,13 @@ export function PeopleView({
       </div>
       </div>
 
-      <div className="hidden md:sticky md:top-4 md:block md:max-h-[calc(100vh-2rem)] md:min-w-0 md:overflow-y-auto">
+      <div className="hidden md:block">
+        {/* Spacer mirroring the header row above the list, so the sticky panel
+            top lines up with the top of the people list, not the heading. */}
+        <div aria-hidden className="invisible mb-4">
+          <h1 className="font-display text-xl font-bold">People</h1>
+        </div>
+        <div className="sticky top-4 max-h-[calc(100vh-2rem)] min-w-0 overflow-y-auto">
         {selectedPerson ? (
           <PersonDetailPanel
             key={selectedPerson.id}
@@ -696,6 +702,7 @@ export function PeopleView({
             Select a person to edit
           </div>
         )}
+        </div>
       </div>
     </div>
   );
