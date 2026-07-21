@@ -709,19 +709,19 @@ export function PeopleView({
                 className="flex items-center gap-1.5 border-b px-3 py-2"
                 style={{
                   borderColor: "var(--color-line)",
-                  background: "var(--color-paper)",
+                  background: "var(--color-accent)",
                 }}
               >
-                <Building2 size={14} style={{ color: "var(--color-ink-soft)" }} />
+                <Building2 size={14} style={{ color: "var(--color-paper-raised)" }} />
                 <h3
                   className="font-display text-[15px] font-bold"
-                  style={{ color: "var(--color-ink)" }}
+                  style={{ color: "var(--color-paper-raised)" }}
                 >
                   {bucket.name}
                 </h3>
                 <span
                   className="font-mono ml-auto text-[11px]"
-                  style={{ color: "var(--color-ink-soft)" }}
+                  style={{ color: "var(--color-paper-raised)" }}
                 >
                   {bucket.people.length}
                 </span>
