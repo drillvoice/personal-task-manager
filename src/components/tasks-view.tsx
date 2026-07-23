@@ -6,6 +6,7 @@ import { Plus } from "lucide-react";
 import { ProjectCard } from "@/components/project-card";
 import { TaskRow } from "@/components/task-row";
 import { TaskDetailPanel } from "@/components/task-detail-panel";
+import { quickAddTask } from "@/app/(app)/review/actions";
 import {
   SmartSearchBar,
   hasActiveFilters,
@@ -136,6 +137,12 @@ export function TasksView({
     name: p.id === null ? "Inbox (no project)" : p.name,
   }));
 
+  // Inbox is a pseudo-project (id null) — it can't be the target of a
+  // `^project` reference, since it is already the fallback.
+  const realProjects = projectOptions.filter(
+    (p): p is { id: string; name: string } => p.id !== null,
+  );
+
   return (
     <div className="p-4 pb-24 md:grid md:grid-cols-[minmax(0,1fr)_minmax(320px,380px)] md:items-start md:gap-6">
       <div className="min-w-0">
@@ -193,6 +200,8 @@ export function TasksView({
         filters={filters}
         setFilters={setFilters}
         availableTags={availableTags}
+        projects={realProjects}
+        onCreate={(title, projectId) => quickAddTask({ title, projectId })}
       />
 
       {mode === "by_project" && !active && (
@@ -318,9 +327,7 @@ export function TasksView({
           <TaskDetailPanel
             key={selectedTask.id}
             task={selectedTask}
-            projects={projectOptions.filter(
-              (p): p is { id: string; name: string } => p.id !== null,
-            )}
+            projects={realProjects}
             people={people}
             tagOptions={tagOptions}
             onClose={() => setSelectedTaskId(null)}

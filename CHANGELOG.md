@@ -6,6 +6,16 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 ## [Unreleased]
 
 ### Added
+- **The Tasks search bar now doubles as a capture bar.** Typing still filters
+  the list live; pressing ⏎ creates a task from whatever is in the box. It
+  understands the same `#tag` and natural-language due-date syntax as the other
+  quick-add fields, plus a new `^project` sigil — typing `^` opens an inline
+  project autocomplete (arrow keys or click to pick, ⏎/Tab to insert), so
+  multi-word project names work without quoting. Text after `^` that matches no
+  project is left in the title as-is and the task goes to Inbox, so a typo can
+  never misdirect a capture. A hint under the bar always names the destination
+  before you commit, and turns into a confirmation afterwards. Creating clears
+  the search text but leaves any filter chips on.
 - **Group the People list by organisation.** A toggle above the people list
   switches between the alphabetical (by name) view and a by-organisation view
   that buckets people under their organisation, orgs A–Z, with an unaffiliated

@@ -105,6 +105,8 @@ Two modes, toggled at the top of the same screen:
 
 Both modes share one **smart search/filter bar**: a free-text search over task titles, plus combinable toggle chips for **priority** (P1/P2/P3, color-coded — these filter by the `p1`/`p2`/`p3` tag, same underlying data as the tag chips below), **status** (Next action / Waiting on), and **tag** (dynamically generated from tags in use, excluding the priority tags already surfaced as their own chips). All filters AND together. In "By project" mode, an active filter collapses out non-matching projects and auto-expands matching ones to show just the relevant tasks.
 
+The search bar doubles as a **capture bar**: typing filters as described above, and pressing ⏎ creates a task from whatever is in the box. It accepts the same inline syntax as the other quick-add fields — `#tag` and a natural-language due phrase ("in 3 days") — plus a `^project` sigil, which is unique to this bar because it is the only capture surface not already scoped to a project. Typing `^` opens an inline project autocomplete; selecting from it inserts the full project name, so multi-word names work. Text after `^` that matches no project is left in the title verbatim and the task lands in Inbox — a typo never blocks or misdirects a capture. On success the search text clears while the filter chips stay on. (The sigil is `^` rather than `@` because `@` is reserved for GTD context tags — see §3.)
+
 A **"+ New task"** action opens an inline form (title, project dropdown incl. Inbox, due date, tag picker) without leaving the page. There is no separate priority control — set it by picking (or typing) a `p1`/`p2`/`p3` tag, same as any other tag.
 
 ### C. Project Notes
