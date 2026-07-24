@@ -88,6 +88,14 @@ Concrete rules:
   than a longer message.
 - This applies to setup and ops work specifically. For code review,
   code changes, and coding-question answers, terse is still fine.
+- **Make important caveats visually prominent — Joel scans.** When a
+  response ends with a "one thing worth flagging" style caveat, trade-off,
+  or gotcha that Joel genuinely needs to notice, don't leave it as an
+  ordinary sentence buried at the bottom. Keeping it last is good, but set
+  it off so it survives a scan: give it its own heading (e.g. a bold
+  **⚠️ Heads-up** line), extra blank lines around it, or a blockquote.
+  Reserve this for things that actually matter — if every response shouts,
+  nothing does.
 
 ## Standing rules
 
