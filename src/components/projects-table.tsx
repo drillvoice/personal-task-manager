@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useLayoutEffect, useRef, useState, useTransition } from "react";
 import dynamic from "next/dynamic";
 import { Plus } from "lucide-react";
 import { upsertWeeklyNote } from "@/app/(app)/projects/actions";
@@ -14,9 +14,9 @@ export function ProjectsTable({ data }: { data: ProjectsTableData }) {
   const [showAdd, setShowAdd] = useState(false);
 
   return (
-    <div className="p-6">
+    <div className="px-4 py-6">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <h1 className="font-display text-xl font-bold">Projects</h1>
+        <h1 className="font-display text-xl font-bold">Project overview</h1>
         <button
           type="button"
           onClick={() => setShowAdd((s) => !s)}
@@ -34,10 +34,7 @@ export function ProjectsTable({ data }: { data: ProjectsTableData }) {
         style={{ color: "var(--color-ink-soft)" }}
       >
         Click a cell to write the week&rsquo;s update — it saves when you
-        click away. Columns fill in as you add notes across weeks.{" "}
-        <span className="font-mono">
-          (Desktop-oriented view — not optimised for mobile.)
-        </span>
+        click away. Columns fill in as you add notes across weeks.
       </p>
 
       {showAdd && (
@@ -48,11 +45,10 @@ export function ProjectsTable({ data }: { data: ProjectsTableData }) {
       )}
 
       <div
-        className="gtd-scrollbar overflow-auto rounded-[4px] border"
+        className="gtd-scrollbar overflow-x-auto rounded-[4px] border"
         style={{
           background: "var(--color-paper-raised)",
           borderColor: "var(--color-line)",
-          maxHeight: 560,
         }}
       >
         <table className="gtd-history-table w-full text-[13px]">
@@ -142,6 +138,16 @@ function NoteCell({
   const [saved, setSaved] = useState<string>(initialNote);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const resize = () => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  };
+
+  useLayoutEffect(resize, [value]);
 
   const save = () => {
     if (value === saved) return;
@@ -169,12 +175,13 @@ function NoteCell({
       }}
     >
       <textarea
+        ref={textareaRef}
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onBlur={save}
-        rows={3}
+        rows={1}
         placeholder={isCurrent ? "Write this week's update…" : "—"}
-        className="w-full resize-y bg-transparent p-1.5 text-[13px] outline-none"
+        className="w-full resize-none overflow-hidden bg-transparent p-1.5 text-[13px] outline-none"
         style={{
           border: "1px solid transparent",
           color:

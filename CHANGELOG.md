@@ -55,6 +55,12 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
   demand so the landing page stays lean.
 
 ### Changed
+- **Project overview reads like a spreadsheet.** The Projects screen is now
+  titled "Project overview". Its weekly-note cells grow vertically to fit their
+  text instead of scrolling inside a fixed-height box — the whole page scrolls
+  when the table runs long — and the table spans more of the horizontal width so
+  updates wrap less. Dropped the "not optimised for mobile" caveat from the
+  intro.
 - **Marking a meeting completed returns to the meetings list.** Clicking "Mark
   completed" in a meeting now saves the status and navigates back to
   `/meetings` instead of leaving you on the completed meeting. "Reopen" still
