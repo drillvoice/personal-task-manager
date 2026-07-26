@@ -6,6 +6,14 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 ## [Unreleased]
 
 ### Added
+- **Drag a task from "Also due today" into a Today's/Tomorrow's three slot.**
+  On the Today screen, rows in the "Also due today" list are now draggable;
+  dropping one onto an open slot in either "Today's three" or "Tomorrow's
+  three" adds it to that plan — the same as picking it via `+ open slot`, but
+  direct. Empty slots highlight while a drag is in progress and read "drop to
+  add" on hover; the dragged row leaves the also-due list immediately (and
+  reappears if the add is rejected by the 3-task cap). The `+ open slot`
+  picker remains for keyboard use.
 - **The Tasks search bar now doubles as a capture bar.** Typing still filters
   the list live; pressing ⏎ creates a task from whatever is in the box. It
   understands the same `#tag` and natural-language due-date syntax as the other

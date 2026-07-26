@@ -6,7 +6,22 @@ import { PrioritySlot } from "@/components/priority-slot";
 import { PriorityBadge } from "@/components/priority-badge";
 import { DueLabel } from "@/components/due-label";
 import { useTaskEditor } from "@/components/task-editor-overlay";
+import { usePlanDnd } from "@/components/today-plan-dnd";
+import type { TaskRowProps } from "@/components/task-row";
 import type { TodaySlot, TodayTask } from "@/lib/server/today";
+
+function toTodayTask(t: TaskRowProps["task"]): TodayTask {
+  return {
+    id: t.id,
+    title: t.title,
+    priority: t.priority,
+    status: t.status,
+    dueDate: t.dueDate,
+    projectId: t.projectId ?? null,
+    projectName: t.projectName,
+    weekly: t.weekly ?? false,
+  };
+}
 
 export function PlanSlots({
   slots,
@@ -24,6 +39,7 @@ export function PlanSlots({
   onToggleDone?: (id: string, done: boolean) => Promise<unknown>;
 }) {
   const { openEditor } = useTaskEditor();
+  const dnd = usePlanDnd();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [eligible, setEligible] = useState<TodayTask[] | null>(null);
   const [query, setQuery] = useState("");
@@ -107,6 +123,24 @@ export function PlanSlots({
     });
   };
 
+  const dropTask = (dragged: TaskRowProps["task"]) => {
+    if (!canAdd) return;
+    if (optimisticSlots.some((s) => s.task?.id === dragged.id)) return;
+    const task = toTodayTask(dragged);
+    // Pull the row out of its source list immediately so it doesn't linger in
+    // two places; restore it if the add is rejected (e.g. the cap raced).
+    dnd?.hide(task.id);
+    setError(null);
+    startTransition(async () => {
+      applySlots({ type: "add", task });
+      const res = await addAction(task.id);
+      if (!res.ok) {
+        setError(res.error);
+        dnd?.unhide(task.id);
+      }
+    });
+  };
+
   return (
     <>
       <div className="mb-4 flex flex-col gap-2">
@@ -128,9 +162,25 @@ export function PlanSlots({
             onRemove={remove}
             onToggleDone={onToggleDone}
             onEdit={s.task ? () => openEditor(s.task!.id) : undefined}
+            droppable={!!dnd && canAdd}
+            dragActive={!!dnd?.draggingTask}
+            onDropTask={
+              dnd?.draggingTask
+                ? () => dropTask(dnd.draggingTask!)
+                : undefined
+            }
           />
         ))}
       </div>
+
+      {error && !pickerOpen && (
+        <p
+          className="font-mono mb-4 text-[11px]"
+          style={{ color: "var(--color-danger)" }}
+        >
+          {error}
+        </p>
+      )}
 
       {pickerOpen && canAdd && (
         <div

@@ -37,6 +37,11 @@ export type TaskRowProps = {
   // swapping to the inline edit form.
   onSelect?: () => void;
   selected?: boolean;
+  // Native drag-and-drop opt-in (used by "Also due today" to drag a row into
+  // a Today/Tomorrow plan slot). Only wired up on the inline layout.
+  draggable?: boolean;
+  onTaskDragStart?: (e: React.DragEvent) => void;
+  onTaskDragEnd?: (e: React.DragEvent) => void;
 };
 
 export async function createProjectOption(
@@ -257,6 +262,9 @@ export function TaskRow({
   tagOptions,
   onSelect,
   selected = false,
+  draggable = false,
+  onTaskDragStart,
+  onTaskDragEnd,
 }: TaskRowProps) {
   const [pending, startTransition] = useTransition();
   const [editing, setEditing] = useState(false);
@@ -379,10 +387,13 @@ export function TaskRow({
       className="group flex flex-wrap items-center gap-2 border-b px-1 py-2.5"
       style={{
         borderColor: "var(--color-line)",
-        cursor: onSelect ? "pointer" : undefined,
+        cursor: draggable ? "grab" : onSelect ? "pointer" : undefined,
         background: selected ? "var(--color-paper)" : undefined,
         boxShadow: selected ? "inset 2px 0 0 var(--color-accent)" : undefined,
       }}
+      draggable={draggable}
+      onDragStart={onTaskDragStart}
+      onDragEnd={onTaskDragEnd}
       onClick={onSelect}
       role={onSelect ? "button" : undefined}
       tabIndex={onSelect ? 0 : undefined}

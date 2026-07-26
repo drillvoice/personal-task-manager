@@ -1,6 +1,6 @@
 "use client";
 
-import { useOptimistic, useTransition } from "react";
+import { useOptimistic, useState, useTransition } from "react";
 import { Check, Plus, X } from "lucide-react";
 
 type Task = {
@@ -17,6 +17,9 @@ export function PrioritySlot({
   onRemove,
   onToggleDone,
   onEdit,
+  droppable = false,
+  dragActive = false,
+  onDropTask,
 }: {
   number: 1 | 2 | 3;
   task: Task | null;
@@ -24,22 +27,56 @@ export function PrioritySlot({
   onRemove: (id: string) => Promise<void>;
   onToggleDone?: (id: string, done: boolean) => Promise<unknown>;
   onEdit?: () => void;
+  // Drag-and-drop: an empty slot can receive a task dragged from elsewhere on
+  // the Today screen (e.g. "Also due today"). See today-plan-dnd.
+  droppable?: boolean;
+  dragActive?: boolean;
+  onDropTask?: () => void;
 }) {
   const [pending, startTransition] = useTransition();
   // Optimistic tick — strike-through lands on click, reverts on failure.
   const [done, setOptimisticDone] = useOptimistic(task?.done ?? false);
+  const [dragOver, setDragOver] = useState(false);
 
   if (!task) {
+    const armed = droppable && dragActive;
+    const borderColor = dragOver
+      ? "var(--color-accent)"
+      : armed
+        ? "var(--color-ink-soft)"
+        : "var(--color-line)";
     return (
       <button
         type="button"
         onClick={onOpenPicker}
-        className="flex w-full items-center gap-3 rounded-[4px] px-4 py-3"
-        style={{ border: "1.5px dashed var(--color-line)" }}
+        onDragOver={
+          droppable
+            ? (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = "move";
+                setDragOver(true);
+              }
+            : undefined
+        }
+        onDragLeave={droppable ? () => setDragOver(false) : undefined}
+        onDrop={
+          droppable
+            ? (e) => {
+                e.preventDefault();
+                setDragOver(false);
+                onDropTask?.();
+              }
+            : undefined
+        }
+        className="flex w-full items-center gap-3 rounded-[4px] px-4 py-3 transition-colors"
+        style={{
+          border: `1.5px dashed ${borderColor}`,
+          background: dragOver ? "var(--color-paper-raised)" : undefined,
+        }}
       >
         <span
           className="font-display text-2xl font-bold w-6 shrink-0"
-          style={{ color: "var(--color-line)" }}
+          style={{ color: dragOver ? "var(--color-accent)" : "var(--color-line)" }}
         >
           {number}
         </span>
@@ -47,7 +84,7 @@ export function PrioritySlot({
           className="font-mono flex items-center gap-1 text-[11px]"
           style={{ color: "var(--color-ink-soft)" }}
         >
-          <Plus size={12} /> open slot
+          <Plus size={12} /> {dragOver ? "drop to add" : "open slot"}
         </span>
       </button>
     );
