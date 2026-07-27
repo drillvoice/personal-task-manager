@@ -97,6 +97,19 @@ Concrete rules:
   Reserve this for things that actually matter — if every response shouts,
   nothing does.
 
+## Staging large changes
+
+**When a request is big, propose staging it before you build.** For anything
+ambitious — a new page/view, a cross-cutting refactor, or work that spans
+schema + server + UI in one pass — don't default to landing it as a single
+commit. First look for natural seams to split it into discrete,
+independently-reviewable stages, and propose that breakdown to Joel *before*
+starting (e.g. "schema + migration first, then the read/browse path, then the
+editor"). Recommend staging even when Joel asked for the whole thing at once,
+and push back if a one-shot change would be hard to review or risky to land.
+Small or self-contained changes don't need this — reserve it for work a
+reviewer couldn't comfortably take in as one diff.
+
 ## Standing rules
 
 **Run `pnpm typecheck` before considering any task done.** TypeScript is the
