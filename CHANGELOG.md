@@ -11,15 +11,18 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
   in Markdown: `Tab`/`Shift-Tab` indent and outdent bullet outlines, and a
   **Write/Read** toggle switches between the editable source and a rendered
   view. Type `@` to mention a person or `#` to add a tag — both autocomplete
-  (people come from your contacts; tags share the Meetings tag vocabulary, and
-  a new `#tag` is created on save). In Read mode, mentions become links to the
-  person and tags render as coloured chips. Page between days with the
+  (people come from your contacts; tags share the Meetings tag vocabulary).
+  Typing a bare `#word` links it to a tag of that name if one exists and is
+  otherwise just text — adding a *new* tag to the vocabulary takes picking
+  **Create #name** from the autocomplete, so a half-typed word or a pasted
+  code snippet can't quietly mint one. In Read mode, mentions become links to
+  the person and tags render as coloured chips. Page between days with the
   prev/next arrows or jump straight to a date; today defaults to Write, past
   days to Read. Mentions and tags are stored as structured references, so
   finding "every day I mentioned X" is a cheap future addition.
 - **Keyboard shortcuts for the sidebar nav.** Press `g` to arm navigation — a
-  small accent number badge (`1`–`6`) appears on each sidebar icon — then press
-  the digit to jump to that view (`1` Today … `6` Review). It's a sequence, not
+  small accent number badge (`1`–`7`) appears on each sidebar icon — then press
+  the digit to jump to that view (`1` Today … `7` Journal). It's a sequence, not
   a chord: press `g`, then the number within a 2-second window (the arm state
   auto-clears after that, or on any non-digit key/`Esc`, without navigating).
   Shortcuts are ignored while typing in an input, and `Cmd`/`Ctrl`+number is

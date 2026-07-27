@@ -17,6 +17,9 @@ import { extractJournalRefs } from "@/lib/server/parse-journal-refs";
 const saveSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD"),
   body: z.string().max(50000),
+  // Names the user explicitly chose to create from the "#" autocomplete. Only
+  // these may mint a tag row; see resolveBareTagIds.
+  createTagNames: z.array(z.string().min(1).max(80)).max(20).optional(),
 });
 
 // Mentions come from parsing free text, so a stale or hand-typed person link
@@ -54,12 +57,22 @@ async function ownedMeetingTagIds(
   return rows.map((r) => r.id);
 }
 
-// Find-or-create against the meeting tag vocabulary (kind = 'meeting') so the
-// journal and meetings share one namespace. Case-insensitive so "#Budget" and
-// "#budget" resolve to the same tag.
-async function findOrCreateJournalTagIds(
+/**
+ * Resolve bare "#word" tokens against the meeting tag vocabulary
+ * (kind = 'meeting') so the journal and meetings share one namespace.
+ * Case-insensitive, so "#Budget" and "#budget" are the same tag.
+ *
+ * A bare token never creates a tag on its own. Autosave fires mid-word, so
+ * pausing while typing "#budget" would otherwise mint "#b", "#bu", "#bud" as
+ * permanent rows in a vocabulary the Meetings view also reads, and nothing in
+ * the app deletes tags. Creation requires an explicit "Create #name" choice in
+ * the autocomplete, which arrives as `createTagNames`; an unmatched token
+ * without that intent is display-only.
+ */
+async function resolveBareTagIds(
   userId: string,
   names: string[],
+  createNames: string[],
 ): Promise<string[]> {
   if (names.length === 0) return [];
   const existing = await db
@@ -75,17 +88,28 @@ async function findOrCreateJournalTagIds(
         ),
       ),
     );
-  const existingNames = new Set(existing.map((t) => t.name.toLowerCase()));
-  const missing = names.filter((n) => !existingNames.has(n.toLowerCase()));
-  const inserted = missing.length
+  const idByName = new Map(
+    existing.map((t) => [t.name.toLowerCase(), t.id] as const),
+  );
+  const requested = new Set(createNames.map((n) => n.toLowerCase()));
+  const toCreate = names.filter(
+    (n) => !idByName.has(n.toLowerCase()) && requested.has(n.toLowerCase()),
+  );
+
+  // onConflictDoNothing: a concurrent save (second tab, or an overlapping
+  // autosave) may have inserted the same name against tags_user_kind_name_uniq.
+  // Losing the race costs this save the link, not the save — the token resolves
+  // by name on the next one.
+  const inserted = toCreate.length
     ? await db
         .insert(tags)
         .values(
-          missing.map((name) => ({ userId, name, kind: "meeting" as const })),
+          toCreate.map((name) => ({ userId, name, kind: "meeting" as const })),
         )
-        .returning({ id: tags.id, name: tags.name })
+        .onConflictDoNothing()
+        .returning({ id: tags.id })
     : [];
-  return [...existing, ...inserted].map((t) => t.id);
+  return [...idByName.values(), ...inserted.map((t) => t.id)];
 }
 
 // Autosave target: deliberately no revalidatePath — re-rendering the page
@@ -99,7 +123,7 @@ export async function saveJournalBody(
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid" };
   }
-  const { date, body } = parsed.data;
+  const { date, body, createTagNames = [] } = parsed.data;
 
   const entryId = await ensureJournalEntry(userId, date);
   await db
@@ -109,11 +133,11 @@ export async function saveJournalBody(
 
   const { personIds, tagIds, tagNames } = extractJournalRefs(body);
   const validPersonIds = await ownedPersonIds(userId, personIds);
-  const [linkedTagIds, createdTagIds] = await Promise.all([
+  const [linkedTagIds, bareTagIds] = await Promise.all([
     ownedMeetingTagIds(userId, tagIds),
-    findOrCreateJournalTagIds(userId, tagNames),
+    resolveBareTagIds(userId, tagNames, createTagNames),
   ]);
-  const allTagIds = [...new Set([...linkedTagIds, ...createdTagIds])];
+  const allTagIds = [...new Set([...linkedTagIds, ...bareTagIds])];
 
   // Atomic delete + re-insert of both junctions so a mid-write failure can't
   // leave the entry's mentions/tags half-reconciled.

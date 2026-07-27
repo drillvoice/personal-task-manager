@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { saveJournalBody } from "@/app/(app)/journal/actions";
+import { isBareTagName } from "@/lib/journal-tags";
 import type { ContactOption } from "@/lib/server/people";
 import type { TagOption } from "@/lib/server/meetings";
 
@@ -34,22 +35,41 @@ export function JournalEditor({
   const [pending, startTransition] = useTransition();
   const [menu, setMenu] = useState<Menu | null>(null);
   const [active, setActive] = useState(0);
+  // Tags this session created. The `tags` prop is server data and won't include
+  // them until a reload, so without this the menu keeps offering "Create #x".
+  const [createdTagNames, setCreatedTagNames] = useState<string[]>([]);
 
   const lastSaved = useRef(initialBody);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const pendingCaret = useRef<number | null>(null);
 
+  // Bare "#word" tokens are display-only unless a tag of that name exists, so
+  // picking "Create #name" is the one thing that authorises minting one. Held
+  // until a save carries it through (lowercase key → the casing to create).
+  const pendingCreates = useRef(new Map<string, string>());
+
   const save = (v: string) => {
     if (v === lastSaved.current) return;
+    const creating = [...pendingCreates.current.values()];
     startTransition(async () => {
-      const result = await saveJournalBody({ date, body: v });
+      const result = await saveJournalBody({
+        date,
+        body: v,
+        createTagNames: creating,
+      });
       if (!result.ok) {
         setError(result.error);
         return;
       }
       setError(null);
       lastSaved.current = v;
+      for (const name of creating) {
+        pendingCreates.current.delete(name.toLowerCase());
+      }
+      setCreatedTagNames((prev) =>
+        creating.length ? [...new Set([...prev, ...creating])] : prev,
+      );
     });
   };
 
@@ -88,15 +108,16 @@ export function JournalEditor({
         .map((p) => ({ kind: "person", id: p.id, name: p.name }));
     }
     const matches = tags.filter((t) => t.name.toLowerCase().includes(q));
-    const exact = tags.some((t) => t.name.toLowerCase() === q);
+    const known = [...tags.map((t) => t.name), ...createdTagNames];
+    const exact = known.some((name) => name.toLowerCase() === q);
     const list: MenuItem[] = matches
       .slice(0, MAX_MENU_ITEMS)
       .map((t) => ({ kind: "tag", id: t.id, name: t.name, color: t.color }));
-    if (menu.query.length > 0 && !exact) {
+    if (menu.query.length > 0 && !exact && isBareTagName(menu.query)) {
       list.push({ kind: "create-tag", name: menu.query });
     }
     return list;
-  }, [menu, people, tags]);
+  }, [menu, people, tags, createdTagNames]);
 
   const flush = () => {
     if (saveTimer.current) clearTimeout(saveTimer.current);
@@ -131,6 +152,9 @@ export function JournalEditor({
     const caret = el?.selectionStart ?? value.length;
     const before = value.slice(0, menu.tokenStart);
     const after = value.slice(caret);
+    if (item.kind === "create-tag") {
+      pendingCreates.current.set(item.name.toLowerCase(), item.name);
+    }
     const insert =
       item.kind === "person"
         ? `[@${item.name}](/people/${item.id}) `

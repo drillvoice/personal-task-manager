@@ -57,4 +57,43 @@ describe("extractJournalRefs", () => {
       tagNames: [],
     });
   });
+
+  it("ignores tokens inside a fenced code block", () => {
+    const body = [
+      "pasted the config:",
+      "```c",
+      "#include <stdio.h>",
+      "#define MAX 10",
+      "```",
+      "then tagged it #infra",
+    ].join("\n");
+    expect(extractJournalRefs(body).tagNames).toEqual(["infra"]);
+  });
+
+  it("ignores tokens inside a tilde fence and resumes after it", () => {
+    const body = ["~~~css", "#sidebar { color: red; }", "~~~", "#done"].join(
+      "\n",
+    );
+    expect(extractJournalRefs(body).tagNames).toEqual(["done"]);
+  });
+
+  it("ignores tokens inside an inline code span", () => {
+    const body = "use `#budget` for the rollup, tag it #finance";
+    expect(extractJournalRefs(body).tagNames).toEqual(["finance"]);
+  });
+
+  it("does not treat an all-numeric token as a tag", () => {
+    const body = "closes #123 and #1 — real one is #q3";
+    expect(extractJournalRefs(body).tagNames).toEqual(["q3"]);
+  });
+
+  it("does not treat a url fragment as a tag", () => {
+    const body = "ref https://example.com/doc#section2 and #notes";
+    expect(extractJournalRefs(body).tagNames).toEqual(["notes"]);
+  });
+
+  it("ignores a malformed uuid in a person link", () => {
+    const body = `[@Ghost](/people/${"-".repeat(36)}) and [@Real](/people/${UUID_A})`;
+    expect(extractJournalRefs(body).personIds).toEqual([UUID_A]);
+  });
 });
