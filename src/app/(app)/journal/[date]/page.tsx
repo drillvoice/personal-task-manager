@@ -1,10 +1,9 @@
 import { notFound } from "next/navigation";
-import { formatInTimeZone } from "date-fns-tz";
 import { JournalDayNav } from "@/components/journal-day-nav";
 import { JournalView } from "@/components/journal-view";
 import { requireUserId } from "@/lib/server/session";
 import { loadJournalEntry, loadJournalRefOptions } from "@/lib/server/journal";
-import { APP_TZ, addDaysIso, todayIso } from "@/lib/time";
+import { addDaysIso, formatDateIso, todayIso } from "@/lib/time";
 
 export const dynamic = "force-dynamic";
 
@@ -28,11 +27,7 @@ export default async function JournalDatePage({
 
   const today = todayIso();
   const isToday = date === today;
-  const heading = formatInTimeZone(
-    new Date(`${date}T00:00:00`),
-    APP_TZ,
-    "EEEE, d MMMM yyyy",
-  );
+  const heading = formatDateIso(date, "EEEE, d MMMM yyyy");
 
   return (
     <div className="p-4">

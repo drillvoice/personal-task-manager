@@ -2,6 +2,7 @@ import {
   addDays,
   addWeeks,
   differenceInCalendarDays,
+  format,
   formatISO,
   isSameDay,
   startOfDay,
@@ -28,6 +29,16 @@ export function addDaysIso(dateIso: string, days: number): string {
   return formatISO(addDays(new Date(`${dateIso}T00:00:00`), days), {
     representation: "date",
   });
+}
+
+/**
+ * Human label for a `yyyy-MM-dd` string, e.g. "Thursday, 1 January 2099".
+ * Formats the date string in place. Parsing it into an instant and formatting
+ * that in APP_TZ happens to agree while Sydney runs ahead of the runtime's
+ * zone, but it is the same double-offset trap tomorrowIso documents.
+ */
+export function formatDateIso(dateIso: string, pattern: string): string {
+  return format(new Date(`${dateIso}T00:00:00`), pattern);
 }
 
 export function tomorrowIso(now: Date = new Date()): string {
