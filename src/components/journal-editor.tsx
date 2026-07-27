@@ -87,10 +87,33 @@ export function JournalEditor({
     syncMenu(next, e.target.selectionStart ?? next.length);
   };
 
+  // React's onSelect does not fire for a caret move with no selection, so the
+  // menu could outlive the token it was opened for. selectionchange covers
+  // arrow keys, Home/End, and clicks alike. Text is read off the element
+  // because the event can beat React's re-render to it.
+  useEffect(() => {
+    const onSelectionChange = () => {
+      const el = textareaRef.current;
+      if (!el || document.activeElement !== el) return;
+      syncMenu(el.value, el.selectionStart ?? el.value.length);
+    };
+    document.addEventListener("selectionchange", onSelectionChange);
+    return () =>
+      document.removeEventListener("selectionchange", onSelectionChange);
+    // syncMenu only touches state setters, which are stable across renders.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const applySelection = (item: MenuItem) => {
     if (!menu) return;
     const el = textareaRef.current;
     const caret = el?.selectionStart ?? value.length;
+    // Never act on a token the caret has already left — replacing that span
+    // would splice the mention into unrelated text.
+    if (value.slice(menu.tokenStart, caret) !== menu.trigger + menu.query) {
+      closeMenu();
+      return;
+    }
     const before = value.slice(0, menu.tokenStart);
     const after = value.slice(caret);
     if (item.kind === "create-tag") {
@@ -187,9 +210,6 @@ export function JournalEditor({
         onChange={onChange}
         onKeyDown={onKeyDown}
         onBlur={autosave.flush}
-        onClick={(e) =>
-          syncMenu(value, e.currentTarget.selectionStart ?? value.length)
-        }
         placeholder="Jot what happened today. Type @ for a person, # for a tag."
         rows={18}
         className="gtd-scrollbar w-full resize-y rounded-[4px] border p-3 text-[13px] leading-relaxed outline-none"
