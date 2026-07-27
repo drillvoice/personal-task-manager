@@ -8,7 +8,7 @@ import {
   people,
   tags,
 } from "@/lib/db/schema";
-import { loadContactOptions } from "@/lib/server/people";
+import { loadPersonOptions } from "@/lib/server/people";
 import { loadTagOptions } from "@/lib/server/meetings";
 import type { ContactOption } from "@/lib/server/people";
 import type { TagOption } from "@/lib/server/meetings";
@@ -56,40 +56,29 @@ export async function loadJournalEntry(
 }
 
 /**
- * Journal-entry id for (user, date), creating one if none exists. Same
- * select → insert-on-conflict-do-nothing → re-select shape as ensureDailyPlan,
- * so two concurrent first-saves resolve to the one row.
+ * Write the body for (user, date), creating the row if this is the first save,
+ * and return its id.
+ *
+ * One statement rather than ensureDailyPlan's select → insert → re-select: over
+ * the HTTP driver every statement is its own request, and this runs on an
+ * 800ms autosave. It also makes creating the row atomic with writing the body,
+ * and leans on journal_entries_user_date_uniq so two concurrent first-saves
+ * still resolve to one row.
  */
-export async function ensureJournalEntry(
+export async function upsertJournalBody(
   userId: string,
   dateIso: string,
+  body: string,
 ): Promise<string> {
-  const [existing] = await db
-    .select({ id: journalEntries.id })
-    .from(journalEntries)
-    .where(
-      and(
-        eq(journalEntries.userId, userId),
-        eq(journalEntries.entryDate, dateIso),
-      ),
-    );
-  if (existing) return existing.id;
   const [row] = await db
     .insert(journalEntries)
-    .values({ userId, entryDate: dateIso })
-    .onConflictDoNothing()
+    .values({ userId, entryDate: dateIso, body })
+    .onConflictDoUpdate({
+      target: [journalEntries.userId, journalEntries.entryDate],
+      set: { body, updatedAt: new Date() },
+    })
     .returning({ id: journalEntries.id });
-  if (row) return row.id;
-  const [raced] = await db
-    .select({ id: journalEntries.id })
-    .from(journalEntries)
-    .where(
-      and(
-        eq(journalEntries.userId, userId),
-        eq(journalEntries.entryDate, dateIso),
-      ),
-    );
-  return raced.id;
+  return row.id;
 }
 
 // Autocomplete sources for the editor: the user's people and the shared
@@ -98,9 +87,9 @@ export async function loadJournalRefOptions(userId: string): Promise<{
   people: ContactOption[];
   tags: TagOption[];
 }> {
-  const [contacts, tagOptions] = await Promise.all([
-    loadContactOptions(userId),
+  const [personOptions, tagOptions] = await Promise.all([
+    loadPersonOptions(userId),
     loadTagOptions(userId),
   ]);
-  return { people: contacts.people, tags: tagOptions };
+  return { people: personOptions, tags: tagOptions };
 }

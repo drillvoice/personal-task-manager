@@ -4,14 +4,13 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import {
-  journalEntries,
   journalEntryPeople,
   journalEntryTags,
   people,
   tags,
 } from "@/lib/db/schema";
 import { requireUserId } from "@/lib/server/session";
-import { ensureJournalEntry } from "@/lib/server/journal";
+import { upsertJournalBody } from "@/lib/server/journal";
 import { extractJournalRefs } from "@/lib/server/parse-journal-refs";
 
 const saveSchema = z.object({
@@ -125,15 +124,10 @@ export async function saveJournalBody(
   }
   const { date, body, createTagNames = [] } = parsed.data;
 
-  const entryId = await ensureJournalEntry(userId, date);
-  await db
-    .update(journalEntries)
-    .set({ body, updatedAt: new Date() })
-    .where(eq(journalEntries.id, entryId));
-
   const { personIds, tagIds, tagNames } = extractJournalRefs(body);
-  const validPersonIds = await ownedPersonIds(userId, personIds);
-  const [linkedTagIds, bareTagIds] = await Promise.all([
+  const [entryId, validPersonIds, linkedTagIds, bareTagIds] = await Promise.all([
+    upsertJournalBody(userId, date, body),
+    ownedPersonIds(userId, personIds),
     ownedMeetingTagIds(userId, tagIds),
     resolveBareTagIds(userId, tagNames, createTagNames),
   ]);
