@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { JournalEditor } from "@/components/journal-editor";
 import { JournalReader } from "@/components/journal-reader";
+import { useJournalAutosave } from "@/components/use-journal-autosave";
 import type { ContactOption } from "@/lib/server/people";
 import type { TagOption } from "@/lib/server/meetings";
 
@@ -22,9 +23,9 @@ export function JournalView({
   initialMode: Mode;
 }) {
   const [mode, setMode] = useState<Mode>(initialMode);
-  // Lift the live body so Read mode reflects unsaved edits made in Write mode
-  // (the editor owns autosave; this just keeps the two views in sync).
-  const [liveBody, setLiveBody] = useState(body);
+  // Owned here rather than in the editor so toggling to Read and back doesn't
+  // tear down in-flight or failed saves. Read mode renders the same live text.
+  const autosave = useJournalAutosave(date, body);
 
   return (
     <div>
@@ -52,15 +53,9 @@ export function JournalView({
       </div>
 
       {mode === "edit" ? (
-        <JournalEditor
-          date={date}
-          initialBody={liveBody}
-          people={people}
-          tags={tags}
-          onBodyChange={setLiveBody}
-        />
+        <JournalEditor autosave={autosave} people={people} tags={tags} />
       ) : (
-        <JournalReader body={liveBody} tags={tags} />
+        <JournalReader body={autosave.value} tags={tags} />
       )}
     </div>
   );

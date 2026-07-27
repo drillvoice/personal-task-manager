@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { saveJournalBody } from "@/app/(app)/journal/actions";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { isBareTagName } from "@/lib/journal-tags";
+import type { JournalAutosave } from "@/components/use-journal-autosave";
 import type { ContactOption } from "@/lib/server/people";
 import type { TagOption } from "@/lib/server/meetings";
 
-const SAVE_DEBOUNCE_MS = 800;
 const INDENT = "  ";
 const MAX_MENU_ITEMS = 8;
 
@@ -18,69 +17,20 @@ type MenuItem =
 type Menu = { trigger: "@" | "#"; tokenStart: number; query: string };
 
 export function JournalEditor({
-  date,
-  initialBody,
+  autosave,
   people,
   tags,
-  onBodyChange,
 }: {
-  date: string;
-  initialBody: string;
+  autosave: JournalAutosave;
   people: ContactOption[];
   tags: TagOption[];
-  onBodyChange?: (value: string) => void;
 }) {
-  const [value, setValue] = useState(initialBody);
-  const [error, setError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
+  const { value, setValue, createdTagNames, error, pending, dirty } = autosave;
   const [menu, setMenu] = useState<Menu | null>(null);
   const [active, setActive] = useState(0);
-  // Tags this session created. The `tags` prop is server data and won't include
-  // them until a reload, so without this the menu keeps offering "Create #x".
-  const [createdTagNames, setCreatedTagNames] = useState<string[]>([]);
 
-  const lastSaved = useRef(initialBody);
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const pendingCaret = useRef<number | null>(null);
-
-  // Bare "#word" tokens are display-only unless a tag of that name exists, so
-  // picking "Create #name" is the one thing that authorises minting one. Held
-  // until a save carries it through (lowercase key → the casing to create).
-  const pendingCreates = useRef(new Map<string, string>());
-
-  const save = (v: string) => {
-    if (v === lastSaved.current) return;
-    const creating = [...pendingCreates.current.values()];
-    startTransition(async () => {
-      const result = await saveJournalBody({
-        date,
-        body: v,
-        createTagNames: creating,
-      });
-      if (!result.ok) {
-        setError(result.error);
-        return;
-      }
-      setError(null);
-      lastSaved.current = v;
-      for (const name of creating) {
-        pendingCreates.current.delete(name.toLowerCase());
-      }
-      setCreatedTagNames((prev) =>
-        creating.length ? [...new Set([...prev, ...creating])] : prev,
-      );
-    });
-  };
-
-  useEffect(() => {
-    if (value === lastSaved.current) return;
-    saveTimer.current = setTimeout(() => save(value), SAVE_DEBOUNCE_MS);
-    return () => {
-      if (saveTimer.current) clearTimeout(saveTimer.current);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value]);
 
   // Apply a caret position queued by an edit that also changed `value`, once
   // React has painted the new text.
@@ -93,10 +43,6 @@ export function JournalEditor({
     }
     pendingCaret.current = null;
   }, [value]);
-
-  useEffect(() => {
-    onBodyChange?.(value);
-  }, [value, onBodyChange]);
 
   const items = useMemo<MenuItem[]>(() => {
     if (!menu) return [];
@@ -118,11 +64,6 @@ export function JournalEditor({
     }
     return list;
   }, [menu, people, tags, createdTagNames]);
-
-  const flush = () => {
-    if (saveTimer.current) clearTimeout(saveTimer.current);
-    save(value);
-  };
 
   const closeMenu = () => setMenu(null);
 
@@ -153,7 +94,7 @@ export function JournalEditor({
     const before = value.slice(0, menu.tokenStart);
     const after = value.slice(caret);
     if (item.kind === "create-tag") {
-      pendingCreates.current.set(item.name.toLowerCase(), item.name);
+      autosave.registerTagCreate(item.name);
     }
     const insert =
       item.kind === "person"
@@ -238,8 +179,6 @@ export function JournalEditor({
     }
   };
 
-  const dirty = value !== lastSaved.current;
-
   return (
     <div className="relative">
       <textarea
@@ -247,7 +186,7 @@ export function JournalEditor({
         value={value}
         onChange={onChange}
         onKeyDown={onKeyDown}
-        onBlur={flush}
+        onBlur={autosave.flush}
         onClick={(e) =>
           syncMenu(value, e.currentTarget.selectionStart ?? value.length)
         }
