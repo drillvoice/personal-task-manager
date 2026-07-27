@@ -6,6 +6,14 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 ## [Unreleased]
 
 ### Added
+- **Keyboard shortcuts for the sidebar nav.** Press `g` to arm navigation — a
+  small accent number badge (`1`–`6`) appears on each sidebar icon — then press
+  the digit to jump to that view (`1` Today … `6` Review). It's a sequence, not
+  a chord: press `g`, then the number within a 2-second window (the arm state
+  auto-clears after that, or on any non-digit key/`Esc`, without navigating).
+  Shortcuts are ignored while typing in an input, and `Cmd`/`Ctrl`+number is
+  deliberately not used because browsers reserve it for tab switching. Each nav
+  item's hover tooltip now shows its shortcut, e.g. `Today (g 1)`.
 - **Drag a task from "Also due today" into a Today's/Tomorrow's three slot.**
   On the Today screen, rows in the "Also due today" list are now draggable;
   dropping one onto an open slot in either "Today's three" or "Tomorrow's
