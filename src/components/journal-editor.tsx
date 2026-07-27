@@ -34,18 +34,19 @@ export function JournalEditor({
   const dismissed = useRef<string | null>(null);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const pendingCaret = useRef<number | null>(null);
+  const pendingSelection = useRef<{ start: number; end: number } | null>(null);
 
-  // Apply a caret position queued by an edit that also changed `value`, once
-  // React has painted the new text.
+  // Apply a selection queued by an edit that also changed `value`, once React
+  // has painted the new text.
   useEffect(() => {
-    if (pendingCaret.current === null) return;
+    const sel = pendingSelection.current;
+    if (!sel) return;
     const el = textareaRef.current;
     if (el) {
       el.focus();
-      el.setSelectionRange(pendingCaret.current, pendingCaret.current);
+      el.setSelectionRange(sel.start, sel.end);
     }
-    pendingCaret.current = null;
+    pendingSelection.current = null;
   }, [value]);
 
   const items = useMemo<MenuItem[]>(() => {
@@ -140,9 +141,9 @@ export function JournalEditor({
         : item.kind === "tag"
           ? `[#${item.name}](/tags/${item.id}) `
           : `#${item.name} `;
-    const next = before + insert + after;
-    pendingCaret.current = (before + insert).length;
-    setValue(next);
+    const nextCaret = (before + insert).length;
+    pendingSelection.current = { start: nextCaret, end: nextCaret };
+    setValue(before + insert + after);
     closeMenu();
   };
 
@@ -153,39 +154,41 @@ export function JournalEditor({
     const start = el.selectionStart;
     const end = el.selectionEnd;
     const lineStart = value.lastIndexOf("\n", start - 1) + 1;
-    const multiline = value.slice(start, end).includes("\n");
 
-    if (!multiline && !outdent) {
-      const next = value.slice(0, start) + INDENT + value.slice(end);
-      pendingCaret.current = start + INDENT.length;
-      setValue(next);
+    // Only a bare caret inserts an indent in place. With anything selected we
+    // fall through and shift whole lines, because replacing the range would
+    // delete the selected text.
+    if (start === end && !outdent) {
+      const caret = start + INDENT.length;
+      pendingSelection.current = { start: caret, end: caret };
+      setValue(value.slice(0, start) + INDENT + value.slice(end));
       return;
     }
 
-    const block = value.slice(lineStart, end);
-    const lines = block.split("\n");
-    let removedFirst = 0;
-    let removedTotal = 0;
+    const lines = value.slice(lineStart, end).split("\n");
+    let firstDelta = 0;
+    let totalDelta = 0;
     const transformed = lines
       .map((line, i) => {
         if (outdent) {
           const trimmed = line.replace(/^ {1,2}/, "");
-          const removed = line.length - trimmed.length;
-          if (i === 0) removedFirst = removed;
-          removedTotal += removed;
+          const delta = trimmed.length - line.length;
+          if (i === 0) firstDelta = delta;
+          totalDelta += delta;
           return trimmed;
         }
-        if (i === 0) removedFirst = -INDENT.length;
-        removedTotal -= INDENT.length;
+        if (i === 0) firstDelta = INDENT.length;
+        totalDelta += INDENT.length;
         return INDENT + line;
       })
       .join("\n");
-    const next = value.slice(0, lineStart) + transformed + value.slice(end);
-    setValue(next);
-    pendingCaret.current = Math.max(lineStart, start - removedFirst);
-    // Selection collapses to caret after a programmatic edit; keeping the
-    // caret sensible is enough for the outline-indent use case.
-    void removedTotal;
+
+    // Keep the selection across the edit so Shift-Tab can be pressed twice.
+    pendingSelection.current = {
+      start: Math.max(lineStart, start + firstDelta),
+      end: Math.max(lineStart, end + totalDelta),
+    };
+    setValue(value.slice(0, lineStart) + transformed + value.slice(end));
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
