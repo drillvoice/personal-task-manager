@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { saveJournalBody } from "@/app/(app)/journal/actions";
 
 const SAVE_DEBOUNCE_MS = 800;
+const SAVE_RETRY_MS = 5000;
 
 export type JournalAutosave = {
   value: string;
@@ -37,22 +38,47 @@ export function useJournalAutosave(
   const [createdTagNames, setCreatedTagNames] = useState<string[]>([]);
   const [pending, startTransition] = useTransition();
 
+  // Bumped after a failed save so the debounce effect re-runs and tries again;
+  // otherwise a note only retries when the user happens to type or blur.
+  const [retryTick, setRetryTick] = useState(0);
+
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingCreates = useRef(new Map<string, string>());
+
+  const scheduleRetry = () => {
+    if (retryTimer.current) clearTimeout(retryTimer.current);
+    retryTimer.current = setTimeout(
+      () => setRetryTick((n) => n + 1),
+      SAVE_RETRY_MS,
+    );
+  };
 
   const save = (next: string) => {
     if (next === savedBody) return;
     const creating = [...pendingCreates.current.values()];
     startTransition(async () => {
-      const result = await saveJournalBody({
-        date,
-        body: next,
-        createTagNames: creating,
-      });
+      let result: Awaited<ReturnType<typeof saveJournalBody>>;
+      try {
+        result = await saveJournalBody({
+          date,
+          body: next,
+          createTagNames: creating,
+        });
+      } catch {
+        // saveJournalBody only *returns* a failure for schema problems.
+        // Everything else — offline, a redeploy mid-session, a database error
+        // — throws, and an uncaught throw here takes the whole page down to
+        // the error boundary with the note still unsaved.
+        setError("couldn't reach the server");
+        scheduleRetry();
+        return;
+      }
       if (!result.ok) {
         setError(result.error);
         return;
       }
+      if (retryTimer.current) clearTimeout(retryTimer.current);
       setError(null);
       setSavedBody(next);
       for (const name of creating) {
@@ -71,7 +97,14 @@ export function useJournalAutosave(
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value, savedBody]);
+  }, [value, savedBody, retryTick]);
+
+  useEffect(
+    () => () => {
+      if (retryTimer.current) clearTimeout(retryTimer.current);
+    },
+    [],
+  );
 
   return {
     value,
