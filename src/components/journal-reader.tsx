@@ -1,5 +1,5 @@
 import Link from "next/link";
-import Markdown from "react-markdown";
+import Markdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { linkBareTags } from "@/lib/journal-tags";
 import type { TagOption } from "@/lib/server/meetings";
@@ -36,9 +36,13 @@ export function JournalReader({
     <div className="journal-prose text-[13px] leading-relaxed">
       <Markdown
         remarkPlugins={[remarkGfm]}
-        // Single-user, self-authored content — skip react-markdown's URL
-        // sanitiser so our custom "tag:" scheme survives to the `a` renderer.
-        urlTransform={(url) => url}
+        // Only our own "tag:" scheme bypasses the sanitiser. Journal text is
+        // self-authored but not self-written — it is where things get pasted
+        // from email and the web — and disabling the transform outright left
+        // "javascript:" hrefs live.
+        urlTransform={(url) =>
+          url.startsWith("tag:") ? url : defaultUrlTransform(url)
+        }
         components={{
           a({ href, children }) {
             const url = href ?? "";
