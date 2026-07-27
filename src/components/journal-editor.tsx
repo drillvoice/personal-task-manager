@@ -28,6 +28,10 @@ export function JournalEditor({
   const { value, setValue, createdTagNames, error, pending, dirty } = autosave;
   const [menu, setMenu] = useState<Menu | null>(null);
   const [active, setActive] = useState(0);
+  // Whether the user has actually reached into the menu (arrow keys, hover)
+  // rather than merely having it appear while typing.
+  const [engaged, setEngaged] = useState(false);
+  const dismissed = useRef<string | null>(null);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const pendingCaret = useRef<number | null>(null);
@@ -67,6 +71,8 @@ export function JournalEditor({
 
   const closeMenu = () => setMenu(null);
 
+  const tokenKey = (m: Menu) => `${m.tokenStart}:${m.trigger}${m.query}`;
+
   // Recompute the mention/tag menu from the text immediately left of the caret.
   const syncMenu = (text: string, caret: number) => {
     const before = text.slice(0, caret);
@@ -75,10 +81,19 @@ export function JournalEditor({
       closeMenu();
       return;
     }
-    const trigger = m[2] as "@" | "#";
     const query = m[3];
-    setMenu({ trigger, tokenStart: caret - query.length - 1, query });
+    const next: Menu = {
+      trigger: m[2] as "@" | "#",
+      tokenStart: caret - query.length - 1,
+      query,
+    };
+    // Escape dismisses the menu for this exact token, so it doesn't spring
+    // back on the very next keystroke.
+    if (dismissed.current === tokenKey(next)) return;
+    dismissed.current = null;
+    setMenu(next);
     setActive(0);
+    setEngaged(false);
   };
 
   const onChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -177,23 +192,34 @@ export function JournalEditor({
     if (menu && items.length > 0) {
       if (e.key === "ArrowDown") {
         e.preventDefault();
+        setEngaged(true);
         setActive((a) => (a + 1) % items.length);
         return;
       }
       if (e.key === "ArrowUp") {
         e.preventDefault();
+        setEngaged(true);
         setActive((a) => (a - 1 + items.length) % items.length);
-        return;
-      }
-      if (e.key === "Enter" || e.key === "Tab") {
-        e.preventDefault();
-        applySelection(items[active]);
         return;
       }
       if (e.key === "Escape") {
         e.preventDefault();
+        dismissed.current = tokenKey(menu);
         closeMenu();
         return;
+      }
+      // A half-typed "@name" is inert until it becomes a link, so Enter taking
+      // the top match is what the user wants. A bare "#tag" already links to an
+      // existing tag on its own, so Enter there is far more likely to be "end
+      // this line" — and minting a tag should be deliberate anyway. So "#"
+      // commits only once the user has reached into the menu.
+      if ((e.key === "Enter" || e.key === "Tab") && items[active]) {
+        if (menu.trigger === "@" || engaged) {
+          e.preventDefault();
+          applySelection(items[active]);
+          return;
+        }
+        closeMenu();
       }
     }
     if (e.key === "Tab") {
@@ -238,7 +264,10 @@ export function JournalEditor({
                   e.preventDefault();
                   applySelection(item);
                 }}
-                onMouseEnter={() => setActive(i)}
+                onMouseEnter={() => {
+                  setEngaged(true);
+                  setActive(i);
+                }}
                 className="font-mono flex w-full items-center gap-2 px-3 py-1.5 text-left text-[12px]"
                 style={{
                   background:
