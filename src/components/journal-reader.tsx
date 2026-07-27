@@ -1,12 +1,8 @@
 import Link from "next/link";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { linkBareTags } from "@/lib/journal-tags";
 import type { TagOption } from "@/lib/server/meetings";
-
-// Same boundary rule as parse-journal-refs so the reader chips exactly the
-// tokens we store. We rewrite "#tag" to a link with a "tag:" scheme, then turn
-// that link into a chip in the `a` renderer below.
-const TAG_LINK_RE = /(^|\s)#([a-zA-Z0-9_-]+)/g;
 
 export function JournalReader({
   body,
@@ -34,10 +30,7 @@ export function JournalReader({
     tags.map((t) => [t.name.toLowerCase(), t.color] as const),
   );
   const colorById = new Map(tags.map((t) => [t.id, t.color] as const));
-  const withTagLinks = body.replace(
-    TAG_LINK_RE,
-    (_m, pre: string, name: string) => `${pre}[#${name}](tag:${name})`,
-  );
+  const withTagLinks = linkBareTags(body);
 
   return (
     <div className="journal-prose text-[13px] leading-relaxed">
