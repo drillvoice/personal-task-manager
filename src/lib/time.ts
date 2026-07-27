@@ -19,13 +19,22 @@ export function todayIso(now: Date = new Date()): string {
   return formatInTimeZone(now, APP_TZ, "yyyy-MM-dd");
 }
 
+/**
+ * Shift a `yyyy-MM-dd` string by whole calendar days, returning `yyyy-MM-dd`.
+ * Works on the date string itself (not an instant) so it never drifts across a
+ * timezone offset — the same reason tomorrowIso avoids toZonedTime here.
+ */
+export function addDaysIso(dateIso: string, days: number): string {
+  return formatISO(addDays(new Date(`${dateIso}T00:00:00`), days), {
+    representation: "date",
+  });
+}
+
 export function tomorrowIso(now: Date = new Date()): string {
   // Add the calendar day to the *Sydney* date string, not to the instant.
   // Chaining toZonedTime → formatInTimeZone double-applies the tz offset and,
   // on a UTC runtime (Vercel), pushes the result an extra day forward.
-  return formatISO(addDays(new Date(`${todayIso(now)}T00:00:00`), 1), {
-    representation: "date",
-  });
+  return addDaysIso(todayIso(now), 1);
 }
 
 /**
