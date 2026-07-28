@@ -242,6 +242,7 @@ export function TasksView({
                 project={p}
                 visibleTasks={openTasks}
                 defaultOpen={p.status === "active" || p.id === null}
+                hideNotes
                 projects={projectOptions}
                 people={people}
                 tagOptions={tagOptions}
@@ -274,6 +275,7 @@ export function TasksView({
                 project={p}
                 visibleTasks={matched}
                 defaultOpen
+                hideNotes
                 projects={projectOptions}
                 people={people}
                 tagOptions={tagOptions}

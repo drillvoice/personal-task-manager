@@ -19,6 +19,7 @@ export function ProjectCard({
   visibleTasks,
   defaultOpen,
   showTaskProject = false,
+  hideNotes = false,
   projects,
   people,
   tagOptions,
@@ -29,6 +30,7 @@ export function ProjectCard({
   visibleTasks: TasksViewTask[];
   defaultOpen: boolean;
   showTaskProject?: boolean;
+  hideNotes?: boolean;
   projects?: ProjectOption[];
   people?: ContactOption[];
   tagOptions?: TagOption[];
@@ -76,7 +78,7 @@ export function ProjectCard({
       </button>
       {open && (
         <div className="px-3 pb-3">
-          {project.notes && (
+          {!hideNotes && project.notes && (
             <p
               className="mb-2 border-b pb-2 text-[13px]"
               style={{
@@ -87,7 +89,7 @@ export function ProjectCard({
               {project.notes}
             </p>
           )}
-          {project.id !== null && (
+          {!hideNotes && project.id !== null && (
             <div className="mb-2">
               <button
                 type="button"
