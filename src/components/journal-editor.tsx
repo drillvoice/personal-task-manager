@@ -36,6 +36,20 @@ export function JournalEditor({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const pendingSelection = useRef<{ start: number; end: number } | null>(null);
 
+  // The editor is reached via keyboard shortcut (g 7) with no mouse
+  // involved, so it needs to be usable without ever touching the mouse —
+  // land focus in the textarea with the caret at the end of today's entry.
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.focus();
+    const end = el.value.length;
+    el.setSelectionRange(end, end);
+    // Mount-only: this should fire once when the editor appears, not on
+    // every keystroke that changes value.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Apply a selection queued by an edit that also changed `value`, once React
   // has painted the new text.
   useEffect(() => {
