@@ -2,6 +2,7 @@ import {
   addDays,
   addWeeks,
   differenceInCalendarDays,
+  format,
   formatISO,
   isSameDay,
   startOfDay,
@@ -19,13 +20,32 @@ export function todayIso(now: Date = new Date()): string {
   return formatInTimeZone(now, APP_TZ, "yyyy-MM-dd");
 }
 
+/**
+ * Shift a `yyyy-MM-dd` string by whole calendar days, returning `yyyy-MM-dd`.
+ * Works on the date string itself (not an instant) so it never drifts across a
+ * timezone offset — the same reason tomorrowIso avoids toZonedTime here.
+ */
+export function addDaysIso(dateIso: string, days: number): string {
+  return formatISO(addDays(new Date(`${dateIso}T00:00:00`), days), {
+    representation: "date",
+  });
+}
+
+/**
+ * Human label for a `yyyy-MM-dd` string, e.g. "Thursday, 1 January 2099".
+ * Formats the date string in place. Parsing it into an instant and formatting
+ * that in APP_TZ happens to agree while Sydney runs ahead of the runtime's
+ * zone, but it is the same double-offset trap tomorrowIso documents.
+ */
+export function formatDateIso(dateIso: string, pattern: string): string {
+  return format(new Date(`${dateIso}T00:00:00`), pattern);
+}
+
 export function tomorrowIso(now: Date = new Date()): string {
   // Add the calendar day to the *Sydney* date string, not to the instant.
   // Chaining toZonedTime → formatInTimeZone double-applies the tz offset and,
   // on a UTC runtime (Vercel), pushes the result an extra day forward.
-  return formatISO(addDays(new Date(`${todayIso(now)}T00:00:00`), 1), {
-    representation: "date",
-  });
+  return addDaysIso(todayIso(now), 1);
 }
 
 /**

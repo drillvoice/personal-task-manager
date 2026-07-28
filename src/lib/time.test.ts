@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  addDaysIso,
   dueLabel,
+  formatDateIso,
   isOverdue,
   isToday,
   recentWeekStarts,
@@ -106,5 +108,35 @@ describe("isToday / isOverdue", () => {
   });
   it("does not flag today as overdue", () => {
     expect(isOverdue("2026-07-01", wed)).toBe(false);
+  });
+});
+
+describe("addDaysIso", () => {
+  it("shifts a date string without drifting across the offset", () => {
+    expect(addDaysIso("2026-07-28", 1)).toBe("2026-07-29");
+    expect(addDaysIso("2026-07-28", -1)).toBe("2026-07-27");
+  });
+
+  it("crosses month and year boundaries", () => {
+    expect(addDaysIso("2026-07-31", 1)).toBe("2026-08-01");
+    expect(addDaysIso("2026-01-01", -1)).toBe("2025-12-31");
+    expect(addDaysIso("2024-02-28", 1)).toBe("2024-02-29");
+  });
+});
+
+describe("formatDateIso", () => {
+  it("labels the date named by the string, not an instant near it", () => {
+    expect(formatDateIso("2099-01-01", "EEEE, d MMMM yyyy")).toBe(
+      "Thursday, 1 January 2099",
+    );
+    expect(formatDateIso("2026-07-28", "EEEE, d MMMM yyyy")).toBe(
+      "Tuesday, 28 July 2026",
+    );
+  });
+
+  it("round-trips with addDaysIso", () => {
+    expect(formatDateIso(addDaysIso("2026-07-28", -1), "yyyy-MM-dd")).toBe(
+      "2026-07-27",
+    );
   });
 });

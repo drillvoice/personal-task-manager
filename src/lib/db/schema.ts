@@ -438,6 +438,57 @@ export const dailyPlanItems = pgTable(
   ],
 );
 
+// One freeform daily-log note per user per day (Obsidian daily-note style).
+// The body is markdown source text; @people mentions and #tags in it are
+// reconciled into the two junctions below on save so they stay queryable.
+export const journalEntries = pgTable(
+  "journal_entries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    entryDate: date("entry_date").notNull(),
+    body: text("body").notNull().default(""),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("journal_entries_user_date_uniq").on(t.userId, t.entryDate),
+  ],
+);
+
+export const journalEntryPeople = pgTable(
+  "journal_entry_people",
+  {
+    entryId: uuid("entry_id")
+      .notNull()
+      .references(() => journalEntries.id, { onDelete: "cascade" }),
+    personId: uuid("person_id")
+      .notNull()
+      .references(() => people.id, { onDelete: "cascade" }),
+  },
+  (t) => [primaryKey({ columns: [t.entryId, t.personId] })],
+);
+
+// Journal tags reuse the meeting tag vocabulary (tags.kind = 'meeting').
+export const journalEntryTags = pgTable(
+  "journal_entry_tags",
+  {
+    entryId: uuid("entry_id")
+      .notNull()
+      .references(() => journalEntries.id, { onDelete: "cascade" }),
+    tagId: uuid("tag_id")
+      .notNull()
+      .references(() => tags.id, { onDelete: "cascade" }),
+  },
+  (t) => [primaryKey({ columns: [t.entryId, t.tagId] })],
+);
+
 /* ------------------------------------------------------------------ */
 /* Relations                                                          */
 /* ------------------------------------------------------------------ */
@@ -452,6 +503,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   people: many(people),
   groups: many(groups),
   meetings: many(meetings),
+  journalEntries: many(journalEntries),
 }));
 
 export const organisationsRelations = relations(
@@ -473,6 +525,7 @@ export const peopleRelations = relations(people, ({ one, many }) => ({
   }),
   taskAssignees: many(taskAssignees),
   meetingAttendees: many(meetingAttendees),
+  journalMentions: many(journalEntryPeople),
   groups: many(personGroups),
 }));
 
@@ -529,6 +582,7 @@ export const tagsRelations = relations(tags, ({ one, many }) => ({
   user: one(users, { fields: [tags.userId], references: [users.id] }),
   tasks: many(taskTags),
   meetings: many(meetingTags),
+  journalEntries: many(journalEntryTags),
 }));
 
 export const meetingsRelations = relations(meetings, ({ one, many }) => ({
@@ -616,6 +670,46 @@ export const dailyPlanItemsRelations = relations(dailyPlanItems, ({ one }) => ({
   }),
 }));
 
+export const journalEntriesRelations = relations(
+  journalEntries,
+  ({ one, many }) => ({
+    user: one(users, {
+      fields: [journalEntries.userId],
+      references: [users.id],
+    }),
+    people: many(journalEntryPeople),
+    tags: many(journalEntryTags),
+  }),
+);
+
+export const journalEntryPeopleRelations = relations(
+  journalEntryPeople,
+  ({ one }) => ({
+    entry: one(journalEntries, {
+      fields: [journalEntryPeople.entryId],
+      references: [journalEntries.id],
+    }),
+    person: one(people, {
+      fields: [journalEntryPeople.personId],
+      references: [people.id],
+    }),
+  }),
+);
+
+export const journalEntryTagsRelations = relations(
+  journalEntryTags,
+  ({ one }) => ({
+    entry: one(journalEntries, {
+      fields: [journalEntryTags.entryId],
+      references: [journalEntries.id],
+    }),
+    tag: one(tags, {
+      fields: [journalEntryTags.tagId],
+      references: [tags.id],
+    }),
+  }),
+);
+
 /* ------------------------------------------------------------------ */
 /* Inferred row types                                                 */
 /* ------------------------------------------------------------------ */
@@ -639,6 +733,8 @@ export type DailyPlan = typeof dailyPlans.$inferSelect;
 export type DailyPlanItem = typeof dailyPlanItems.$inferSelect;
 export type Meeting = typeof meetings.$inferSelect;
 export type NewMeeting = typeof meetings.$inferInsert;
+export type JournalEntry = typeof journalEntries.$inferSelect;
+export type NewJournalEntry = typeof journalEntries.$inferInsert;
 
 /* PRIORITY_TASK_CAP is enforced in server actions — see lib/server/priority-cap.ts */
 export const PRIORITY_TASK_CAP = 3;

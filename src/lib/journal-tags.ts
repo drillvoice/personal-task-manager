@@ -1,0 +1,90 @@
+// Bare "#word" tag scanning, shared by the save-time reference parser and the
+// read-mode renderer so both chip and store exactly the same tokens. Kept free
+// of `server-only` deliberately: the reader is a client component.
+
+// A tag must sit at a start/whitespace boundary, which (a) keeps
+// "example.com#frag" in a URL from being read as a tag and (b) skips the
+// "#Name" inside a `[#Name](...)` link (preceded by "["). A heading marker
+// ("# ", "## ") is a '#' followed by whitespace, so requiring a word char
+// right after '#' already skips headings. At least one letter is required so
+// an issue reference like "#123" isn't a tag.
+const BARE_TAG_RE = /(^|\s)#([a-zA-Z0-9_-]*[a-zA-Z][a-zA-Z0-9_-]*)/g;
+
+// Code regions are blanked rather than removed so match offsets still index
+// into the original body. NUL rather than a space because the boundary rule
+// keys off whitespace: blanking with spaces would make "`x`#tag" — not a tag
+// today, being butted against a code span — start matching.
+const FILLER = "\u0000";
+const FENCE_RE = /^\s*(`{3,}|~{3,})/;
+const FENCE_CLOSE_RE = /^\s*(`{3,}|~{3,})\s*$/;
+const INLINE_CODE_RE = /(`+)[^\n]*?\1/g;
+
+export type BareTagMatch = { name: string; index: number; length: number };
+
+function maskFencedBlocks(body: string): string {
+  let fenceChar: string | null = null;
+  return body
+    .split("\n")
+    .map((line) => {
+      if (fenceChar === null) {
+        const opener = FENCE_RE.exec(line);
+        if (!opener) return line;
+        fenceChar = opener[1][0];
+        return FILLER.repeat(line.length);
+      }
+      const closer = FENCE_CLOSE_RE.exec(line);
+      if (closer && closer[1][0] === fenceChar) fenceChar = null;
+      return FILLER.repeat(line.length);
+    })
+    .join("\n");
+}
+
+function maskInlineCode(body: string): string {
+  return body.replace(INLINE_CODE_RE, (m) => FILLER.repeat(m.length));
+}
+
+/**
+ * Bare "#tag" tokens in `body`, with the offset of the '#'. Tokens inside
+ * fenced blocks or inline code spans are skipped — pasting a shell snippet or
+ * a CSS rule shouldn't read as tagging.
+ */
+export function findBareTagMatches(body: string): BareTagMatch[] {
+  const masked = maskInlineCode(maskFencedBlocks(body));
+  return [...masked.matchAll(BARE_TAG_RE)].map((m) => ({
+    name: m[2],
+    index: m.index + m[1].length,
+    length: m[2].length + 1,
+  }));
+}
+
+export function findBareTagNames(body: string): string[] {
+  return findBareTagMatches(body).map((m) => m.name);
+}
+
+/**
+ * Rewrite each bare "#tag" into a markdown link under a custom "tag:" scheme,
+ * which the read view turns into a chip. Driven by the same scan the save path
+ * uses, so the chips shown and the tags stored can't drift apart — and a "#tag"
+ * inside a code block is left as code rather than having link markup spliced
+ * into it.
+ */
+export function linkBareTags(body: string): string {
+  const matches = findBareTagMatches(body);
+  if (matches.length === 0) return body;
+  let out = "";
+  let cursor = 0;
+  for (const { name, index, length } of matches) {
+    out += body.slice(cursor, index) + `[#${name}](tag:${name})`;
+    cursor = index + length;
+  }
+  return out + body.slice(cursor);
+}
+
+/**
+ * Whether `name` survives a round-trip as a bare "#name" token. The editor uses
+ * this to avoid offering "Create #foo!" — the '!' wouldn't parse back out, so
+ * the tag would be created under a name the body never references again.
+ */
+export function isBareTagName(name: string): boolean {
+  return /^[a-zA-Z0-9_-]*[a-zA-Z][a-zA-Z0-9_-]*$/.test(name);
+}

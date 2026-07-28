@@ -8,6 +8,7 @@ import {
   Circle,
   Grid3x3,
   ListTodo,
+  NotebookPen,
   RefreshCw,
   Users,
 } from "lucide-react";
@@ -19,6 +20,7 @@ const items = [
   { href: "/meetings", label: "Meetings", Icon: CalendarDays },
   { href: "/people", label: "People", Icon: Users },
   { href: "/review", label: "Review", Icon: RefreshCw },
+  { href: "/journal", label: "Journal", Icon: NotebookPen },
 ] as const;
 
 // Desktop rail is icon-only by default and expands on hover. The content

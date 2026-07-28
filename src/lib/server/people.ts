@@ -168,16 +168,22 @@ export async function loadGroupOptions(
   }));
 }
 
+export async function loadPersonOptions(
+  userId: string,
+): Promise<ContactOption[]> {
+  return db
+    .select({ id: people.id, name: people.name })
+    .from(people)
+    .where(eq(people.userId, userId))
+    .orderBy(asc(people.name));
+}
+
 export async function loadContactOptions(userId: string): Promise<{
   people: ContactOption[];
   orgs: ContactOption[];
 }> {
   const [personRows, orgRows] = await Promise.all([
-    db
-      .select({ id: people.id, name: people.name })
-      .from(people)
-      .where(eq(people.userId, userId))
-      .orderBy(asc(people.name)),
+    loadPersonOptions(userId),
     db
       .select({ id: organisations.id, name: organisations.name })
       .from(organisations)
