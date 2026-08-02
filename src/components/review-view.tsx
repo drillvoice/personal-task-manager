@@ -13,6 +13,7 @@ import {
   updateReflection,
   updateReviewFlag,
 } from "@/app/(app)/review/actions";
+import { setTaskDone } from "@/app/(app)/today/actions";
 import type {
   ReviewCompletedData,
   ReviewData,
@@ -569,27 +570,12 @@ function ReviewProjectCard({
             </p>
           )}
           {tasks.map((t) => (
-            <div
+            <ReviewProjectTaskRow
               key={t.id}
-              className="flex items-center gap-2 border-b px-1 py-2 text-[13px]"
-              style={{ borderColor: "var(--color-line)" }}
-            >
-              <PriorityBadge priority={t.priority} />
-              <span className="flex-1">{t.title}</span>
-              <button
-                type="button"
-                onClick={() => togglePriority(t.id)}
-                disabled={pending}
-                className="font-mono text-[11px]"
-                style={{
-                  color: weeklyOn.has(t.id)
-                    ? "var(--color-accent)"
-                    : "var(--color-ink-soft)",
-                }}
-              >
-                {weeklyOn.has(t.id) ? "★ priority" : "☆ pick"}
-              </button>
-            </div>
+              task={t}
+              weeklyOn={weeklyOn.has(t.id)}
+              togglePriority={togglePriority}
+            />
           ))}
           <div className="mt-2 flex items-center gap-2 pt-2">
             <Plus size={14} style={{ color: "var(--color-ink-soft)" }} />
@@ -609,6 +595,73 @@ function ReviewProjectCard({
             />
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function ReviewProjectTaskRow({
+  task,
+  weeklyOn,
+  togglePriority,
+}: {
+  task: { id: string; title: string; priority: 1 | 2 | 3 | null };
+  weeklyOn: boolean;
+  togglePriority: (id: string) => void;
+}) {
+  // The task list is loaded server-side as open tasks only, so a completed row
+  // stays visible (struck through) until the next render drops it.
+  const [done, setDone] = useState(false);
+  const [pending, startTransition] = useTransition();
+
+  const complete = () => {
+    const next = !done;
+    setDone(next);
+    startTransition(async () => {
+      const res = await setTaskDone(task.id, next);
+      if (!res.ok) setDone(!next);
+    });
+  };
+
+  return (
+    <div
+      className="flex items-center gap-2 border-b px-1 py-2 text-[13px]"
+      style={{ borderColor: "var(--color-line)" }}
+    >
+      <PriorityBadge priority={task.priority} />
+      <span
+        className="flex-1"
+        style={{
+          textDecoration: done ? "line-through" : undefined,
+          color: done ? "var(--color-ink-soft)" : undefined,
+        }}
+      >
+        {task.title}
+      </span>
+      <div className="flex flex-col items-end gap-0.5">
+        <button
+          type="button"
+          onClick={complete}
+          disabled={pending}
+          aria-pressed={done}
+          className="font-mono text-[11px]"
+          style={{
+            color: done ? "var(--color-teal)" : "var(--color-ink-soft)",
+          }}
+        >
+          {done ? "✓ done" : "✓ tick"}
+        </button>
+        <button
+          type="button"
+          onClick={() => togglePriority(task.id)}
+          disabled={pending}
+          className="font-mono text-[11px]"
+          style={{
+            color: weeklyOn ? "var(--color-accent)" : "var(--color-ink-soft)",
+          }}
+        >
+          {weeklyOn ? "★ priority" : "☆ pick"}
+        </button>
       </div>
     </div>
   );

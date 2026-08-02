@@ -88,6 +88,11 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
   overlay, since Today has no room for a side panel. Task detail is loaded on
   demand so the landing page stays lean.
 
+- **Tick off tasks during the weekly review.** Each task listed under a project
+  in the review now has a small `✓ tick` above its `☆ pick` star, for closing
+  out something that's already done rather than carrying it forward. The row
+  strikes through immediately and drops off the list on the next load.
+
 ### Changed
 - **Project overview reads like a spreadsheet.** The Projects screen is now
   titled "Project overview". Its weekly-note cells grow vertically to fit their

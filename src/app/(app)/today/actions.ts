@@ -165,6 +165,7 @@ export async function setTaskDone(
   if (!updated) return { ok: false, error: "Task not found" };
   revalidatePath("/today");
   revalidatePath("/tasks");
+  revalidatePath("/review");
   if (updated.meetingId) revalidatePath(`/meetings/${updated.meetingId}`);
   return { ok: true };
 }
