@@ -167,6 +167,15 @@ paths — `createTask` and `updateTask` in `src/app/(app)/tasks/actions.ts` and
 projects must stay in the task project-pickers (sorted last, suffixed
 `(archived)`): remove them there and the reactivation path becomes unreachable.
 
+**Notes have no tags — `#word` is plain text.** The Notes module (`notes`
+table, one `body` column) deliberately has no tag junction and no `tags` rows.
+A `#polling` in a note is found because search covers the whole body, and
+`src/components/note-body.tsx` renders it as a chip using the journal's
+`findBareTagMatches`. Wiring notes into the `tags` table would reintroduce the
+autosave tag-minting problem `saveJournalBody` had to solve, for no gain.
+Search is substring `ILIKE` (`src/lib/server/notes.ts`); user input goes
+through `escapeLikePattern` so a typed `%` matches literally.
+
 **Inbox is a pseudo-project** (`projectId = null`). It appears in the Tasks
 view but is *excluded* from the Projects history table. See
 `src/lib/server/tasks.ts` and `src/lib/server/projects.ts`.

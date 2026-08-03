@@ -4,9 +4,9 @@ import { usePathname } from "next/navigation";
 
 /**
  * Wraps every authenticated page in a max-width container. Tasks, Projects,
- * Meetings, Review, Today, and Journal use the wider desktop surface needed
- * for dense lists, table/editing controls, the task picker, two-column notes
- * + tasks layouts, and a comfortably wide entry textarea.
+ * Meetings, Review, Today, Journal, and Notes use the wider desktop surface
+ * needed for dense lists, table/editing controls, the task picker, two-column
+ * notes + tasks layouts, and a comfortably wide entry textarea.
  */
 export function AppFrame({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -17,7 +17,8 @@ export function AppFrame({ children }: { children: React.ReactNode }) {
     pathname.startsWith("/people") ||
     pathname.startsWith("/today") ||
     pathname.startsWith("/review") ||
-    pathname.startsWith("/journal");
+    pathname.startsWith("/journal") ||
+    pathname.startsWith("/notes");
   // Tasks, People, and Projects each carry a reserved detail-panel column, so
   // they get extra width beyond the standard wide surface.
   const hasDetailPanel =
