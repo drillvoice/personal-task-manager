@@ -1,14 +1,20 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useAutosave, type AutosaveResult } from "@/components/use-autosave";
 
-function isFailure(result: unknown): result is { ok: false; error?: string } {
-  return (
+// Callers are server actions with assorted return shapes; anything that isn't
+// an explicit `{ ok: false }` counts as saved.
+function toResult(result: unknown): AutosaveResult {
+  if (
     typeof result === "object" &&
     result !== null &&
     "ok" in result &&
     (result as { ok: unknown }).ok === false
-  );
+  ) {
+    const { error } = result as { error?: string };
+    return { ok: false, error: error ?? "Couldn't save" };
+  }
+  return { ok: true };
 }
 
 export function AutosaveTextarea({
@@ -26,40 +32,8 @@ export function AutosaveTextarea({
   placeholder?: string;
   rows?: number;
 }) {
-  const [value, setValue] = useState(initialValue);
-  const [error, setError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
-  const lastSaved = useRef(initialValue);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const save = (v: string) => {
-    if (v === lastSaved.current) return;
-    startTransition(async () => {
-      const result = await onSave(v);
-      if (isFailure(result)) {
-        setError(result.error ?? "Couldn't save");
-        return;
-      }
-      setError(null);
-      lastSaved.current = v;
-    });
-  };
-
-  useEffect(() => {
-    if (value === lastSaved.current) return;
-    timer.current = setTimeout(() => save(value), 800);
-    return () => {
-      if (timer.current) clearTimeout(timer.current);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value]);
-
-  const flush = () => {
-    if (timer.current) clearTimeout(timer.current);
-    save(value);
-  };
-
-  const dirty = value !== lastSaved.current;
+  const { value, setValue, flush, error, pending, dirty, unreachable } =
+    useAutosave(initialValue, async (next) => toResult(await onSave(next)));
 
   return (
     <div>
@@ -88,9 +62,11 @@ export function AutosaveTextarea({
       >
         {pending
           ? "Saving…"
-          : error
-            ? `Not saved — ${error}`
-            : "Unsaved changes"}
+          : unreachable
+            ? `Not saved — ${error}, retrying`
+            : error
+              ? `Not saved — ${error}`
+              : "Unsaved changes"}
       </p>
     </div>
   );

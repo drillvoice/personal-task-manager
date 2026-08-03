@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useTransition } from "react";
 import { Check, Flag, Plus } from "lucide-react";
 import { PriorityBadge } from "@/components/priority-badge";
+import { AutosaveTextarea } from "@/components/autosave-textarea";
 import {
   finishReview,
   quickAddTask,
@@ -668,29 +669,13 @@ function ReviewProjectTaskRow({
 }
 
 function Reflection({ defaultValue }: { defaultValue: string }) {
-  const [value, setValue] = useState(defaultValue);
-  const [pending, startTransition] = useTransition();
-  const save = () =>
-    startTransition(async () => {
-      await updateReflection(value);
-    });
   return (
-    <div
-      className="mb-6 rounded-[4px] border p-4"
-      style={{
-        background: "var(--color-paper-raised)",
-        borderColor: "var(--color-line)",
-      }}
-    >
-      <textarea
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onBlur={save}
-        disabled={pending}
-        rows={3}
+    <div className="mb-6">
+      <AutosaveTextarea
+        initialValue={defaultValue}
+        onSave={updateReflection}
         placeholder="How did this week actually go?"
-        className="w-full bg-transparent text-[13px] outline-none"
-        style={{ color: "var(--color-ink)" }}
+        rows={3}
       />
     </div>
   );

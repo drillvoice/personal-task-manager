@@ -74,16 +74,25 @@ export async function updateReviewFlag(
   revalidatePath("/review");
 }
 
+const reflectionSchema = z.string().max(50000);
+
 // Autosave target: no revalidatePath — re-rendering /review underneath the
 // textarea the user is typing into costs a full data reload per blur and
 // nothing user-visible goes stale (same convention as the meetings notes).
-export async function updateReflection(text: string): Promise<void> {
+export async function updateReflection(
+  text: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
   const userId = await requireUserId();
+  const parsed = reflectionSchema.safeParse(text);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid" };
+  }
   const reviewId = await currentReviewId(userId);
   await db
     .update(weeklyReviews)
-    .set({ reflectionNotes: text })
+    .set({ reflectionNotes: parsed.data })
     .where(eq(weeklyReviews.id, reviewId));
+  return { ok: true };
 }
 
 export async function updateProjectNotes(
@@ -179,22 +188,26 @@ export async function quickAddTask(input: {
   if (parsed.data.projectId) {
     await assertOwnsProject(userId, parsed.data.projectId);
   }
-  const [row] = await db
-    .insert(tasks)
-    .values({
+  // Tag rows must exist before anything can link to them, so resolution stays
+  // outside — but the task and its links land in one batch (a single implicit
+  // transaction over neon-http), same as createTask. A quick-capture's whole
+  // point is that "#p1" arrives with the task; a mid-write failure that drops
+  // the link would silently lose the priority.
+  const tagIds = await findOrCreateTaskTagIds(userId, tagNames);
+  const taskId = crypto.randomUUID();
+  await db.batch([
+    db.insert(tasks).values({
+      id: taskId,
       userId,
       title: parsed.data.title,
       projectId: parsed.data.projectId,
       dueDate,
       status: parsed.data.projectId ? "next_action" : "inbox",
-    })
-    .returning({ id: tasks.id });
-  const tagIds = await findOrCreateTaskTagIds(userId, tagNames);
-  if (tagIds.length > 0) {
-    await db
-      .insert(taskTags)
-      .values(tagIds.map((tagId) => ({ taskId: row.id, tagId })));
-  }
+    }),
+    ...(tagIds.length > 0
+      ? [db.insert(taskTags).values(tagIds.map((tagId) => ({ taskId, tagId })))]
+      : []),
+  ]);
   await reactivateArchivedProject(userId, parsed.data.projectId);
   revalidatePath("/review");
   revalidatePath("/tasks");
