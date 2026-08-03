@@ -113,6 +113,13 @@
       "when": 1785147937853,
       "tag": "0015_legal_chronomancer",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1785738798473,
+      "tag": "0016_same_gorilla_man",
+      "breakpoints": true
     }
   ]
 }

@@ -489,6 +489,28 @@ export const journalEntryTags = pgTable(
   (t) => [primaryKey({ columns: [t.entryId, t.tagId] })],
 );
 
+// Dateless reference notes — the "filing cabinet". Deliberately just a body:
+// no title, no project, and no tag junction. A "#tag" here is plain text that
+// search happens to match, not a `tags` row, so nothing needs reconciling on
+// save (contrast journalEntries above).
+export const notes = pgTable(
+  "notes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    body: text("body").notNull().default(""),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("notes_user_updated_idx").on(t.userId, t.updatedAt)],
+);
+
 /* ------------------------------------------------------------------ */
 /* Relations                                                          */
 /* ------------------------------------------------------------------ */
@@ -504,6 +526,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   groups: many(groups),
   meetings: many(meetings),
   journalEntries: many(journalEntries),
+  notes: many(notes),
 }));
 
 export const organisationsRelations = relations(
@@ -710,6 +733,10 @@ export const journalEntryTagsRelations = relations(
   }),
 );
 
+export const notesRelations = relations(notes, ({ one }) => ({
+  user: one(users, { fields: [notes.userId], references: [users.id] }),
+}));
+
 /* ------------------------------------------------------------------ */
 /* Inferred row types                                                 */
 /* ------------------------------------------------------------------ */
@@ -735,6 +762,8 @@ export type Meeting = typeof meetings.$inferSelect;
 export type NewMeeting = typeof meetings.$inferInsert;
 export type JournalEntry = typeof journalEntries.$inferSelect;
 export type NewJournalEntry = typeof journalEntries.$inferInsert;
+export type Note = typeof notes.$inferSelect;
+export type NewNote = typeof notes.$inferInsert;
 
 /* PRIORITY_TASK_CAP is enforced in server actions — see lib/server/priority-cap.ts */
 export const PRIORITY_TASK_CAP = 3;
