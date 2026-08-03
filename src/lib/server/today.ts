@@ -11,7 +11,7 @@ import {
 } from "@/lib/db/schema";
 import { comparePriority } from "@/lib/priority";
 import { todayIso, tomorrowIso, weekStartIso } from "@/lib/time";
-import type { Priority } from "@/lib/types";
+import type { Priority, TaskStatus } from "@/lib/types";
 import { ensureDailyPlan } from "./priority-cap";
 import { loadTaskPriorities } from "./task-priority";
 
@@ -19,7 +19,7 @@ export type TodayTask = {
   id: string;
   title: string;
   priority: Priority | null;
-  status: "inbox" | "next_action" | "waiting_on" | "done";
+  status: TaskStatus;
   dueDate: string | null;
   projectId: string | null;
   projectName: string | null;

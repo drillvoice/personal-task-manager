@@ -5,6 +5,30 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 
 ## [Unreleased]
 
+### Fixed
+- **Editing a task's tags no longer wipes its priority.** Adding or removing
+  any tag — from the Tasks detail panel, the Today editor, or the inline edit
+  form on a meeting — silently deleted the task's `p1`/`p2`/`p3` tag, and with
+  it the priority, since priority *is* a tag. The tag picker was seeded from
+  the row's display list, which deliberately hides priority tags so they show
+  as a badge instead of a duplicate chip; saving then replaced the whole tag
+  set with one that had never contained them. Editors now read the complete
+  set. As a consequence the priority tag is visible in those editors as an
+  ordinary chip, so you can add, change or clear a task's priority there —
+  previously it could only be set through quick capture's `#p1`.
+
+### Changed
+- **Autosaved text now survives a save that never reaches the server.** Task
+  notes, project notes, meeting prep/notes and note bodies previously took the
+  page down to the error screen if a save failed outright — offline, a deploy
+  mid-session, a database hiccup — losing whatever had been typed. They now say
+  *"Not saved — couldn't reach the server, retrying"* under the field, keep the
+  text, and retry on their own until it lands. The daily journal already
+  behaved this way; everything else does now too.
+- **Deleting a note asks inline instead of in a browser dialog.** The `Delete`
+  on a note card now turns into `Confirm delete?` / `Keep`, the same two-step
+  every other delete in the app uses.
+
 ### Added
 - **Notes — a filing cabinet for discrete facts.** New sidebar entry (`Notes`,
   reachable via `g 8`) for durable, dateless reference material: "Pyxis is a

@@ -5,9 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CalendarDays, Plus, Search, Users } from "lucide-react";
 import { createMeeting } from "@/app/(app)/meetings/actions";
-import { createPerson } from "@/app/(app)/people/actions";
 import { EntityPicker } from "@/components/entity-picker";
 import type { PickerOption } from "@/components/entity-picker";
+import { createPersonOption } from "@/components/entity-create-options";
 import { TagChip } from "@/components/tag-chip";
 import { DueLabel } from "@/components/due-label";
 import type { MeetingListItem } from "@/lib/server/meetings";
@@ -94,13 +94,6 @@ function NewMeetingForm({
   const [attendeeIds, setAttendeeIds] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-
-  const createPersonOption = async (
-    name: string,
-  ): Promise<PickerOption | null> => {
-    const res = await createPerson({ name });
-    return res.ok ? { id: res.id, name } : null;
-  };
 
   const submit = () => {
     if (!title.trim() || !meetingDate) return;

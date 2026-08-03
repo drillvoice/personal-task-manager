@@ -14,12 +14,12 @@ import {
 } from "@/lib/db/schema";
 import { isPriorityTagName, priorityFromTagNames } from "@/lib/priority";
 import { weekStartIso } from "@/lib/time";
-import type { Priority } from "@/lib/types";
+import type { Priority, ProjectStatus, TaskStatus } from "@/lib/types";
 
 export type TasksViewProject = {
   id: string | null; // null = Inbox pseudo-project
   name: string;
-  status: "active" | "someday_maybe" | "on_hold" | "completed" | "archived";
+  status: ProjectStatus;
   // This week's snapshot from project_weekly_notes (read-only here).
   notes: string;
   // The project's current narrative (projects.notes) — editable in the card.
@@ -31,13 +31,19 @@ export type TasksViewTask = {
   id: string;
   title: string;
   priority: Priority | null;
-  status: "inbox" | "next_action" | "waiting_on" | "done";
+  status: TaskStatus;
   dueDate: string | null;
   notes: string;
   projectId: string | null;
   projectName: string | null;
   assignees: { id: string; name: string }[];
+  // For *display*: priority tags are stripped, since a row renders those as a
+  // PriorityBadge rather than a second chip saying the same thing.
   tags: { id: string; name: string; color: string }[];
+  // For *editing*: the complete set, priority tags included. Seeding a tag
+  // picker from `tags` above would omit them, and saving replaces the whole
+  // set — so an unrelated tag edit silently deleted the task's priority.
+  allTagIds: string[];
   // On this week's top-3 (weekly review priorities).
   weekly: boolean;
 };
@@ -194,6 +200,7 @@ export async function loadTasksData(userId: string) {
       projectName: r.projectName ?? null,
       assignees: assigneesByTask.get(r.task.id) ?? [],
       tags: allTags.filter((tg) => !isPriorityTagName(tg.name)),
+      allTagIds: allTags.map((tg) => tg.id),
       weekly: weeklyIds.has(r.task.id),
     };
     if (r.task.projectId) {

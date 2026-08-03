@@ -1,60 +1,51 @@
 "use server";
 
-import { and, count, eq, inArray, max, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import {
   projectWeeklyNotes,
-  projects,
   tags,
   taskTags,
   tasks,
-  WEEKLY_PRIORITY_CAP,
   weeklyPriorities,
   weeklyReviews,
 } from "@/lib/db/schema";
 import { requireUserId } from "@/lib/server/session";
+import { ownsProject, ownsTask } from "@/lib/server/ownership";
 import { extractDueDate } from "@/lib/server/parse-due-date";
 import { reactivateArchivedProject } from "@/lib/server/reactivate-project";
 import {
-  PriorityCapExceededError,
+  claimWeeklyPrioritySlot,
   ensureOpenReview,
   getOpenReviewId,
 } from "@/lib/server/priority-cap";
 import { weekStartIso } from "@/lib/time";
 
-async function currentReviewId(userId: string): Promise<string> {
-  return ensureOpenReview(userId);
-}
-
-// The week the open review covers. Project notes saved during a review file
-// under this week, not necessarily the current calendar week — a reopened past
-// review edits the notes for the week it covers.
-async function currentReviewWeek(userId: string): Promise<string> {
-  const reviewId = await ensureOpenReview(userId);
+// The week the open review covers, alongside its id. Project notes saved
+// during a review file under this week, not necessarily the current calendar
+// week — a reopened past review edits the notes for the week it covers.
+async function currentReview(
+  userId: string,
+): Promise<{ id: string; weekStartDate: string }> {
+  const id = await ensureOpenReview(userId);
   const [row] = await db
     .select({ weekStartDate: weeklyReviews.weekStartDate })
     .from(weeklyReviews)
-    .where(eq(weeklyReviews.id, reviewId));
-  return row?.weekStartDate ?? weekStartIso();
+    .where(eq(weeklyReviews.id, id));
+  return { id, weekStartDate: row?.weekStartDate ?? weekStartIso() };
 }
 
 async function assertOwnsProject(userId: string, projectId: string) {
-  const [row] = await db
-    .select({ id: projects.id })
-    .from(projects)
-    .where(and(eq(projects.id, projectId), eq(projects.userId, userId)));
-  if (!row) throw new Error("Project not found");
+  if (!(await ownsProject(userId, projectId))) {
+    throw new Error("Project not found");
+  }
 }
 
 async function assertOwnsTask(userId: string, taskId: string) {
-  const [row] = await db
-    .select({ id: tasks.id })
-    .from(tasks)
-    .where(and(eq(tasks.id, taskId), eq(tasks.userId, userId)));
-  if (!row) throw new Error("Task not found");
+  if (!(await ownsTask(userId, taskId))) throw new Error("Task not found");
 }
 
 export async function updateReviewFlag(
@@ -66,7 +57,7 @@ export async function updateReviewFlag(
   value: boolean,
 ): Promise<void> {
   const userId = await requireUserId();
-  const reviewId = await currentReviewId(userId);
+  const reviewId = await ensureOpenReview(userId);
   await db
     .update(weeklyReviews)
     .set({ [field]: value })
@@ -74,16 +65,25 @@ export async function updateReviewFlag(
   revalidatePath("/review");
 }
 
+const reflectionSchema = z.string().max(50000);
+
 // Autosave target: no revalidatePath — re-rendering /review underneath the
 // textarea the user is typing into costs a full data reload per blur and
 // nothing user-visible goes stale (same convention as the meetings notes).
-export async function updateReflection(text: string): Promise<void> {
+export async function updateReflection(
+  text: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
   const userId = await requireUserId();
-  const reviewId = await currentReviewId(userId);
+  const parsed = reflectionSchema.safeParse(text);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid" };
+  }
+  const reviewId = await ensureOpenReview(userId);
   await db
     .update(weeklyReviews)
-    .set({ reflectionNotes: text })
+    .set({ reflectionNotes: parsed.data })
     .where(eq(weeklyReviews.id, reviewId));
+  return { ok: true };
 }
 
 export async function updateProjectNotes(
@@ -91,13 +91,9 @@ export async function updateProjectNotes(
   notes: string,
 ): Promise<void> {
   const userId = await requireUserId();
-  const [owned] = await db
-    .select({ id: projects.id })
-    .from(projects)
-    .where(and(eq(projects.id, projectId), eq(projects.userId, userId)));
-  if (!owned) throw new Error("Project not found");
+  await assertOwnsProject(userId, projectId);
 
-  const weekStartDate = await currentReviewWeek(userId);
+  const { weekStartDate } = await currentReview(userId);
   await db
     .insert(projectWeeklyNotes)
     .values({ projectId, weekStartDate, note: notes })
@@ -179,22 +175,26 @@ export async function quickAddTask(input: {
   if (parsed.data.projectId) {
     await assertOwnsProject(userId, parsed.data.projectId);
   }
-  const [row] = await db
-    .insert(tasks)
-    .values({
+  // Tag rows must exist before anything can link to them, so resolution stays
+  // outside — but the task and its links land in one batch (a single implicit
+  // transaction over neon-http), same as createTask. A quick-capture's whole
+  // point is that "#p1" arrives with the task; a mid-write failure that drops
+  // the link would silently lose the priority.
+  const tagIds = await findOrCreateTaskTagIds(userId, tagNames);
+  const taskId = crypto.randomUUID();
+  await db.batch([
+    db.insert(tasks).values({
+      id: taskId,
       userId,
       title: parsed.data.title,
       projectId: parsed.data.projectId,
       dueDate,
       status: parsed.data.projectId ? "next_action" : "inbox",
-    })
-    .returning({ id: tasks.id });
-  const tagIds = await findOrCreateTaskTagIds(userId, tagNames);
-  if (tagIds.length > 0) {
-    await db
-      .insert(taskTags)
-      .values(tagIds.map((tagId) => ({ taskId: row.id, tagId })));
-  }
+    }),
+    ...(tagIds.length > 0
+      ? [db.insert(taskTags).values(tagIds.map((tagId) => ({ taskId, tagId })))]
+      : []),
+  ]);
   await reactivateArchivedProject(userId, parsed.data.projectId);
   revalidatePath("/review");
   revalidatePath("/tasks");
@@ -208,7 +208,7 @@ export async function toggleWeeklyPriority(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const userId = await requireUserId();
   await assertOwnsTask(userId, taskId);
-  const reviewId = await currentReviewId(userId);
+  const reviewId = await ensureOpenReview(userId);
 
   const [existing] = await db
     .select({ id: weeklyPriorities.id })
@@ -228,23 +228,12 @@ export async function toggleWeeklyPriority(
     return { ok: true };
   }
 
-  const [agg] = await db
-    .select({
-      count: count(),
-      // sort_order isn't read anywhere today, but a removed priority leaves
-      // a gap — reusing count() as the next value can collide with a slot
-      // that's still in use. max()+1 always lands on an unused value.
-      maxSortOrder: max(weeklyPriorities.sortOrder),
-    })
-    .from(weeklyPriorities)
-    .where(eq(weeklyPriorities.weeklyReviewId, reviewId));
-  if (agg.count >= WEEKLY_PRIORITY_CAP) {
-    return { ok: false, error: new PriorityCapExceededError("weekly").message };
-  }
+  const slot = await claimWeeklyPrioritySlot(reviewId);
+  if (!slot.ok) return slot;
   await db.insert(weeklyPriorities).values({
     weeklyReviewId: reviewId,
     taskId,
-    sortOrder: (agg.maxSortOrder ?? -1) + 1,
+    sortOrder: slot.sortOrder,
   });
   revalidatePath("/review");
   return { ok: true };
@@ -252,7 +241,7 @@ export async function toggleWeeklyPriority(
 
 export async function finishReview(): Promise<void> {
   const userId = await requireUserId();
-  const reviewId = await currentReviewId(userId);
+  const reviewId = await ensureOpenReview(userId);
   await db
     .update(weeklyReviews)
     .set({ completedAt: new Date() })

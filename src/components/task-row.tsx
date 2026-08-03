@@ -6,14 +6,17 @@ import { DueLabel } from "@/components/due-label";
 import { PriorityBadge } from "@/components/priority-badge";
 import { TagChip } from "@/components/tag-chip";
 import { EntityPicker } from "@/components/entity-picker";
-import type { PickerOption } from "@/components/entity-picker";
-import { createProject } from "@/app/(app)/projects/actions";
-import { createPerson } from "@/app/(app)/people/actions";
+import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
+import {
+  createPersonOption,
+  createProjectOption,
+  createTaskTagOption,
+} from "@/components/entity-create-options";
 import type { ProjectSelectOption as ProjectOption } from "@/lib/server/projects";
 import type { TagOption } from "@/lib/server/tasks";
 import type { ContactOption } from "@/lib/server/people";
 import { setTaskDone } from "@/app/(app)/today/actions";
-import { updateTask, deleteTask, createTaskTag } from "@/app/(app)/tasks/actions";
+import { updateTask, deleteTask } from "@/app/(app)/tasks/actions";
 
 export type TaskRowProps = {
   task: {
@@ -25,7 +28,12 @@ export type TaskRowProps = {
     projectId?: string | null;
     projectName: string | null;
     assignees?: { id: string; name: string }[];
+    // Display list — priority tags stripped, since the row shows a
+    // PriorityBadge for those instead.
     tags?: { id: string; name: string; color: string }[];
+    // Complete set for the inline editor; see TasksViewTask. Optional because
+    // the Today rows don't carry tags at all and never open that editor.
+    allTagIds?: string[];
     weekly?: boolean;
   };
   showProject?: boolean;
@@ -43,27 +51,6 @@ export type TaskRowProps = {
   onTaskDragStart?: (e: React.DragEvent) => void;
   onTaskDragEnd?: (e: React.DragEvent) => void;
 };
-
-export async function createProjectOption(
-  name: string,
-): Promise<PickerOption | null> {
-  const res = await createProject({ name, status: "active" });
-  return res.ok ? { id: res.id, name } : null;
-}
-
-export async function createPersonOption(
-  name: string,
-): Promise<PickerOption | null> {
-  const res = await createPerson({ name });
-  return res.ok ? { id: res.id, name } : null;
-}
-
-export async function createTagOption(
-  name: string,
-): Promise<PickerOption | null> {
-  const res = await createTaskTag({ name });
-  return res.ok ? { id: res.id, name: res.name, color: res.color } : null;
-}
 
 function EditTaskForm({
   task,
@@ -83,11 +70,11 @@ function EditTaskForm({
   const [assigneeIds, setAssigneeIds] = useState<string[]>(
     task.assignees?.map((a) => a.id) ?? [],
   );
-  const [tagIds, setTagIds] = useState<string[]>(
-    task.tags?.map((t) => t.id) ?? [],
-  );
+  // The complete set, not the display-filtered `tags` — saving replaces every
+  // task_tag, so seeding from a list with priority tags stripped would delete
+  // the task's priority on any unrelated tag edit.
+  const [tagIds, setTagIds] = useState<string[]>(task.allTagIds ?? []);
   const [dueDate, setDueDate] = useState(task.dueDate ?? "");
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -119,10 +106,6 @@ function EditTaskForm({
   };
 
   const del = () => {
-    if (!confirmDelete) {
-      setConfirmDelete(true);
-      return;
-    }
     startTransition(async () => {
       await deleteTask(task.id);
       onDone();
@@ -176,7 +159,7 @@ function EditTaskForm({
               options={tagOptions}
               selectedIds={tagIds}
               onChange={setTagIds}
-              onCreate={createTagOption}
+              onCreate={createTaskTagOption}
               placeholder="Add tag…"
             />
           </div>
@@ -206,25 +189,11 @@ function EditTaskForm({
         </p>
       )}
       <div className="flex items-center justify-between">
-        <button
-          type="button"
-          onClick={del}
-          disabled={pending}
-          className="font-mono text-[11px]"
-          style={{ color: confirmDelete ? "var(--color-danger)" : "var(--color-ink-soft)" }}
-        >
-          {confirmDelete ? "Confirm delete?" : "Delete task"}
-        </button>
-        {confirmDelete && (
-          <button
-            type="button"
-            onClick={() => setConfirmDelete(false)}
-            className="font-mono ml-2 text-[11px]"
-            style={{ color: "var(--color-ink-soft)" }}
-          >
-            Keep
-          </button>
-        )}
+        <ConfirmDeleteButton
+          label="Delete task"
+          pending={pending}
+          onConfirm={del}
+        />
         <div className="ml-auto flex gap-2">
           <button
             type="button"

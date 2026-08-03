@@ -248,73 +248,60 @@ export async function deleteGroup(
   return { ok: true };
 }
 
-const groupMemberSchema = z.object({
+const setGroupMembersSchema = z.object({
   groupId: z.string().uuid(),
-  personId: z.string().uuid(),
+  personIds: z.array(z.string().uuid()).max(500).default([]),
 });
 
-export type GroupMemberInput = z.input<typeof groupMemberSchema>;
+export type SetGroupMembersInput = z.input<typeof setGroupMembersSchema>;
 
 // Junction rows carry no userId, so both ends must be confirmed as the user's
 // own before touching the membership.
-async function ownsGroupAndPerson(
-  userId: string,
-  groupId: string,
-  personId: string,
-): Promise<boolean> {
-  const [groupRow, personRow] = await Promise.all([
-    db
-      .select({ id: groups.id })
-      .from(groups)
-      .where(and(eq(groups.id, groupId), eq(groups.userId, userId))),
-    db
-      .select({ id: people.id })
-      .from(people)
-      .where(and(eq(people.id, personId), eq(people.userId, userId))),
+async function ownedPersonIds(userId: string, ids: string[]): Promise<boolean> {
+  if (ids.length === 0) return true;
+  const rows = await db
+    .select({ id: people.id })
+    .from(people)
+    .where(and(eq(people.userId, userId), inArray(people.id, ids)));
+  return rows.length === ids.length;
+}
+
+/**
+ * Replace a group's membership wholesale.
+ *
+ * One call rather than an add/remove per person: editing a five-person group
+ * used to be five sequential server actions, each with its own ownership
+ * check, write and revalidation of three routes.
+ */
+export async function setGroupMembers(
+  input: SetGroupMembersInput,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const userId = await requireUserId();
+  const parsed = setGroupMembersSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid" };
+  }
+  const { groupId } = parsed.data;
+  const unique = [...new Set(parsed.data.personIds)];
+  const [ownsGroup, ownsPeople] = await Promise.all([
+    ownedGroupIds(userId, [groupId]),
+    ownedPersonIds(userId, unique),
   ]);
-  return groupRow.length === 1 && personRow.length === 1;
-}
-
-export async function addGroupMember(
-  input: GroupMemberInput,
-): Promise<{ ok: true } | { ok: false; error: string }> {
-  const userId = await requireUserId();
-  const parsed = groupMemberSchema.safeParse(input);
-  if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid" };
-  }
-  const { groupId, personId } = parsed.data;
-  if (!(await ownsGroupAndPerson(userId, groupId, personId))) {
+  if (!ownsGroup || !ownsPeople) {
     return { ok: false, error: "Unknown group or person" };
   }
-  await db
-    .insert(personGroups)
-    .values({ groupId, personId })
-    .onConflictDoNothing();
-  revalidateContactViews();
-  return { ok: true };
-}
-
-export async function removeGroupMember(
-  input: GroupMemberInput,
-): Promise<{ ok: true } | { ok: false; error: string }> {
-  const userId = await requireUserId();
-  const parsed = groupMemberSchema.safeParse(input);
-  if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid" };
-  }
-  const { groupId, personId } = parsed.data;
-  if (!(await ownsGroupAndPerson(userId, groupId, personId))) {
-    return { ok: false, error: "Unknown group or person" };
-  }
-  await db
-    .delete(personGroups)
-    .where(
-      and(
-        eq(personGroups.groupId, groupId),
-        eq(personGroups.personId, personId),
-      ),
-    );
+  // Atomic delete + re-insert (single batch transaction) so a mid-write
+  // failure can't strip the group's members.
+  await db.batch([
+    db.delete(personGroups).where(eq(personGroups.groupId, groupId)),
+    ...(unique.length > 0
+      ? [
+          db
+            .insert(personGroups)
+            .values(unique.map((personId) => ({ groupId, personId }))),
+        ]
+      : []),
+  ]);
   revalidateContactViews();
   return { ok: true };
 }

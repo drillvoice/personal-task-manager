@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Plus, Users } from "lucide-react";
 import {
-  createTag,
   deleteMeeting,
   setMeetingAttendees,
   setMeetingStatus,
@@ -14,12 +13,16 @@ import {
   updateMeetingNotes,
   updateMeetingPrepNotes,
 } from "@/app/(app)/meetings/actions";
-import { createPerson } from "@/app/(app)/people/actions";
 import { AddTaskForm } from "@/components/add-task-form";
 import { AutosaveTextarea } from "@/components/autosave-textarea";
 import { EntityPicker } from "@/components/entity-picker";
 import type { PickerOption } from "@/components/entity-picker";
+import {
+  createMeetingTagOption,
+  createPersonOption,
+} from "@/components/entity-create-options";
 import { TaskRow } from "@/components/task-row";
+import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import type { ProjectSelectOption as ProjectOption } from "@/lib/server/projects";
 import type { ContactOption, GroupOption } from "@/lib/server/people";
 import type { MeetingDetail, TagOption } from "@/lib/server/meetings";
@@ -53,7 +56,6 @@ export function MeetingDetailView({
     [people, groups],
   );
   const [showAdd, setShowAdd] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const [, startTransition] = useTransition();
 
   const saveHeader = () => {
@@ -78,20 +80,6 @@ export function MeetingDetailView({
     });
   };
 
-  const createPersonOption = async (
-    name: string,
-  ): Promise<PickerOption | null> => {
-    const res = await createPerson({ name });
-    return res.ok ? { id: res.id, name } : null;
-  };
-
-  const createTagOption = async (
-    name: string,
-  ): Promise<PickerOption | null> => {
-    const res = await createTag({ name });
-    return res.ok ? { id: res.id, name: res.name, color: res.color } : null;
-  };
-
   const toggleStatus = () => {
     const next = status === "upcoming" ? "completed" : "upcoming";
     setStatus(next);
@@ -102,10 +90,6 @@ export function MeetingDetailView({
   };
 
   const del = () => {
-    if (!confirmDelete) {
-      setConfirmDelete(true);
-      return;
-    }
     startTransition(async () => {
       const res = await deleteMeeting(meeting.id);
       if (res.ok) router.push("/meetings");
@@ -187,7 +171,7 @@ export function MeetingDetailView({
           options={availableTags}
           selectedIds={tagIds}
           onChange={changeTags}
-          onCreate={createTagOption}
+          onCreate={createMeetingTagOption}
           placeholder="Add tag…"
         />
       </div>
@@ -284,28 +268,11 @@ export function MeetingDetailView({
       </div>
 
       <div className="mt-8">
-        <button
-          type="button"
-          onClick={del}
-          className="font-mono text-[11px]"
-          style={{
-            color: confirmDelete
-              ? "var(--color-danger)"
-              : "var(--color-ink-soft)",
-          }}
-        >
-          {confirmDelete ? "Confirm delete? Tasks are kept." : "Delete meeting"}
-        </button>
-        {confirmDelete && (
-          <button
-            type="button"
-            onClick={() => setConfirmDelete(false)}
-            className="font-mono ml-2 text-[11px]"
-            style={{ color: "var(--color-ink-soft)" }}
-          >
-            Keep
-          </button>
-        )}
+        <ConfirmDeleteButton
+          label="Delete meeting"
+          confirmLabel="Confirm delete? Tasks are kept."
+          onConfirm={del}
+        />
       </div>
     </div>
   );

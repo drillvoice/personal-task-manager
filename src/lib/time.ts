@@ -12,8 +12,16 @@ import { formatInTimeZone, toZonedTime } from "date-fns-tz";
 
 export const APP_TZ = "Australia/Sydney";
 
-export function nowInTz(now: Date = new Date()): Date {
-  return toZonedTime(now, APP_TZ);
+/**
+ * A `yyyy-MM-dd` string as an instant at midnight in the *runtime's* zone.
+ *
+ * Every date-string entry point below goes through this, so the one place that
+ * decides how a bare date becomes a Date is here rather than repeated inline —
+ * see `tomorrowIso` for what happens when a date string and an instant get
+ * confused for one another.
+ */
+function parseIsoDate(dateIso: string): Date {
+  return new Date(`${dateIso}T00:00:00`);
 }
 
 export function todayIso(now: Date = new Date()): string {
@@ -26,7 +34,7 @@ export function todayIso(now: Date = new Date()): string {
  * timezone offset — the same reason tomorrowIso avoids toZonedTime here.
  */
 export function addDaysIso(dateIso: string, days: number): string {
-  return formatISO(addDays(new Date(`${dateIso}T00:00:00`), days), {
+  return formatISO(addDays(parseIsoDate(dateIso), days), {
     representation: "date",
   });
 }
@@ -38,7 +46,7 @@ export function addDaysIso(dateIso: string, days: number): string {
  * zone, but it is the same double-offset trap tomorrowIso documents.
  */
 export function formatDateIso(dateIso: string, pattern: string): string {
-  return format(new Date(`${dateIso}T00:00:00`), pattern);
+  return format(parseIsoDate(dateIso), pattern);
 }
 
 export function tomorrowIso(now: Date = new Date()): string {
@@ -71,7 +79,7 @@ export function weekStartIso(now: Date = new Date()): string {
 }
 
 export function weekStartFromIso(dateIso: string): string {
-  return weekStartIso(new Date(`${dateIso}T00:00:00`));
+  return weekStartIso(parseIsoDate(dateIso));
 }
 
 /**
@@ -88,7 +96,7 @@ export function recentWeekStarts(count: number, now: Date = new Date()): string[
 
 /** "9 Jun" style label for the history table columns. */
 export function weekLabel(weekStartIsoDate: string): string {
-  return formatInTimeZone(new Date(`${weekStartIsoDate}T00:00:00`), APP_TZ, "d MMM");
+  return formatInTimeZone(parseIsoDate(weekStartIsoDate), APP_TZ, "d MMM");
 }
 
 /**
@@ -98,7 +106,7 @@ export function weekLabel(weekStartIsoDate: string): string {
  */
 export function weekBeginningLabel(weekStartIsoDate: string): string {
   return `w/b ${formatInTimeZone(
-    new Date(`${weekStartIsoDate}T00:00:00`),
+    parseIsoDate(weekStartIsoDate),
     APP_TZ,
     "EEE d MMM",
   )}`;
@@ -123,13 +131,13 @@ export function daysSince(past: Date, now: Date = new Date()): number {
 }
 
 export function isToday(dateIso: string, now: Date = new Date()): boolean {
-  const target = new Date(`${dateIso}T00:00:00`);
+  const target = parseIsoDate(dateIso);
   return isSameDay(toZonedTime(target, APP_TZ), toZonedTime(now, APP_TZ));
 }
 
 export function isOverdue(dateIso: string, now: Date = new Date()): boolean {
-  const today = new Date(`${todayIso(now)}T00:00:00`);
-  const target = new Date(`${dateIso}T00:00:00`);
+  const today = parseIsoDate(todayIso(now));
+  const target = parseIsoDate(dateIso);
   return target < today;
 }
 
@@ -138,7 +146,7 @@ export function isOverdue(dateIso: string, now: Date = new Date()): boolean {
  * mockup's compact metadata style.
  */
 export function dueLabel(dateIso: string, now: Date = new Date()): string {
-  const target = new Date(`${dateIso}T00:00:00`);
+  const target = parseIsoDate(dateIso);
   const zonedTarget = toZonedTime(target, APP_TZ);
   const zonedNow = toZonedTime(now, APP_TZ);
   if (isSameDay(zonedTarget, zonedNow)) return "Today";

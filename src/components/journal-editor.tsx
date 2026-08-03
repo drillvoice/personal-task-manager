@@ -47,7 +47,6 @@ export function JournalEditor({
     el.setSelectionRange(end, end);
     // Mount-only: this should fire once when the editor appears, not on
     // every keystroke that changes value.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Apply a selection queued by an edit that also changed `value`, once React

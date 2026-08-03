@@ -4,11 +4,12 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { Check, Users, X } from "lucide-react";
 import { EntityPicker } from "@/components/entity-picker";
 import { AutosaveTextarea } from "@/components/autosave-textarea";
+import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import {
   createPersonOption,
   createProjectOption,
-  createTagOption,
-} from "@/components/task-row";
+  createTaskTagOption,
+} from "@/components/entity-create-options";
 import type { ContactOption } from "@/lib/server/people";
 import type { TagOption, TasksViewTask } from "@/lib/server/tasks";
 import { setTaskDone } from "@/app/(app)/today/actions";
@@ -36,9 +37,11 @@ export function TaskDetailPanel({
   const [assigneeIds, setAssigneeIds] = useState<string[]>(
     task.assignees.map((a) => a.id),
   );
-  const [tagIds, setTagIds] = useState<string[]>(task.tags.map((t) => t.id));
+  // Seeded from the complete tag set, not the display-filtered one: saving
+  // replaces every task_tag, so a picker that never held the priority tag
+  // would drop it on the next unrelated edit.
+  const [tagIds, setTagIds] = useState<string[]>(task.allTagIds);
   const [dueDate, setDueDate] = useState(task.dueDate ?? "");
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   // The checkbox fills the moment it's clicked and stays that way. This is
@@ -48,10 +51,14 @@ export function TaskDetailPanel({
   // action settled. Reverts only if the server rejects the change.
   const [done, setDone] = useState(task.status === "done");
 
-  // Notes autosave fires from a debounced closure; read the latest field
-  // values through a ref so a stale snapshot can't overwrite newer edits.
+  // `commit` fires from event handlers and a debounced closure; read the
+  // latest field values through a ref so a stale snapshot can't overwrite
+  // newer edits. Refreshed after commit rather than during render — every
+  // reader runs after paint, so it always sees the current values.
   const fieldsRef = useRef({ title, projectId, assigneeIds, tagIds, dueDate });
-  fieldsRef.current = { title, projectId, assigneeIds, tagIds, dueDate };
+  useEffect(() => {
+    fieldsRef.current = { title, projectId, assigneeIds, tagIds, dueDate };
+  });
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -100,10 +107,6 @@ export function TaskDetailPanel({
   };
 
   const del = () => {
-    if (!confirmDelete) {
-      setConfirmDelete(true);
-      return;
-    }
     startTransition(async () => {
       const res = await deleteTask(task.id);
       if (res.ok) onClose();
@@ -236,7 +239,7 @@ export function TaskDetailPanel({
             setTagIds(ids);
             commit({ tagIds: ids });
           }}
-          onCreate={createTagOption}
+          onCreate={createTaskTagOption}
           placeholder="Add tag…"
         />
       </div>
@@ -300,30 +303,11 @@ export function TaskDetailPanel({
         style={{ borderColor: "var(--color-line)" }}
       >
         <span>
-          <button
-            type="button"
-            onClick={del}
-            disabled={pending}
-            className="font-mono text-[11px]"
-            style={{
-              color: confirmDelete
-                ? "var(--color-danger)"
-                : "var(--color-ink-soft)",
-              fontWeight: confirmDelete ? 600 : 400,
-            }}
-          >
-            {confirmDelete ? "Confirm delete?" : "Delete task"}
-          </button>
-          {confirmDelete && (
-            <button
-              type="button"
-              onClick={() => setConfirmDelete(false)}
-              className="font-mono ml-2.5 text-[11px]"
-              style={{ color: "var(--color-ink-soft)" }}
-            >
-              Keep
-            </button>
-          )}
+        <ConfirmDeleteButton
+          label="Delete task"
+          pending={pending}
+          onConfirm={del}
+        />
         </span>
         <span
           className="font-mono text-[10px]"

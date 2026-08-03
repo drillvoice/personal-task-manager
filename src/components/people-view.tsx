@@ -1,18 +1,17 @@
 "use client";
 
-import { useMemo, useState, useSyncExternalStore, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { Building2, Plus, Users } from "lucide-react";
+import { AddPersonForm } from "@/components/add-person-form";
 import { PersonRow } from "@/components/person-row";
 import { PersonDetailPanel } from "@/components/person-detail-panel";
 import { EntityPicker } from "@/components/entity-picker";
+import { NamedEntityRow } from "@/components/named-entity-row";
+import { useIsDesktop } from "@/components/use-is-desktop";
 import {
-  addGroupMember,
-  createGroup,
-  createOrganisation,
-  createPerson,
   deleteGroup,
   deleteOrganisation,
-  removeGroupMember,
+  setGroupMembers,
   updateGroup,
   updateOrganisation,
 } from "@/app/(app)/people/actions";
@@ -22,337 +21,14 @@ import type {
   PersonWithOrg,
 } from "@/lib/server/people";
 
-const inputStyle = {
-  background: "transparent",
-  borderColor: "var(--color-line)",
-  color: "var(--color-ink)",
-} as const;
-
-// The detail panel is desktop-only; below md, rows keep inline editing.
-const DESKTOP_QUERY = "(min-width: 768px)";
-
-function useIsDesktop(): boolean {
-  return useSyncExternalStore(
-    (onChange) => {
-      const mql = window.matchMedia(DESKTOP_QUERY);
-      mql.addEventListener("change", onChange);
-      return () => mql.removeEventListener("change", onChange);
-    },
-    () => window.matchMedia(DESKTOP_QUERY).matches,
-    () => false,
-  );
-}
-
-function AddPersonForm({
-  orgs,
-  groups,
-  onDone,
-}: {
-  orgs: OrganisationRow[];
-  groups: OrganisationRow[];
-  onDone: () => void;
-}) {
-  const [name, setName] = useState("");
-  const [role, setRole] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [notes, setNotes] = useState("");
-  const [orgId, setOrgId] = useState("");
-  const [groupIds, setGroupIds] = useState<string[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
-
-  const submit = () => {
-    if (!name.trim()) return;
-    startTransition(async () => {
-      const res = await createPerson({
-        name,
-        role,
-        email,
-        phone,
-        notes,
-        organisationId: orgId,
-        groupIds,
-      });
-      if (res.ok) {
-        onDone();
-      } else {
-        setError(res.error);
-      }
-    });
-  };
-
-  const keyHandler = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey && !e.metaKey && !e.ctrlKey) {
-      e.preventDefault();
-      submit();
-    }
-    if (e.key === "Escape") onDone();
-  };
-
-  const formKeyHandler = (e: React.KeyboardEvent) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-      e.preventDefault();
-      submit();
-    }
-  };
-
-  return (
-    <div
-      className="mb-4 rounded-[4px] border p-4"
-      style={{
-        background: "var(--color-paper-raised)",
-        borderColor: "var(--color-line)",
-      }}
-      onKeyDown={formKeyHandler}
-    >
-      <input
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder="Name…"
-        className="mb-2 w-full border p-2 text-[13px] outline-none"
-        style={inputStyle}
-        autoFocus
-        onKeyDown={keyHandler}
-      />
-      <div className="mb-2 grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-4">
-        <input
-          value={role}
-          onChange={(e) => setRole(e.target.value)}
-          placeholder="Role"
-          className="w-full border p-2 text-[13px] outline-none"
-          style={inputStyle}
-          onKeyDown={keyHandler}
-        />
-        <EntityPicker
-          mode="single"
-          options={orgs}
-          selectedIds={orgId ? [orgId] : []}
-          onChange={(ids) => setOrgId(ids[0] ?? "")}
-          onCreate={async (name) => {
-            const res = await createOrganisation({ name });
-            return res.ok ? { id: res.id, name } : null;
-          }}
-          placeholder="Organisation…"
-        />
-        <input
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="Email"
-          type="email"
-          className="w-full border p-2 text-[13px] outline-none"
-          style={inputStyle}
-          onKeyDown={keyHandler}
-        />
-        <input
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          placeholder="Phone"
-          type="tel"
-          className="w-full border p-2 text-[13px] outline-none"
-          style={inputStyle}
-          onKeyDown={keyHandler}
-        />
-      </div>
-      <div className="mb-2">
-        <EntityPicker
-          mode="multi"
-          options={groups}
-          selectedIds={groupIds}
-          onChange={setGroupIds}
-          onCreate={async (name) => {
-            const res = await createGroup({ name });
-            return res.ok ? { id: res.id, name } : null;
-          }}
-          placeholder="Groups…"
-          icon={Users}
-        />
-      </div>
-      <textarea
-        value={notes}
-        onChange={(e) => setNotes(e.target.value)}
-        placeholder="Notes…"
-        rows={2}
-        className="mb-2 w-full resize-y border p-2 text-[13px] outline-none"
-        style={inputStyle}
-        onKeyDown={(e) => {
-          if (e.key === "Escape") onDone();
-        }}
-      />
-      {error && (
-        <p
-          className="font-mono mb-2 text-[11px]"
-          style={{ color: "var(--color-danger)" }}
-        >
-          {error}
-        </p>
-      )}
-      <div className="flex justify-end gap-2">
-        <button
-          type="button"
-          onClick={submit}
-          disabled={pending || !name.trim()}
-          className="font-mono px-3 py-1.5 text-[12px] font-semibold"
-          style={{
-            background: "var(--color-ink)",
-            color: "var(--color-paper)",
-            opacity: pending || !name.trim() ? 0.6 : 1,
-          }}
-        >
-          Add person
-        </button>
-        <button
-          type="button"
-          onClick={onDone}
-          className="font-mono px-3 py-1.5 text-[12px]"
-          style={{ color: "var(--color-ink-soft)" }}
-        >
-          Cancel
-        </button>
-      </div>
-    </div>
-  );
-}
-
 function OrgRow({ org }: { org: OrganisationRow }) {
-  const [editing, setEditing] = useState(false);
-  const [name, setName] = useState(org.name);
-  const [notes, setNotes] = useState(org.notes);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
-
-  const save = () => {
-    if (!name.trim()) return;
-    startTransition(async () => {
-      const res = await updateOrganisation({ id: org.id, name, notes });
-      if (res.ok) {
-        setEditing(false);
-      } else {
-        setError(res.error);
-      }
-    });
-  };
-
-  const del = () => {
-    if (!confirmDelete) {
-      setConfirmDelete(true);
-      return;
-    }
-    startTransition(async () => {
-      await deleteOrganisation(org.id);
-    });
-  };
-
-  if (!editing) {
-    return (
-      <div
-        className="cursor-pointer border-b px-1 py-2.5"
-        style={{ borderColor: "var(--color-line)" }}
-        onClick={() => setEditing(true)}
-      >
-        <span
-          className="font-display text-[14px] font-semibold"
-          style={{ color: "var(--color-ink)" }}
-        >
-          {org.name}
-        </span>
-        {org.notes && (
-          <p
-            className="mt-1 text-[12px]"
-            style={{ color: "var(--color-ink-soft)" }}
-          >
-            {org.notes}
-          </p>
-        )}
-      </div>
-    );
-  }
-
   return (
-    <div
-      className="border-b px-1 py-3"
-      style={{ borderColor: "var(--color-line)" }}
-    >
-      <input
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        className="mb-2 w-full border p-2 text-[13px] outline-none"
-        style={inputStyle}
-        autoFocus
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); save(); }
-          if (e.key === "Escape") setEditing(false);
-        }}
-      />
-      <textarea
-        value={notes}
-        onChange={(e) => setNotes(e.target.value)}
-        placeholder="Notes…"
-        rows={2}
-        className="mb-2 w-full resize-y border p-2 text-[13px] outline-none"
-        style={inputStyle}
-        onKeyDown={(e) => {
-          if (e.key === "Escape") setEditing(false);
-        }}
-      />
-      {error && (
-        <p
-          className="font-mono mb-2 text-[11px]"
-          style={{ color: "var(--color-danger)" }}
-        >
-          {error}
-        </p>
-      )}
-      <div className="flex items-center justify-between">
-        <button
-          type="button"
-          onClick={del}
-          disabled={pending}
-          className="font-mono text-[11px]"
-          style={{
-            color: confirmDelete
-              ? "var(--color-danger)"
-              : "var(--color-ink-soft)",
-          }}
-        >
-          {confirmDelete ? "Confirm delete?" : "Delete organisation"}
-        </button>
-        {confirmDelete && (
-          <button
-            type="button"
-            onClick={() => setConfirmDelete(false)}
-            className="font-mono ml-2 text-[11px]"
-            style={{ color: "var(--color-ink-soft)" }}
-          >
-            Keep
-          </button>
-        )}
-        <div className="ml-auto flex gap-2">
-          <button
-            type="button"
-            onClick={() => setEditing(false)}
-            className="font-mono px-3 py-1.5 text-[12px]"
-            style={{ color: "var(--color-ink-soft)" }}
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={save}
-            disabled={pending || !name.trim()}
-            className="font-mono px-3 py-1.5 text-[12px] font-semibold"
-            style={{
-              background: "var(--color-ink)",
-              color: "var(--color-paper)",
-              opacity: pending || !name.trim() ? 0.6 : 1,
-            }}
-          >
-            Save
-          </button>
-        </div>
-      </div>
-    </div>
+    <NamedEntityRow
+      entity={org}
+      deleteLabel="Delete organisation"
+      onSave={(fields) => updateOrganisation({ id: org.id, ...fields })}
+      onDelete={() => deleteOrganisation(org.id)}
+    />
   );
 }
 
@@ -363,107 +39,30 @@ function GroupRow({
   group: OrganisationRow;
   people: PersonWithOrg[];
 }) {
-  const [editing, setEditing] = useState(false);
-  const [name, setName] = useState(group.name);
-  const [notes, setNotes] = useState(group.notes);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
 
-  const members = people.filter((p) =>
-    p.groups.some((g) => g.id === group.id),
-  );
-  const memberIds = members.map((p) => p.id);
+  const memberIds = people
+    .filter((p) => p.groups.some((g) => g.id === group.id))
+    .map((p) => p.id);
   const personOptions: ContactOption[] = people.map((p) => ({
     id: p.id,
     name: p.name,
   }));
 
   const changeMembers = (nextIds: string[]) => {
-    const added = nextIds.filter((id) => !memberIds.includes(id));
-    const removed = memberIds.filter((id) => !nextIds.includes(id));
     startTransition(async () => {
-      for (const personId of added) {
-        await addGroupMember({ groupId: group.id, personId });
-      }
-      for (const personId of removed) {
-        await removeGroupMember({ groupId: group.id, personId });
-      }
+      await setGroupMembers({ groupId: group.id, personIds: nextIds });
     });
   };
-
-  const save = () => {
-    if (!name.trim()) return;
-    startTransition(async () => {
-      const res = await updateGroup({ id: group.id, name, notes });
-      if (res.ok) {
-        setEditing(false);
-      } else {
-        setError(res.error);
-      }
-    });
-  };
-
-  const del = () => {
-    if (!confirmDelete) {
-      setConfirmDelete(true);
-      return;
-    }
-    startTransition(async () => {
-      await deleteGroup(group.id);
-    });
-  };
-
-  if (!editing) {
-    return (
-      <div
-        className="cursor-pointer border-b px-1 py-2.5"
-        style={{ borderColor: "var(--color-line)" }}
-        onClick={() => setEditing(true)}
-      >
-        <div className="flex items-baseline gap-2">
-          <span
-            className="font-display text-[14px] font-semibold"
-            style={{ color: "var(--color-ink)" }}
-          >
-            {group.name}
-          </span>
-          <span
-            className="font-mono text-[11px]"
-            style={{ color: "var(--color-ink-soft)" }}
-          >
-            {members.length} {members.length === 1 ? "member" : "members"}
-          </span>
-        </div>
-        {group.notes && (
-          <p
-            className="mt-1 text-[12px]"
-            style={{ color: "var(--color-ink-soft)" }}
-          >
-            {group.notes}
-          </p>
-        )}
-      </div>
-    );
-  }
 
   return (
-    <div
-      className="border-b px-1 py-3"
-      style={{ borderColor: "var(--color-line)" }}
-    >
-      <input
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        className="mb-2 w-full border p-2 text-[13px] outline-none"
-        style={inputStyle}
-        autoFocus
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); save(); }
-          if (e.key === "Escape") setEditing(false);
-        }}
-      />
-      <div className="mb-2">
+    <NamedEntityRow
+      entity={group}
+      deleteLabel="Delete group"
+      subtitle={`${memberIds.length} ${
+        memberIds.length === 1 ? "member" : "members"
+      }`}
+      extraFields={
         <EntityPicker
           mode="multi"
           options={personOptions}
@@ -472,75 +71,10 @@ function GroupRow({
           placeholder="Add member…"
           icon={Users}
         />
-      </div>
-      <textarea
-        value={notes}
-        onChange={(e) => setNotes(e.target.value)}
-        placeholder="Notes…"
-        rows={2}
-        className="mb-2 w-full resize-y border p-2 text-[13px] outline-none"
-        style={inputStyle}
-        onKeyDown={(e) => {
-          if (e.key === "Escape") setEditing(false);
-        }}
-      />
-      {error && (
-        <p
-          className="font-mono mb-2 text-[11px]"
-          style={{ color: "var(--color-danger)" }}
-        >
-          {error}
-        </p>
-      )}
-      <div className="flex items-center justify-between">
-        <button
-          type="button"
-          onClick={del}
-          disabled={pending}
-          className="font-mono text-[11px]"
-          style={{
-            color: confirmDelete
-              ? "var(--color-danger)"
-              : "var(--color-ink-soft)",
-          }}
-        >
-          {confirmDelete ? "Confirm delete?" : "Delete group"}
-        </button>
-        {confirmDelete && (
-          <button
-            type="button"
-            onClick={() => setConfirmDelete(false)}
-            className="font-mono ml-2 text-[11px]"
-            style={{ color: "var(--color-ink-soft)" }}
-          >
-            Keep
-          </button>
-        )}
-        <div className="ml-auto flex gap-2">
-          <button
-            type="button"
-            onClick={() => setEditing(false)}
-            className="font-mono px-3 py-1.5 text-[12px]"
-            style={{ color: "var(--color-ink-soft)" }}
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={save}
-            disabled={pending || !name.trim()}
-            className="font-mono px-3 py-1.5 text-[12px] font-semibold"
-            style={{
-              background: "var(--color-ink)",
-              color: "var(--color-paper)",
-              opacity: pending || !name.trim() ? 0.6 : 1,
-            }}
-          >
-            Save
-          </button>
-        </div>
-      </div>
-    </div>
+      }
+      onSave={(fields) => updateGroup({ id: group.id, ...fields })}
+      onDelete={() => deleteGroup(group.id)}
+    />
   );
 }
 

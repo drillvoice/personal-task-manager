@@ -1,4 +1,4 @@
-import { addWeeks, differenceInCalendarWeeks, format, parseISO } from "date-fns";
+import { addWeeks, format, parseISO } from "date-fns";
 
 export type ReviewSummary = {
   weekStartDate: string; // yyyy-MM-dd, always Monday
@@ -58,11 +58,4 @@ export function streakLabel(
     streak > 0 ? `${streak}-week streak` : "No active streak";
   if (!lastCompleted) return streakPart;
   return `${streakPart} · last completed ${fmt(lastCompleted)}`;
-}
-
-// exported so tests can assert against a stable time reference
-export function weeksBetween(a: string, b: string): number {
-  return differenceInCalendarWeeks(parseISO(b), parseISO(a), {
-    weekStartsOn: 1,
-  });
 }

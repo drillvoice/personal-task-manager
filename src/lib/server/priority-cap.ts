@@ -1,5 +1,5 @@
 import "server-only";
-import { and, count, eq, isNull } from "drizzle-orm";
+import { and, count, eq, isNull, max } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   PRIORITY_TASK_CAP,
@@ -11,39 +11,59 @@ import {
 } from "@/lib/db/schema";
 import { weekStartIso } from "@/lib/time";
 
-/**
- * Guards the "exactly 3" cap on today's priority slots. Callers should catch
- * PriorityCapExceededError and surface it as a validation error to the client.
- */
-export class PriorityCapExceededError extends Error {
-  constructor(scope: "daily" | "weekly") {
-    super(
-      scope === "daily"
-        ? `Today's plan already has ${PRIORITY_TASK_CAP} tasks — remove one first.`
-        : `The weekly review already has ${WEEKLY_PRIORITY_CAP} priorities — remove one first.`,
-    );
-    this.name = "PriorityCapExceededError";
-  }
+// A full cap is an ordinary validation result the caller returns to the client,
+// not an exceptional condition — so this is a message, not a thrown error.
+function capExceededMessage(scope: "daily" | "weekly"): string {
+  return scope === "daily"
+    ? `Today's plan already has ${PRIORITY_TASK_CAP} tasks — remove one first.`
+    : `The weekly review already has ${WEEKLY_PRIORITY_CAP} priorities — remove one first.`;
 }
 
-export async function assertDailyRoomForOne(planId: string): Promise<void> {
+/**
+ * A slot reserved for one more row, or the reason there wasn't room.
+ *
+ * `sortOrder` is `max()+1` rather than the row count: sort_order *is* read back
+ * — daily_plan_items order Today's three slots, weekly_priorities order the
+ * review's top-3 — so removing a slot leaves a gap that a count-derived value
+ * would collide with.
+ */
+export type SlotClaim =
+  | { ok: true; sortOrder: number }
+  | { ok: false; error: string };
+
+/**
+ * The cap decision itself, kept free of the database so it can be tested
+ * directly — the two functions below differ only in which table they count.
+ */
+export function decideSlot(
+  scope: "daily" | "weekly",
+  cap: number,
+  existing: { count: number; maxSortOrder: number | null },
+): SlotClaim {
+  if (existing.count >= cap) {
+    return { ok: false, error: capExceededMessage(scope) };
+  }
+  return { ok: true, sortOrder: (existing.maxSortOrder ?? -1) + 1 };
+}
+
+/** Reserve a slot in a day's plan, enforcing the daily cap. */
+export async function claimDailyPlanSlot(planId: string): Promise<SlotClaim> {
   const [existing] = await db
-    .select({ value: count() })
+    .select({ count: count(), maxSortOrder: max(dailyPlanItems.sortOrder) })
     .from(dailyPlanItems)
     .where(eq(dailyPlanItems.dailyPlanId, planId));
-  if (existing.value >= PRIORITY_TASK_CAP) {
-    throw new PriorityCapExceededError("daily");
-  }
+  return decideSlot("daily", PRIORITY_TASK_CAP, existing);
 }
 
-export async function assertWeeklyRoomForOne(reviewId: string): Promise<void> {
+/** Reserve a slot in a review's top-3, enforcing the weekly cap. */
+export async function claimWeeklyPrioritySlot(
+  reviewId: string,
+): Promise<SlotClaim> {
   const [existing] = await db
-    .select({ value: count() })
+    .select({ count: count(), maxSortOrder: max(weeklyPriorities.sortOrder) })
     .from(weeklyPriorities)
     .where(eq(weeklyPriorities.weeklyReviewId, reviewId));
-  if (existing.value >= WEEKLY_PRIORITY_CAP) {
-    throw new PriorityCapExceededError("weekly");
-  }
+  return decideSlot("weekly", WEEKLY_PRIORITY_CAP, existing);
 }
 
 /**

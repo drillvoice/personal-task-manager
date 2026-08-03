@@ -7,12 +7,7 @@ import {
   updateProjectStatus,
 } from "@/app/(app)/projects/actions";
 import type { ProjectsTableRow } from "@/lib/server/projects";
-
-const inputStyle = {
-  background: "transparent",
-  borderColor: "var(--color-line)",
-  color: "var(--color-ink)",
-} as const;
+import { inputStyle } from "@/components/field-style";
 
 type EditableStatus = "active" | "someday_maybe" | "archived";
 

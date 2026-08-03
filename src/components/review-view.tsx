@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useTransition } from "react";
 import { Check, Flag, Plus } from "lucide-react";
 import { PriorityBadge } from "@/components/priority-badge";
+import { AutosaveTextarea } from "@/components/autosave-textarea";
 import {
   finishReview,
   quickAddTask,
@@ -20,8 +21,7 @@ import type {
   ReviewEditingData,
 } from "@/lib/server/review";
 import { shortDateLabel } from "@/lib/time";
-
-const WEEKLY_CAP = 3;
+import { WEEKLY_PRIORITY_CAP } from "@/lib/caps";
 
 export function ReviewView({ data }: { data: ReviewData }) {
   if (data.mode === "completed") {
@@ -193,7 +193,7 @@ function EditingReview({ data }: { data: ReviewEditingData }) {
         extra={
           <span style={{ color: "var(--color-ink-soft)" }}>
             {" "}
-            ({selectedCount}/{WEEKLY_CAP} selected)
+            ({selectedCount}/{WEEKLY_PRIORITY_CAP} selected)
           </span>
         }
       />
@@ -222,7 +222,7 @@ function EditingReview({ data }: { data: ReviewEditingData }) {
         )}
         {data.actionableTasks.map((t) => {
           const on = selected.has(t.id);
-          const disabled = !on && selectedCount >= WEEKLY_CAP;
+          const disabled = !on && selectedCount >= WEEKLY_PRIORITY_CAP;
           return (
             <label
               key={t.id}
@@ -668,29 +668,13 @@ function ReviewProjectTaskRow({
 }
 
 function Reflection({ defaultValue }: { defaultValue: string }) {
-  const [value, setValue] = useState(defaultValue);
-  const [pending, startTransition] = useTransition();
-  const save = () =>
-    startTransition(async () => {
-      await updateReflection(value);
-    });
   return (
-    <div
-      className="mb-6 rounded-[4px] border p-4"
-      style={{
-        background: "var(--color-paper-raised)",
-        borderColor: "var(--color-line)",
-      }}
-    >
-      <textarea
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onBlur={save}
-        disabled={pending}
-        rows={3}
+    <div className="mb-6">
+      <AutosaveTextarea
+        initialValue={defaultValue}
+        onSave={updateReflection}
         placeholder="How did this week actually go?"
-        className="w-full bg-transparent text-[13px] outline-none"
-        style={{ color: "var(--color-ink)" }}
+        rows={3}
       />
     </div>
   );

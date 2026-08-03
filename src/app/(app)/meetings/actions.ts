@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   meetingAttendees,
@@ -266,6 +266,10 @@ export async function createTag(
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid" };
   }
   const name = parsed.data.name;
+  // Dedupe case-insensitively, matching createTaskTag and the journal's bare
+  // "#word" resolution — both of which already treat "NSW" and "nsw" as one
+  // tag. tags_user_kind_name_uniq is on the raw name, so an exact-match lookup
+  // here would let the two coexist as separate chips.
   const [existing] = await db
     .select({ id: tags.id, name: tags.name, color: tags.color })
     .from(tags)
@@ -273,7 +277,7 @@ export async function createTag(
       and(
         eq(tags.userId, userId),
         eq(tags.kind, "meeting"),
-        eq(tags.name, name),
+        eq(sql`lower(${tags.name})`, name.toLowerCase()),
       ),
     );
   if (existing) return { ok: true, ...existing };
@@ -281,6 +285,7 @@ export async function createTag(
     .insert(tags)
     .values({ userId, name, kind: "meeting" })
     .returning({ id: tags.id, name: tags.name, color: tags.color });
+  revalidatePath("/meetings");
   return { ok: true, ...row };
 }
 

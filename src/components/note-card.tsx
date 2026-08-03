@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil } from "lucide-react";
 import { AutosaveTextarea } from "@/components/autosave-textarea";
+import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { NoteBody } from "@/components/note-body";
 import { deleteNote, updateNoteBody } from "@/app/(app)/notes/actions";
 import { shortDateLabel } from "@/lib/time";
@@ -24,7 +25,6 @@ export function NoteCard({
   const [removing, startRemoving] = useTransition();
 
   const remove = () => {
-    if (!confirm("Delete this note?")) return;
     startRemoving(async () => {
       await deleteNote({ id: note.id });
     });
@@ -61,7 +61,7 @@ export function NoteCard({
         >
           {shortDateLabel(note.updatedAt)}
         </p>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={() => {
@@ -78,14 +78,11 @@ export function NoteCard({
               <Pencil size={13} color="var(--color-ink-soft)" />
             )}
           </button>
-          <button
-            type="button"
-            onClick={remove}
-            disabled={removing}
-            title="Delete note"
-          >
-            <Trash2 size={13} color="var(--color-danger)" />
-          </button>
+          <ConfirmDeleteButton
+            label="Delete"
+            pending={removing}
+            onConfirm={remove}
+          />
         </div>
       </div>
     </li>
