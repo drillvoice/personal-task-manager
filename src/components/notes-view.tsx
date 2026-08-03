@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, X } from "lucide-react";
-import { NoteBody } from "@/components/note-body";
-import { shortDateLabel } from "@/lib/time";
+import { NoteCard } from "@/components/note-card";
+import { NoteComposer } from "@/components/note-composer";
 import type { NoteRow } from "@/lib/server/notes";
 
 // Long enough that a normal typing burst is one request, short enough that the
@@ -56,6 +56,8 @@ export function NotesView({
         </h1>
       </header>
 
+      <NoteComposer />
+
       <div className="relative mb-5">
         <Search
           size={14}
@@ -99,22 +101,7 @@ export function NotesView({
       ) : (
         <ul className="flex flex-col gap-2">
           {notes.map((note) => (
-            <li
-              key={note.id}
-              className="rounded-[4px] border p-3"
-              style={{
-                background: "var(--color-paper-raised)",
-                borderColor: "var(--color-line)",
-              }}
-            >
-              <NoteBody body={note.body} onTagClick={searchFor} />
-              <p
-                className="font-mono mt-2 text-[10px]"
-                style={{ color: "var(--color-ink-soft)" }}
-              >
-                {shortDateLabel(note.updatedAt)}
-              </p>
-            </li>
+            <NoteCard key={note.id} note={note} onTagClick={searchFor} />
           ))}
         </ul>
       )}

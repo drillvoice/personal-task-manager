@@ -6,6 +6,15 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 ## [Unreleased]
 
 ### Added
+- **Notes — a filing cabinet for discrete facts.** New sidebar entry (`Notes`,
+  reachable via `g 8`) for durable, dateless reference material: "Pyxis is a
+  polling company we could use in NSW", "Momentum Logistics was good for
+  sending stickers". File a note from the box at the top (`Cmd-Enter` submits),
+  and find it again by typing into the search box — it matches anywhere in the
+  note's text, including part-words, so `poll` finds *polling*. Notes have no
+  tags in the Tags sense, but a `#word` in the body renders as a chip and clicking
+  it searches for that word, which is enough to keep a `#polling` or `#logistics`
+  convention working. Notes are editable in place (autosaved) and deletable.
 - **Archive a project, and a project detail panel.** Clicking a project name on
   **Project overview** now opens a panel on the right (desktop) where you can
   rename it or set its status to *active* / *someday* / *archived*. Archiving

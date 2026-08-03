@@ -14,11 +14,15 @@ function isFailure(result: unknown): result is { ok: false; error?: string } {
 export function AutosaveTextarea({
   initialValue,
   onSave,
+  onValueChange,
   placeholder,
   rows = 8,
 }: {
   initialValue: string;
   onSave: (value: string) => Promise<unknown>;
+  // Lets a parent mirror the text it isn't storing — the notes card renders the
+  // saved body as tag chips beside the editor.
+  onValueChange?: (value: string) => void;
   placeholder?: string;
   rows?: number;
 }) {
@@ -61,7 +65,10 @@ export function AutosaveTextarea({
     <div>
       <textarea
         value={value}
-        onChange={(e) => setValue(e.target.value)}
+        onChange={(e) => {
+          setValue(e.target.value);
+          onValueChange?.(e.target.value);
+        }}
         onBlur={flush}
         placeholder={placeholder}
         rows={rows}
