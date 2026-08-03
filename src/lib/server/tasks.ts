@@ -37,7 +37,13 @@ export type TasksViewTask = {
   projectId: string | null;
   projectName: string | null;
   assignees: { id: string; name: string }[];
+  // For *display*: priority tags are stripped, since a row renders those as a
+  // PriorityBadge rather than a second chip saying the same thing.
   tags: { id: string; name: string; color: string }[];
+  // For *editing*: the complete set, priority tags included. Seeding a tag
+  // picker from `tags` above would omit them, and saving replaces the whole
+  // set — so an unrelated tag edit silently deleted the task's priority.
+  allTagIds: string[];
   // On this week's top-3 (weekly review priorities).
   weekly: boolean;
 };
@@ -194,6 +200,7 @@ export async function loadTasksData(userId: string) {
       projectName: r.projectName ?? null,
       assignees: assigneesByTask.get(r.task.id) ?? [],
       tags: allTags.filter((tg) => !isPriorityTagName(tg.name)),
+      allTagIds: allTags.map((tg) => tg.id),
       weekly: weeklyIds.has(r.task.id),
     };
     if (r.task.projectId) {

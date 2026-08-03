@@ -37,7 +37,10 @@ export function TaskDetailPanel({
   const [assigneeIds, setAssigneeIds] = useState<string[]>(
     task.assignees.map((a) => a.id),
   );
-  const [tagIds, setTagIds] = useState<string[]>(task.tags.map((t) => t.id));
+  // Seeded from the complete tag set, not the display-filtered one: saving
+  // replaces every task_tag, so a picker that never held the priority tag
+  // would drop it on the next unrelated edit.
+  const [tagIds, setTagIds] = useState<string[]>(task.allTagIds);
   const [dueDate, setDueDate] = useState(task.dueDate ?? "");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();

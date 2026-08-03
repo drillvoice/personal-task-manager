@@ -28,7 +28,12 @@ export type TaskRowProps = {
     projectId?: string | null;
     projectName: string | null;
     assignees?: { id: string; name: string }[];
+    // Display list — priority tags stripped, since the row shows a
+    // PriorityBadge for those instead.
     tags?: { id: string; name: string; color: string }[];
+    // Complete set for the inline editor; see TasksViewTask. Optional because
+    // the Today rows don't carry tags at all and never open that editor.
+    allTagIds?: string[];
     weekly?: boolean;
   };
   showProject?: boolean;
@@ -65,9 +70,10 @@ function EditTaskForm({
   const [assigneeIds, setAssigneeIds] = useState<string[]>(
     task.assignees?.map((a) => a.id) ?? [],
   );
-  const [tagIds, setTagIds] = useState<string[]>(
-    task.tags?.map((t) => t.id) ?? [],
-  );
+  // The complete set, not the display-filtered `tags` — saving replaces every
+  // task_tag, so seeding from a list with priority tags stripped would delete
+  // the task's priority on any unrelated tag edit.
+  const [tagIds, setTagIds] = useState<string[]>(task.allTagIds ?? []);
   const [dueDate, setDueDate] = useState(task.dueDate ?? "");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
