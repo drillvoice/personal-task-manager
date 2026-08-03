@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   CalendarDays,
   Circle,
+  FolderOpen,
   Grid3x3,
   ListTodo,
   NotebookPen,
@@ -21,6 +22,7 @@ const items = [
   { href: "/people", label: "People", Icon: Users },
   { href: "/review", label: "Review", Icon: RefreshCw },
   { href: "/journal", label: "Journal", Icon: NotebookPen },
+  { href: "/notes", label: "Notes", Icon: FolderOpen },
 ] as const;
 
 // Desktop rail is icon-only by default and expands on hover. The content
