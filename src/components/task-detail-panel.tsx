@@ -7,8 +7,8 @@ import { AutosaveTextarea } from "@/components/autosave-textarea";
 import {
   createPersonOption,
   createProjectOption,
-  createTagOption,
-} from "@/components/task-row";
+  createTaskTagOption,
+} from "@/components/entity-create-options";
 import type { ContactOption } from "@/lib/server/people";
 import type { TagOption, TasksViewTask } from "@/lib/server/tasks";
 import { setTaskDone } from "@/app/(app)/today/actions";
@@ -236,7 +236,7 @@ export function TaskDetailPanel({
             setTagIds(ids);
             commit({ tagIds: ids });
           }}
-          onCreate={createTagOption}
+          onCreate={createTaskTagOption}
           placeholder="Add tag…"
         />
       </div>

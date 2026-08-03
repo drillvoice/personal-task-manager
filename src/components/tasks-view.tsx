@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { Plus } from "lucide-react";
 import { ProjectCard } from "@/components/project-card";
 import { TaskRow } from "@/components/task-row";
 import { TaskDetailPanel } from "@/components/task-detail-panel";
+import { useIsDesktop } from "@/components/use-is-desktop";
 import { quickAddTask } from "@/app/(app)/review/actions";
 import {
   SmartSearchBar,
@@ -22,21 +23,6 @@ import type {
 
 type Mode = "by_project" | "all_tasks";
 type ProjectFilter = "active" | "someday_maybe" | "all";
-
-// The detail panel is desktop-only; below md, rows keep inline editing.
-const DESKTOP_QUERY = "(min-width: 768px)";
-
-function useIsDesktop(): boolean {
-  return useSyncExternalStore(
-    (onChange) => {
-      const mql = window.matchMedia(DESKTOP_QUERY);
-      mql.addEventListener("change", onChange);
-      return () => mql.removeEventListener("change", onChange);
-    },
-    () => window.matchMedia(DESKTOP_QUERY).matches,
-    () => false,
-  );
-}
 
 const AddTaskForm = dynamic(() =>
   import("@/components/add-task-form").then((mod) => mod.AddTaskForm),

@@ -2,11 +2,13 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { Users } from "lucide-react";
-import { createTask, createTaskTag } from "@/app/(app)/tasks/actions";
-import { createProject } from "@/app/(app)/projects/actions";
-import { createPerson } from "@/app/(app)/people/actions";
+import { createTask } from "@/app/(app)/tasks/actions";
 import { EntityPicker } from "@/components/entity-picker";
-import type { PickerOption } from "@/components/entity-picker";
+import {
+  createPersonOption,
+  createProjectOption,
+  createTaskTagOption,
+} from "@/components/entity-create-options";
 import type { ProjectSelectOption as ProjectOption } from "@/lib/server/projects";
 import type { TagOption } from "@/lib/server/tasks";
 import type { ContactOption } from "@/lib/server/people";
@@ -43,27 +45,6 @@ export function AddTaskForm({
         .map((p) => ({ id: p.id, name: p.name })),
     [projects],
   );
-
-  const createProjectOption = async (
-    name: string,
-  ): Promise<PickerOption | null> => {
-    const res = await createProject({ name, status: "active" });
-    return res.ok ? { id: res.id, name } : null;
-  };
-
-  const createPersonOption = async (
-    name: string,
-  ): Promise<PickerOption | null> => {
-    const res = await createPerson({ name });
-    return res.ok ? { id: res.id, name } : null;
-  };
-
-  const createTagOption = async (
-    name: string,
-  ): Promise<PickerOption | null> => {
-    const res = await createTaskTag({ name });
-    return res.ok ? { id: res.id, name: res.name, color: res.color } : null;
-  };
 
   const submit = () => {
     if (!title.trim()) return;
@@ -189,7 +170,7 @@ export function AddTaskForm({
           options={tags}
           selectedIds={tagIds}
           onChange={setTagIds}
-          onCreate={createTagOption}
+          onCreate={createTaskTagOption}
           placeholder="Add tag…"
         />
       </div>

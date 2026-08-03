@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { dailyPlanItems, tasks } from "@/lib/db/schema";
 import { requireUserId } from "@/lib/server/session";
+import { ownsTask } from "@/lib/server/ownership";
 import {
   claimDailyPlanSlot,
   ensureDailyPlan,
@@ -20,11 +21,7 @@ import {
 import { todayIso, tomorrowIso } from "@/lib/time";
 
 async function assertOwnsTask(userId: string, taskId: string) {
-  const [row] = await db
-    .select({ id: tasks.id })
-    .from(tasks)
-    .where(and(eq(tasks.id, taskId), eq(tasks.userId, userId)));
-  if (!row) throw new Error("Task not found");
+  if (!(await ownsTask(userId, taskId))) throw new Error("Task not found");
 }
 
 async function addToPlanForDate(

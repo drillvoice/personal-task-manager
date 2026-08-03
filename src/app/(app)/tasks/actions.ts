@@ -261,5 +261,9 @@ export async function deleteTask(
   if (!deleted) return { ok: false, error: "Task not found" };
   revalidatePath("/tasks");
   revalidatePath("/today");
+  // Same set create/update touch: a deleted task also leaves a project's task
+  // list and, if it was a weekly priority, the review's x/3 count.
+  revalidatePath("/projects");
+  revalidatePath("/review");
   return { ok: true };
 }

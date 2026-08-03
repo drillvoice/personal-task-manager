@@ -6,14 +6,16 @@ import { DueLabel } from "@/components/due-label";
 import { PriorityBadge } from "@/components/priority-badge";
 import { TagChip } from "@/components/tag-chip";
 import { EntityPicker } from "@/components/entity-picker";
-import type { PickerOption } from "@/components/entity-picker";
-import { createProject } from "@/app/(app)/projects/actions";
-import { createPerson } from "@/app/(app)/people/actions";
+import {
+  createPersonOption,
+  createProjectOption,
+  createTaskTagOption,
+} from "@/components/entity-create-options";
 import type { ProjectSelectOption as ProjectOption } from "@/lib/server/projects";
 import type { TagOption } from "@/lib/server/tasks";
 import type { ContactOption } from "@/lib/server/people";
 import { setTaskDone } from "@/app/(app)/today/actions";
-import { updateTask, deleteTask, createTaskTag } from "@/app/(app)/tasks/actions";
+import { updateTask, deleteTask } from "@/app/(app)/tasks/actions";
 
 export type TaskRowProps = {
   task: {
@@ -43,27 +45,6 @@ export type TaskRowProps = {
   onTaskDragStart?: (e: React.DragEvent) => void;
   onTaskDragEnd?: (e: React.DragEvent) => void;
 };
-
-export async function createProjectOption(
-  name: string,
-): Promise<PickerOption | null> {
-  const res = await createProject({ name, status: "active" });
-  return res.ok ? { id: res.id, name } : null;
-}
-
-export async function createPersonOption(
-  name: string,
-): Promise<PickerOption | null> {
-  const res = await createPerson({ name });
-  return res.ok ? { id: res.id, name } : null;
-}
-
-export async function createTagOption(
-  name: string,
-): Promise<PickerOption | null> {
-  const res = await createTaskTag({ name });
-  return res.ok ? { id: res.id, name: res.name, color: res.color } : null;
-}
 
 function EditTaskForm({
   task,
@@ -176,7 +157,7 @@ function EditTaskForm({
               options={tagOptions}
               selectedIds={tagIds}
               onChange={setTagIds}
-              onCreate={createTagOption}
+              onCreate={createTaskTagOption}
               placeholder="Add tag…"
             />
           </div>

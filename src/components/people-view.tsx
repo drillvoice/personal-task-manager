@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState, useSyncExternalStore, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { Building2, Plus, Users } from "lucide-react";
 import { PersonRow } from "@/components/person-row";
 import { PersonDetailPanel } from "@/components/person-detail-panel";
 import { EntityPicker } from "@/components/entity-picker";
+import { useIsDesktop } from "@/components/use-is-desktop";
 import {
   addGroupMember,
   createGroup,
@@ -27,21 +28,6 @@ const inputStyle = {
   borderColor: "var(--color-line)",
   color: "var(--color-ink)",
 } as const;
-
-// The detail panel is desktop-only; below md, rows keep inline editing.
-const DESKTOP_QUERY = "(min-width: 768px)";
-
-function useIsDesktop(): boolean {
-  return useSyncExternalStore(
-    (onChange) => {
-      const mql = window.matchMedia(DESKTOP_QUERY);
-      mql.addEventListener("change", onChange);
-      return () => mql.removeEventListener("change", onChange);
-    },
-    () => window.matchMedia(DESKTOP_QUERY).matches,
-    () => false,
-  );
-}
 
 function AddPersonForm({
   orgs,

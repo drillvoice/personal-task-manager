@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Plus, Users } from "lucide-react";
 import {
-  createTag,
   deleteMeeting,
   setMeetingAttendees,
   setMeetingStatus,
@@ -14,11 +13,14 @@ import {
   updateMeetingNotes,
   updateMeetingPrepNotes,
 } from "@/app/(app)/meetings/actions";
-import { createPerson } from "@/app/(app)/people/actions";
 import { AddTaskForm } from "@/components/add-task-form";
 import { AutosaveTextarea } from "@/components/autosave-textarea";
 import { EntityPicker } from "@/components/entity-picker";
 import type { PickerOption } from "@/components/entity-picker";
+import {
+  createMeetingTagOption,
+  createPersonOption,
+} from "@/components/entity-create-options";
 import { TaskRow } from "@/components/task-row";
 import type { ProjectSelectOption as ProjectOption } from "@/lib/server/projects";
 import type { ContactOption, GroupOption } from "@/lib/server/people";
@@ -76,20 +78,6 @@ export function MeetingDetailView({
     startTransition(async () => {
       await setMeetingTags({ id: meeting.id, tagIds: ids });
     });
-  };
-
-  const createPersonOption = async (
-    name: string,
-  ): Promise<PickerOption | null> => {
-    const res = await createPerson({ name });
-    return res.ok ? { id: res.id, name } : null;
-  };
-
-  const createTagOption = async (
-    name: string,
-  ): Promise<PickerOption | null> => {
-    const res = await createTag({ name });
-    return res.ok ? { id: res.id, name: res.name, color: res.color } : null;
   };
 
   const toggleStatus = () => {
@@ -187,7 +175,7 @@ export function MeetingDetailView({
           options={availableTags}
           selectedIds={tagIds}
           onChange={changeTags}
-          onCreate={createTagOption}
+          onCreate={createMeetingTagOption}
           placeholder="Add tag…"
         />
       </div>

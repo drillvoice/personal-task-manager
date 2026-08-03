@@ -7,7 +7,6 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import {
   projectWeeklyNotes,
-  projects,
   tags,
   taskTags,
   tasks,
@@ -15,6 +14,7 @@ import {
   weeklyReviews,
 } from "@/lib/db/schema";
 import { requireUserId } from "@/lib/server/session";
+import { ownsProject, ownsTask } from "@/lib/server/ownership";
 import { extractDueDate } from "@/lib/server/parse-due-date";
 import { reactivateArchivedProject } from "@/lib/server/reactivate-project";
 import {
@@ -24,36 +24,28 @@ import {
 } from "@/lib/server/priority-cap";
 import { weekStartIso } from "@/lib/time";
 
-async function currentReviewId(userId: string): Promise<string> {
-  return ensureOpenReview(userId);
-}
-
-// The week the open review covers. Project notes saved during a review file
-// under this week, not necessarily the current calendar week — a reopened past
-// review edits the notes for the week it covers.
-async function currentReviewWeek(userId: string): Promise<string> {
-  const reviewId = await ensureOpenReview(userId);
+// The week the open review covers, alongside its id. Project notes saved
+// during a review file under this week, not necessarily the current calendar
+// week — a reopened past review edits the notes for the week it covers.
+async function currentReview(
+  userId: string,
+): Promise<{ id: string; weekStartDate: string }> {
+  const id = await ensureOpenReview(userId);
   const [row] = await db
     .select({ weekStartDate: weeklyReviews.weekStartDate })
     .from(weeklyReviews)
-    .where(eq(weeklyReviews.id, reviewId));
-  return row?.weekStartDate ?? weekStartIso();
+    .where(eq(weeklyReviews.id, id));
+  return { id, weekStartDate: row?.weekStartDate ?? weekStartIso() };
 }
 
 async function assertOwnsProject(userId: string, projectId: string) {
-  const [row] = await db
-    .select({ id: projects.id })
-    .from(projects)
-    .where(and(eq(projects.id, projectId), eq(projects.userId, userId)));
-  if (!row) throw new Error("Project not found");
+  if (!(await ownsProject(userId, projectId))) {
+    throw new Error("Project not found");
+  }
 }
 
 async function assertOwnsTask(userId: string, taskId: string) {
-  const [row] = await db
-    .select({ id: tasks.id })
-    .from(tasks)
-    .where(and(eq(tasks.id, taskId), eq(tasks.userId, userId)));
-  if (!row) throw new Error("Task not found");
+  if (!(await ownsTask(userId, taskId))) throw new Error("Task not found");
 }
 
 export async function updateReviewFlag(
@@ -65,7 +57,7 @@ export async function updateReviewFlag(
   value: boolean,
 ): Promise<void> {
   const userId = await requireUserId();
-  const reviewId = await currentReviewId(userId);
+  const reviewId = await ensureOpenReview(userId);
   await db
     .update(weeklyReviews)
     .set({ [field]: value })
@@ -86,7 +78,7 @@ export async function updateReflection(
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid" };
   }
-  const reviewId = await currentReviewId(userId);
+  const reviewId = await ensureOpenReview(userId);
   await db
     .update(weeklyReviews)
     .set({ reflectionNotes: parsed.data })
@@ -99,13 +91,9 @@ export async function updateProjectNotes(
   notes: string,
 ): Promise<void> {
   const userId = await requireUserId();
-  const [owned] = await db
-    .select({ id: projects.id })
-    .from(projects)
-    .where(and(eq(projects.id, projectId), eq(projects.userId, userId)));
-  if (!owned) throw new Error("Project not found");
+  await assertOwnsProject(userId, projectId);
 
-  const weekStartDate = await currentReviewWeek(userId);
+  const { weekStartDate } = await currentReview(userId);
   await db
     .insert(projectWeeklyNotes)
     .values({ projectId, weekStartDate, note: notes })
@@ -220,7 +208,7 @@ export async function toggleWeeklyPriority(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const userId = await requireUserId();
   await assertOwnsTask(userId, taskId);
-  const reviewId = await currentReviewId(userId);
+  const reviewId = await ensureOpenReview(userId);
 
   const [existing] = await db
     .select({ id: weeklyPriorities.id })
@@ -253,7 +241,7 @@ export async function toggleWeeklyPriority(
 
 export async function finishReview(): Promise<void> {
   const userId = await requireUserId();
-  const reviewId = await currentReviewId(userId);
+  const reviewId = await ensureOpenReview(userId);
   await db
     .update(weeklyReviews)
     .set({ completedAt: new Date() })
