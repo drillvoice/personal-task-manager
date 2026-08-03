@@ -6,6 +6,16 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 ## [Unreleased]
 
 ### Added
+- **Archive a project, and a project detail panel.** Clicking a project name on
+  **Project overview** now opens a panel on the right (desktop) where you can
+  rename it or set its status to *active* / *someday* / *archived*. Archiving
+  takes a project out of the way: it disappears from the Tasks view under every
+  filter chip — including `all` — and from the weekly Review. Archived projects
+  are hidden on Project overview too, behind a **Show archived** chip that only
+  appears once you have some. Nothing is deleted, and it isn't a one-way door:
+  assigning any task to an archived project (it stays pickable, listed last and
+  marked `archived`) flips it straight back to *active*, from the Tasks view,
+  quick capture, or the Review panel alike.
 - **Journal — a daily log.** New sidebar entry (`Journal`, reachable via
   `g 7`) that opens straight onto today. Each day is one freeform note written
   in Markdown: `Tab`/`Shift-Tab` indent and outdent bullet outlines, and a

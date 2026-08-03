@@ -10,11 +10,21 @@ export async function loadProjectOptions(
   userId: string,
 ): Promise<ProjectSelectOption[]> {
   const rows = await db
-    .select({ id: projects.id, name: projects.name })
+    .select({ id: projects.id, name: projects.name, status: projects.status })
     .from(projects)
     .where(eq(projects.userId, userId))
     .orderBy(asc(projects.name));
-  return [{ id: null, name: "Inbox (no project)" }, ...rows];
+  // Archived projects stay pickable (assigning a task reactivates them) but
+  // sort last and say so, so they don't clutter the common case.
+  const [live, archived] = [
+    rows.filter((r) => r.status !== "archived"),
+    rows.filter((r) => r.status === "archived"),
+  ];
+  return [
+    { id: null, name: "Inbox (no project)" },
+    ...live.map(({ id, name }) => ({ id, name })),
+    ...archived.map(({ id, name }) => ({ id, name: `${name} (archived)` })),
+  ];
 }
 
 export type ProjectsTableRow = {
@@ -27,6 +37,8 @@ export type ProjectsTableRow = {
 export type ProjectsTableData = {
   weeks: { start: string; label: string; isCurrent: boolean }[];
   rows: ProjectsTableRow[];
+  // Drives whether the "Show archived" chip is worth rendering at all.
+  hasArchived: boolean;
 };
 
 /**
@@ -37,6 +49,7 @@ export type ProjectsTableData = {
  */
 export async function loadProjectsTable(
   userId: string,
+  includeArchived = false,
 ): Promise<ProjectsTableData> {
   const [projectRows, notes] = await Promise.all([
     db
@@ -51,10 +64,22 @@ export async function loadProjectsTable(
       .where(eq(projects.userId, userId)),
   ]);
 
+  const visibleProjects = (
+    includeArchived
+      ? projectRows
+      : projectRows.filter((p) => p.status !== "archived")
+  ).sort((a, b) => {
+    const rank = (s: string) => (s === "archived" ? 1 : 0);
+    return rank(a.status) - rank(b.status) || a.name.localeCompare(b.name);
+  });
+  const visibleIds = new Set(visibleProjects.map((p) => p.id));
+
   const currentWeek = weekStartIso();
   const populatedWeeks = new Set<string>([currentWeek]);
   for (const n of notes) {
-    if (n.note.trim()) populatedWeeks.add(n.weekStartDate);
+    if (n.note.trim() && visibleIds.has(n.projectId)) {
+      populatedWeeks.add(n.weekStartDate);
+    }
   }
   const weekStarts = Array.from(populatedWeeks).sort();
 
@@ -65,7 +90,7 @@ export async function loadProjectsTable(
     notesByProject.set(n.projectId, inner);
   }
 
-  const rows: ProjectsTableRow[] = projectRows.map((p) => {
+  const rows: ProjectsTableRow[] = visibleProjects.map((p) => {
     const inner = notesByProject.get(p.id) ?? new Map();
     const notesByWeek: Record<string, string> = {};
     for (const w of weekStarts) notesByWeek[w] = inner.get(w) ?? "";
@@ -84,5 +109,6 @@ export async function loadProjectsTable(
       isCurrent: w === currentWeek,
     })),
     rows,
+    hasArchived: projectRows.some((p) => p.status === "archived"),
   };
 }

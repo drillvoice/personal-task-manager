@@ -150,6 +150,23 @@ tag has no badge — `src/components/priority-badge.tsx` renders nothing for
 `null`. Quick-capture's inline `#tag` syntax (see review actions) is the
 normal way to set it, e.g. `ring matthew #p1`.
 
+**Project status: only three values are reachable.** The `project_status` enum
+has five members, but the UI only ever writes `active`, `someday_maybe`, and
+`archived` — `on_hold` and `completed` are dormant and have no behaviour
+anywhere. `archived` means "put aside": `src/lib/server/tasks.ts` drops those
+projects before grouping (so *no* Tasks filter chip can surface them), and
+`src/lib/server/review.ts` already selects `status = 'active'` only, so the
+Review panel excludes them for free. They stay visible on Project overview via
+`loadProjectsTable(userId, includeArchived)`, driven by `?archived=1`.
+
+**Archiving is not a one-way door.** Every task write path that sets a
+`projectId` calls `src/lib/server/reactivate-project.ts#reactivateArchivedProject`,
+which flips an archived project back to `active`. There are exactly three such
+paths — `createTask` and `updateTask` in `src/app/(app)/tasks/actions.ts` and
+`quickAddTask` in `src/app/(app)/review/actions.ts`. This is also why archived
+projects must stay in the task project-pickers (sorted last, suffixed
+`(archived)`): remove them there and the reactivation path becomes unreachable.
+
 **Inbox is a pseudo-project** (`projectId = null`). It appears in the Tasks
 view but is *excluded* from the Projects history table. See
 `src/lib/server/tasks.ts` and `src/lib/server/projects.ts`.

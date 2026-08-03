@@ -44,10 +44,14 @@ const AddTaskForm = dynamic(() =>
 
 export function TasksView({
   projects,
+  archivedProjects,
   people,
   tagOptions,
 }: {
   projects: TasksViewProject[];
+  // Not rendered as groups — they exist only so a task can still be assigned
+  // to an archived project, which reactivates it.
+  archivedProjects: { id: string; name: string }[];
   people: ContactOption[];
   tagOptions: TagOption[];
 }) {
@@ -132,10 +136,16 @@ export function TasksView({
     return p.status === "active" || p.id === null;
   });
 
-  const projectOptions = projects.map((p) => ({
-    id: p.id,
-    name: p.id === null ? "Inbox (no project)" : p.name,
-  }));
+  const projectOptions = [
+    ...projects.map((p) => ({
+      id: p.id,
+      name: p.id === null ? "Inbox (no project)" : p.name,
+    })),
+    ...archivedProjects.map((p) => ({
+      id: p.id as string | null,
+      name: `${p.name} (archived)`,
+    })),
+  ];
 
   // Inbox is a pseudo-project (id null) — it can't be the target of a
   // `^project` reference, since it is already the fallback.

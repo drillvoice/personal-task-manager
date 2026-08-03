@@ -1,33 +1,106 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState, useTransition } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  useTransition,
+} from "react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { Plus } from "lucide-react";
 import { upsertWeeklyNote } from "@/app/(app)/projects/actions";
+import { ProjectDetailPanel } from "@/components/project-detail-panel";
 import type { ProjectsTableData } from "@/lib/server/projects";
 
 const AddProjectForm = dynamic(() =>
   import("@/components/add-project-form").then((mod) => mod.AddProjectForm),
 );
 
-export function ProjectsTable({ data }: { data: ProjectsTableData }) {
+// The detail panel is desktop-only, matching Tasks and People.
+const DESKTOP_QUERY = "(min-width: 768px)";
+
+function useIsDesktop(): boolean {
+  return useSyncExternalStore(
+    (onChange) => {
+      const mql = window.matchMedia(DESKTOP_QUERY);
+      mql.addEventListener("change", onChange);
+      return () => mql.removeEventListener("change", onChange);
+    },
+    () => window.matchMedia(DESKTOP_QUERY).matches,
+    () => false,
+  );
+}
+
+export function ProjectsTable({
+  data,
+  includeArchived,
+}: {
+  data: ProjectsTableData;
+  includeArchived: boolean;
+}) {
   const [showAdd, setShowAdd] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
+    null,
+  );
+  const isDesktop = useIsDesktop();
+
+  // Derived from server data, so archiving the selected project out of view
+  // (or deleting it) closes the panel on revalidation.
+  const selectedProject =
+    selectedProjectId !== null
+      ? (data.rows.find((r) => r.id === selectedProjectId) ?? null)
+      : null;
+
+  useEffect(() => {
+    if (selectedProjectId !== null && selectedProject === null) {
+      setSelectedProjectId(null);
+    }
+  }, [selectedProjectId, selectedProject]);
+
+  const onSelectProject = isDesktop
+    ? (id: string) => setSelectedProjectId((prev) => (prev === id ? null : id))
+    : undefined;
 
   return (
-    <div className="px-4 py-6">
+    <div className="px-4 py-6 md:grid md:grid-cols-[minmax(0,1fr)_minmax(320px,380px)] md:items-start md:gap-6">
+      <div className="min-w-0">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <h1 className="font-display text-xl font-bold">Project overview</h1>
-        <button
-          type="button"
-          onClick={() => setShowAdd((s) => !s)}
-          className="font-mono flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-semibold"
-          style={{
-            background: "var(--color-accent)",
-            color: "var(--color-paper-raised)",
-          }}
-        >
-          <Plus size={12} /> New project
-        </button>
+        <div className="flex items-center gap-2">
+          {(data.hasArchived || includeArchived) && (
+            <Link
+              href={includeArchived ? "/projects" : "/projects?archived=1"}
+              className="font-mono rounded-full border px-3 py-1 text-[11px] font-medium"
+              style={{
+                borderColor: includeArchived
+                  ? "var(--color-ink)"
+                  : "var(--color-line)",
+                background: includeArchived
+                  ? "var(--color-ink)"
+                  : "transparent",
+                color: includeArchived
+                  ? "var(--color-paper)"
+                  : "var(--color-ink-soft)",
+              }}
+            >
+              Show archived
+            </Link>
+          )}
+          <button
+            type="button"
+            onClick={() => setShowAdd((s) => !s)}
+            className="font-mono flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-semibold"
+            style={{
+              background: "var(--color-accent)",
+              color: "var(--color-paper-raised)",
+            }}
+          >
+            <Plus size={12} /> New project
+          </button>
+        </div>
       </div>
       <p
         className="mb-4 text-[13px]"
@@ -99,11 +172,42 @@ export function ProjectsTable({ data }: { data: ProjectsTableData }) {
             {data.rows.map((row) => (
               <tr key={row.id}>
                 <td
-                  className="font-display sticky left-0 z-10 max-w-[220px] truncate px-3 py-2.5 align-top text-[13px] font-semibold"
-                  style={{ background: "var(--color-paper-raised)" }}
+                  className="font-display sticky left-0 z-10 max-w-[220px] px-3 py-2.5 align-top text-[13px] font-semibold"
+                  style={{
+                    background:
+                      row.id === selectedProjectId
+                        ? "var(--color-accent-soft)"
+                        : "var(--color-paper-raised)",
+                  }}
                   title={row.name}
                 >
-                  {row.name}
+                  <button
+                    type="button"
+                    onClick={
+                      onSelectProject
+                        ? () => onSelectProject(row.id)
+                        : undefined
+                    }
+                    aria-pressed={row.id === selectedProjectId}
+                    className="block max-w-full truncate text-left"
+                    style={{
+                      color:
+                        row.status === "archived"
+                          ? "var(--color-ink-soft)"
+                          : "var(--color-ink)",
+                      cursor: onSelectProject ? "pointer" : "default",
+                    }}
+                  >
+                    {row.name}
+                    {row.status === "archived" && (
+                      <span
+                        className="font-mono ml-1.5 text-[10px] font-medium"
+                        style={{ color: "var(--color-ink-soft)" }}
+                      >
+                        archived
+                      </span>
+                    )}
+                  </button>
                 </td>
                 {data.weeks.map((w) => (
                   <NoteCell
@@ -118,6 +222,27 @@ export function ProjectsTable({ data }: { data: ProjectsTableData }) {
             ))}
           </tbody>
         </table>
+      </div>
+      </div>
+
+      <div className="hidden md:sticky md:top-4 md:block md:max-h-[calc(100vh-2rem)] md:min-w-0 md:overflow-y-auto">
+        {selectedProject ? (
+          <ProjectDetailPanel
+            key={selectedProject.id}
+            project={selectedProject}
+            onClose={() => setSelectedProjectId(null)}
+          />
+        ) : (
+          <div
+            className="font-mono flex min-h-[220px] items-center justify-center rounded-[4px] border border-dashed text-[11px]"
+            style={{
+              borderColor: "var(--color-line)",
+              color: "var(--color-ink-soft)",
+            }}
+          >
+            Select a project
+          </div>
+        )}
       </div>
     </div>
   );

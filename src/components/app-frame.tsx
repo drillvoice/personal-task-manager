@@ -18,10 +18,12 @@ export function AppFrame({ children }: { children: React.ReactNode }) {
     pathname.startsWith("/today") ||
     pathname.startsWith("/review") ||
     pathname.startsWith("/journal");
-  // Tasks and People both carry a reserved detail-panel column, so they get
-  // extra width beyond the standard wide surface.
+  // Tasks, People, and Projects each carry a reserved detail-panel column, so
+  // they get extra width beyond the standard wide surface.
   const hasDetailPanel =
-    pathname.startsWith("/tasks") || pathname.startsWith("/people");
+    pathname.startsWith("/tasks") ||
+    pathname.startsWith("/people") ||
+    pathname.startsWith("/projects");
   const maxWidth = hasDetailPanel ? 1280 : isWide ? 900 : 420;
   return (
     <div

@@ -15,6 +15,7 @@ export default async function TasksPage() {
   return (
     <TasksView
       projects={data.projects}
+      archivedProjects={data.archivedProjects}
       people={contacts.people}
       tagOptions={tagOptions}
     />

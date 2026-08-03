@@ -4,8 +4,13 @@ import { loadProjectsTable } from "@/lib/server/projects";
 
 export const dynamic = "force-dynamic";
 
-export default async function ProjectsPage() {
+export default async function ProjectsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ archived?: string }>;
+}) {
   const userId = await requireUserId();
-  const data = await loadProjectsTable(userId);
-  return <ProjectsTable data={data} />;
+  const includeArchived = (await searchParams).archived === "1";
+  const data = await loadProjectsTable(userId, includeArchived);
+  return <ProjectsTable data={data} includeArchived={includeArchived} />;
 }

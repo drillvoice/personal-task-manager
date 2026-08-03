@@ -17,6 +17,7 @@ import {
 } from "@/lib/db/schema";
 import { requireUserId } from "@/lib/server/session";
 import { extractDueDate } from "@/lib/server/parse-due-date";
+import { reactivateArchivedProject } from "@/lib/server/reactivate-project";
 import {
   PriorityCapExceededError,
   ensureOpenReview,
@@ -194,9 +195,11 @@ export async function quickAddTask(input: {
       .insert(taskTags)
       .values(tagIds.map((tagId) => ({ taskId: row.id, tagId })));
   }
+  await reactivateArchivedProject(userId, parsed.data.projectId);
   revalidatePath("/review");
   revalidatePath("/tasks");
   revalidatePath("/today");
+  revalidatePath("/projects");
   return { ok: true };
 }
 

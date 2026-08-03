@@ -152,8 +152,16 @@ export async function loadTasksData(userId: string) {
     assigneesByTask.set(a.taskId, list);
   }
 
+  // Archived projects are hidden from every Tasks grouping and filter chip,
+  // but stay in `archivedProjects` so they remain assignable — picking one is
+  // what reactivates it (see reactivate-project.ts).
+  const archivedProjects = projectRows
+    .filter((p) => p.status === "archived")
+    .map((p) => ({ id: p.id, name: p.name }));
+
   const projectsById = new Map<string, TasksViewProject>();
   for (const p of projectRows) {
+    if (p.status === "archived") continue;
     projectsById.set(p.id, {
       id: p.id,
       name: p.name,
@@ -198,5 +206,6 @@ export async function loadTasksData(userId: string) {
 
   return {
     projects: [inbox, ...projectsById.values()],
+    archivedProjects,
   };
 }

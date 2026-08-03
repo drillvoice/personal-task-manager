@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { people, tags, taskAssignees, taskTags, tasks } from "@/lib/db/schema";
 import { requireUserId } from "@/lib/server/session";
 import { extractDueDate } from "@/lib/server/parse-due-date";
+import { reactivateArchivedProject } from "@/lib/server/reactivate-project";
 
 const nullableUuid = z
   .string()
@@ -108,8 +109,10 @@ export async function createTask(input: CreateTaskInput): Promise<
         ]
       : []),
   ]);
+  await reactivateArchivedProject(userId, projectId);
   revalidatePath("/tasks");
   revalidatePath("/today");
+  revalidatePath("/projects");
   if (meetingId) revalidatePath(`/meetings/${meetingId}`);
   return { ok: true };
 }
@@ -178,8 +181,10 @@ export async function updateTask(
         ]
       : []),
   ]);
+  await reactivateArchivedProject(userId, parsed.data.projectId);
   revalidatePath("/tasks");
   revalidatePath("/today");
+  revalidatePath("/projects");
   return { ok: true };
 }
 
