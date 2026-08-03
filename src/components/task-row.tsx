@@ -6,6 +6,7 @@ import { DueLabel } from "@/components/due-label";
 import { PriorityBadge } from "@/components/priority-badge";
 import { TagChip } from "@/components/tag-chip";
 import { EntityPicker } from "@/components/entity-picker";
+import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import {
   createPersonOption,
   createProjectOption,
@@ -68,7 +69,6 @@ function EditTaskForm({
     task.tags?.map((t) => t.id) ?? [],
   );
   const [dueDate, setDueDate] = useState(task.dueDate ?? "");
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -100,10 +100,6 @@ function EditTaskForm({
   };
 
   const del = () => {
-    if (!confirmDelete) {
-      setConfirmDelete(true);
-      return;
-    }
     startTransition(async () => {
       await deleteTask(task.id);
       onDone();
@@ -187,25 +183,11 @@ function EditTaskForm({
         </p>
       )}
       <div className="flex items-center justify-between">
-        <button
-          type="button"
-          onClick={del}
-          disabled={pending}
-          className="font-mono text-[11px]"
-          style={{ color: confirmDelete ? "var(--color-danger)" : "var(--color-ink-soft)" }}
-        >
-          {confirmDelete ? "Confirm delete?" : "Delete task"}
-        </button>
-        {confirmDelete && (
-          <button
-            type="button"
-            onClick={() => setConfirmDelete(false)}
-            className="font-mono ml-2 text-[11px]"
-            style={{ color: "var(--color-ink-soft)" }}
-          >
-            Keep
-          </button>
-        )}
+        <ConfirmDeleteButton
+          label="Delete task"
+          pending={pending}
+          onConfirm={del}
+        />
         <div className="ml-auto flex gap-2">
           <button
             type="button"

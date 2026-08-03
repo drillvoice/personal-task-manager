@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { Check, Users, X } from "lucide-react";
 import { EntityPicker } from "@/components/entity-picker";
 import { AutosaveTextarea } from "@/components/autosave-textarea";
+import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import {
   createPersonOption,
   createProjectOption,
@@ -38,7 +39,6 @@ export function TaskDetailPanel({
   );
   const [tagIds, setTagIds] = useState<string[]>(task.tags.map((t) => t.id));
   const [dueDate, setDueDate] = useState(task.dueDate ?? "");
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   // The checkbox fills the moment it's clicked and stays that way. This is
@@ -100,10 +100,6 @@ export function TaskDetailPanel({
   };
 
   const del = () => {
-    if (!confirmDelete) {
-      setConfirmDelete(true);
-      return;
-    }
     startTransition(async () => {
       const res = await deleteTask(task.id);
       if (res.ok) onClose();
@@ -300,30 +296,11 @@ export function TaskDetailPanel({
         style={{ borderColor: "var(--color-line)" }}
       >
         <span>
-          <button
-            type="button"
-            onClick={del}
-            disabled={pending}
-            className="font-mono text-[11px]"
-            style={{
-              color: confirmDelete
-                ? "var(--color-danger)"
-                : "var(--color-ink-soft)",
-              fontWeight: confirmDelete ? 600 : 400,
-            }}
-          >
-            {confirmDelete ? "Confirm delete?" : "Delete task"}
-          </button>
-          {confirmDelete && (
-            <button
-              type="button"
-              onClick={() => setConfirmDelete(false)}
-              className="font-mono ml-2.5 text-[11px]"
-              style={{ color: "var(--color-ink-soft)" }}
-            >
-              Keep
-            </button>
-          )}
+        <ConfirmDeleteButton
+          label="Delete task"
+          pending={pending}
+          onConfirm={del}
+        />
         </span>
         <span
           className="font-mono text-[10px]"

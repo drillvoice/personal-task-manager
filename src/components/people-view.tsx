@@ -6,6 +6,7 @@ import { PersonRow } from "@/components/person-row";
 import { PersonDetailPanel } from "@/components/person-detail-panel";
 import { EntityPicker } from "@/components/entity-picker";
 import { useIsDesktop } from "@/components/use-is-desktop";
+import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import {
   addGroupMember,
   createGroup,
@@ -22,12 +23,7 @@ import type {
   OrganisationRow,
   PersonWithOrg,
 } from "@/lib/server/people";
-
-const inputStyle = {
-  background: "transparent",
-  borderColor: "var(--color-line)",
-  color: "var(--color-ink)",
-} as const;
+import { inputStyle } from "@/components/field-style";
 
 function AddPersonForm({
   orgs,
@@ -204,7 +200,6 @@ function OrgRow({ org }: { org: OrganisationRow }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(org.name);
   const [notes, setNotes] = useState(org.notes);
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -221,10 +216,6 @@ function OrgRow({ org }: { org: OrganisationRow }) {
   };
 
   const del = () => {
-    if (!confirmDelete) {
-      setConfirmDelete(true);
-      return;
-    }
     startTransition(async () => {
       await deleteOrganisation(org.id);
     });
@@ -291,29 +282,11 @@ function OrgRow({ org }: { org: OrganisationRow }) {
         </p>
       )}
       <div className="flex items-center justify-between">
-        <button
-          type="button"
-          onClick={del}
-          disabled={pending}
-          className="font-mono text-[11px]"
-          style={{
-            color: confirmDelete
-              ? "var(--color-danger)"
-              : "var(--color-ink-soft)",
-          }}
-        >
-          {confirmDelete ? "Confirm delete?" : "Delete organisation"}
-        </button>
-        {confirmDelete && (
-          <button
-            type="button"
-            onClick={() => setConfirmDelete(false)}
-            className="font-mono ml-2 text-[11px]"
-            style={{ color: "var(--color-ink-soft)" }}
-          >
-            Keep
-          </button>
-        )}
+        <ConfirmDeleteButton
+          label="Delete organisation"
+          pending={pending}
+          onConfirm={del}
+        />
         <div className="ml-auto flex gap-2">
           <button
             type="button"
@@ -352,7 +325,6 @@ function GroupRow({
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(group.name);
   const [notes, setNotes] = useState(group.notes);
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -391,10 +363,6 @@ function GroupRow({
   };
 
   const del = () => {
-    if (!confirmDelete) {
-      setConfirmDelete(true);
-      return;
-    }
     startTransition(async () => {
       await deleteGroup(group.id);
     });
@@ -479,29 +447,11 @@ function GroupRow({
         </p>
       )}
       <div className="flex items-center justify-between">
-        <button
-          type="button"
-          onClick={del}
-          disabled={pending}
-          className="font-mono text-[11px]"
-          style={{
-            color: confirmDelete
-              ? "var(--color-danger)"
-              : "var(--color-ink-soft)",
-          }}
-        >
-          {confirmDelete ? "Confirm delete?" : "Delete group"}
-        </button>
-        {confirmDelete && (
-          <button
-            type="button"
-            onClick={() => setConfirmDelete(false)}
-            className="font-mono ml-2 text-[11px]"
-            style={{ color: "var(--color-ink-soft)" }}
-          >
-            Keep
-          </button>
-        )}
+        <ConfirmDeleteButton
+          label="Delete group"
+          pending={pending}
+          onConfirm={del}
+        />
         <div className="ml-auto flex gap-2">
           <button
             type="button"

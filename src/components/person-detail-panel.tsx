@@ -6,6 +6,7 @@ import Link from "next/link";
 import { DueLabel } from "@/components/due-label";
 import { EntityPicker } from "@/components/entity-picker";
 import type { PickerOption } from "@/components/entity-picker";
+import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import {
   createGroup,
   createOrganisation,
@@ -13,12 +14,7 @@ import {
   updatePerson,
 } from "@/app/(app)/people/actions";
 import type { PersonWithOrg } from "@/lib/server/people";
-
-const inputStyle = {
-  background: "transparent",
-  borderColor: "var(--color-line)",
-  color: "var(--color-ink)",
-} as const;
+import { inputStyle } from "@/components/field-style";
 
 export function PersonDetailPanel({
   person,
@@ -38,7 +34,6 @@ export function PersonDetailPanel({
   const [notes, setNotes] = useState(person.notes);
   const [orgId, setOrgId] = useState(person.orgId ?? "");
   const [groupIds, setGroupIds] = useState(person.groups.map((g) => g.id));
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -78,10 +73,6 @@ export function PersonDetailPanel({
   };
 
   const del = () => {
-    if (!confirmDelete) {
-      setConfirmDelete(true);
-      return;
-    }
     startTransition(async () => {
       await deletePerson(person.id);
       onClose();
@@ -196,29 +187,11 @@ export function PersonDetailPanel({
         </p>
       )}
       <div className="flex items-center justify-between">
-        <button
-          type="button"
-          onClick={del}
-          disabled={pending}
-          className="font-mono text-[11px]"
-          style={{
-            color: confirmDelete
-              ? "var(--color-danger)"
-              : "var(--color-ink-soft)",
-          }}
-        >
-          {confirmDelete ? "Confirm delete?" : "Delete person"}
-        </button>
-        {confirmDelete && (
-          <button
-            type="button"
-            onClick={() => setConfirmDelete(false)}
-            className="font-mono ml-2 text-[11px]"
-            style={{ color: "var(--color-ink-soft)" }}
-          >
-            Keep
-          </button>
-        )}
+        <ConfirmDeleteButton
+          label="Delete person"
+          pending={pending}
+          onConfirm={del}
+        />
         <div className="ml-auto flex gap-2">
           <button
             type="button"
