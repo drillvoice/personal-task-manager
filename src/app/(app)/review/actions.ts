@@ -1,6 +1,6 @@
 "use server";
 
-import { and, count, eq, inArray, max, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -11,7 +11,6 @@ import {
   tags,
   taskTags,
   tasks,
-  WEEKLY_PRIORITY_CAP,
   weeklyPriorities,
   weeklyReviews,
 } from "@/lib/db/schema";
@@ -19,7 +18,7 @@ import { requireUserId } from "@/lib/server/session";
 import { extractDueDate } from "@/lib/server/parse-due-date";
 import { reactivateArchivedProject } from "@/lib/server/reactivate-project";
 import {
-  PriorityCapExceededError,
+  claimWeeklyPrioritySlot,
   ensureOpenReview,
   getOpenReviewId,
 } from "@/lib/server/priority-cap";
@@ -241,23 +240,12 @@ export async function toggleWeeklyPriority(
     return { ok: true };
   }
 
-  const [agg] = await db
-    .select({
-      count: count(),
-      // sort_order isn't read anywhere today, but a removed priority leaves
-      // a gap — reusing count() as the next value can collide with a slot
-      // that's still in use. max()+1 always lands on an unused value.
-      maxSortOrder: max(weeklyPriorities.sortOrder),
-    })
-    .from(weeklyPriorities)
-    .where(eq(weeklyPriorities.weeklyReviewId, reviewId));
-  if (agg.count >= WEEKLY_PRIORITY_CAP) {
-    return { ok: false, error: new PriorityCapExceededError("weekly").message };
-  }
+  const slot = await claimWeeklyPrioritySlot(reviewId);
+  if (!slot.ok) return slot;
   await db.insert(weeklyPriorities).values({
     weeklyReviewId: reviewId,
     taskId,
-    sortOrder: (agg.maxSortOrder ?? -1) + 1,
+    sortOrder: slot.sortOrder,
   });
   revalidatePath("/review");
   return { ok: true };

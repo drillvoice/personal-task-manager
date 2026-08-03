@@ -765,9 +765,6 @@ export type NewJournalEntry = typeof journalEntries.$inferInsert;
 export type Note = typeof notes.$inferSelect;
 export type NewNote = typeof notes.$inferInsert;
 
-/* PRIORITY_TASK_CAP is enforced in server actions — see lib/server/priority-cap.ts */
-export const PRIORITY_TASK_CAP = 3;
-export const WEEKLY_PRIORITY_CAP = 3;
-
-// Prevent unused-import warning; keep sql exported for downstream use.
-void sql;
+/* Re-exported so server code can keep importing caps from the schema; they
+ * live in lib/caps.ts so client components can read them too. */
+export { PRIORITY_TASK_CAP, WEEKLY_PRIORITY_CAP } from "@/lib/caps";

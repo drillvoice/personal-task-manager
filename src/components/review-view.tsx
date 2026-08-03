@@ -21,8 +21,7 @@ import type {
   ReviewEditingData,
 } from "@/lib/server/review";
 import { shortDateLabel } from "@/lib/time";
-
-const WEEKLY_CAP = 3;
+import { WEEKLY_PRIORITY_CAP } from "@/lib/caps";
 
 export function ReviewView({ data }: { data: ReviewData }) {
   if (data.mode === "completed") {
@@ -194,7 +193,7 @@ function EditingReview({ data }: { data: ReviewEditingData }) {
         extra={
           <span style={{ color: "var(--color-ink-soft)" }}>
             {" "}
-            ({selectedCount}/{WEEKLY_CAP} selected)
+            ({selectedCount}/{WEEKLY_PRIORITY_CAP} selected)
           </span>
         }
       />
@@ -223,7 +222,7 @@ function EditingReview({ data }: { data: ReviewEditingData }) {
         )}
         {data.actionableTasks.map((t) => {
           const on = selected.has(t.id);
-          const disabled = !on && selectedCount >= WEEKLY_CAP;
+          const disabled = !on && selectedCount >= WEEKLY_PRIORITY_CAP;
           return (
             <label
               key={t.id}

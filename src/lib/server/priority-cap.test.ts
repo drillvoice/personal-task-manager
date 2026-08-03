@@ -1,70 +1,63 @@
-import { describe, expect, it, vi } from "vitest";
-import {
-  PriorityCapExceededError,
-  assertDailyRoomForOne,
-  assertWeeklyRoomForOne,
-} from "./priority-cap";
+import { describe, expect, it } from "vitest";
+import { PRIORITY_TASK_CAP, WEEKLY_PRIORITY_CAP } from "@/lib/caps";
+import { decideSlot } from "./priority-cap";
 
 /**
- * Unit test the cap logic without touching a real database. Drizzle chain calls
- * are stubbed to return arrays of arbitrary length so we can assert the
- * decision boundary at 3.
+ * `decideSlot` is the whole cap decision — `claimDailyPlanSlot` and
+ * `claimWeeklyPrioritySlot` only count the rows and hand the result here — so
+ * testing it needs no database and no mock of one.
+ *
+ * An earlier version of this file mocked Drizzle to test a pair of helpers
+ * nothing in the app ever called, which meant the cap that actually shipped was
+ * uncovered.
  */
-vi.mock("@/lib/db", () => {
-  const rows: unknown[] = [];
-  const chain = {
-    from: () => chain,
-    where: () => [{ value: rows.length }],
-  };
-  return {
-    db: {
-      __rows: rows,
-      select: () => chain,
-      insert: vi.fn(),
-    },
-  };
-});
-
-const mocked = await import("@/lib/db");
-const rows = (mocked.db as unknown as { __rows: unknown[] }).__rows;
-
-const setCount = (n: number) => {
-  rows.length = 0;
-  for (let i = 0; i < n; i++) rows.push({ id: String(i) });
-};
-
-describe("assertDailyRoomForOne", () => {
-  it("accepts 0, 1, and 2 existing items", async () => {
+describe("decideSlot", () => {
+  it("grants a slot below the cap", () => {
     for (const n of [0, 1, 2]) {
-      setCount(n);
-      await expect(assertDailyRoomForOne("plan-1")).resolves.toBeUndefined();
+      expect(decideSlot("daily", PRIORITY_TASK_CAP, {
+        count: n,
+        maxSortOrder: n - 1,
+      })).toEqual({ ok: true, sortOrder: n });
     }
   });
-  it("rejects at 3", async () => {
-    setCount(3);
-    await expect(assertDailyRoomForOne("plan-1")).rejects.toBeInstanceOf(
-      PriorityCapExceededError,
-    );
-  });
-  it("rejects above 3", async () => {
-    setCount(5);
-    await expect(assertDailyRoomForOne("plan-1")).rejects.toBeInstanceOf(
-      PriorityCapExceededError,
-    );
-  });
-});
 
-describe("assertWeeklyRoomForOne", () => {
-  it("accepts fewer than 3", async () => {
-    setCount(2);
-    await expect(
-      assertWeeklyRoomForOne("review-1"),
-    ).resolves.toBeUndefined();
+  it("starts at 0 when nothing is filed yet", () => {
+    expect(
+      decideSlot("daily", PRIORITY_TASK_CAP, { count: 0, maxSortOrder: null }),
+    ).toEqual({ ok: true, sortOrder: 0 });
   });
-  it("rejects at 3", async () => {
-    setCount(3);
-    await expect(
-      assertWeeklyRoomForOne("review-1"),
-    ).rejects.toBeInstanceOf(PriorityCapExceededError);
+
+  it("refuses at the cap", () => {
+    const claim = decideSlot("daily", PRIORITY_TASK_CAP, {
+      count: PRIORITY_TASK_CAP,
+      maxSortOrder: 2,
+    });
+    expect(claim.ok).toBe(false);
+    expect(claim.ok === false && claim.error).toMatch(/already has 3 tasks/);
+  });
+
+  it("refuses above the cap", () => {
+    expect(
+      decideSlot("daily", PRIORITY_TASK_CAP, { count: 5, maxSortOrder: 4 }),
+    ).toMatchObject({ ok: false });
+  });
+
+  // sort_order is read back to order the three Today slots and the review's
+  // top-3, so a removed row leaves a gap the next claim must step past rather
+  // than reuse — a count-derived value would collide with a live slot.
+  it("steps past a gap left by a removed slot", () => {
+    expect(
+      decideSlot("daily", PRIORITY_TASK_CAP, { count: 1, maxSortOrder: 7 }),
+    ).toEqual({ ok: true, sortOrder: 8 });
+  });
+
+  it("names the weekly review in its own cap message", () => {
+    const claim = decideSlot("weekly", WEEKLY_PRIORITY_CAP, {
+      count: WEEKLY_PRIORITY_CAP,
+      maxSortOrder: 2,
+    });
+    expect(claim.ok === false && claim.error).toMatch(
+      /already has 3 priorities/,
+    );
   });
 });

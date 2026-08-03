@@ -1,12 +1,12 @@
 "use server";
 
-import { and, count, eq, max, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { PRIORITY_TASK_CAP, dailyPlanItems, tasks } from "@/lib/db/schema";
+import { dailyPlanItems, tasks } from "@/lib/db/schema";
 import { requireUserId } from "@/lib/server/session";
 import {
-  PriorityCapExceededError,
+  claimDailyPlanSlot,
   ensureDailyPlan,
 } from "@/lib/server/priority-cap";
 import { loadEligibleForPlan } from "@/lib/server/today";
@@ -34,26 +34,11 @@ async function addToPlanForDate(
   const userId = await requireUserId();
   await assertOwnsTask(userId, taskId);
   const planId = await ensureDailyPlan(userId, dateIso);
-  const [agg] = await db
-    .select({
-      count: count(),
-      // sort_order isn't read anywhere today, but a removed slot leaves a
-      // gap — reusing count() as the next value can collide with a slot
-      // that's still in use. max()+1 always lands on an unused value.
-      maxSortOrder: max(dailyPlanItems.sortOrder),
-    })
-    .from(dailyPlanItems)
-    .where(eq(dailyPlanItems.dailyPlanId, planId));
-  if (agg.count >= PRIORITY_TASK_CAP) {
-    return { ok: false, error: new PriorityCapExceededError("daily").message };
-  }
+  const slot = await claimDailyPlanSlot(planId);
+  if (!slot.ok) return slot;
   await db
     .insert(dailyPlanItems)
-    .values({
-      dailyPlanId: planId,
-      taskId,
-      sortOrder: (agg.maxSortOrder ?? -1) + 1,
-    })
+    .values({ dailyPlanId: planId, taskId, sortOrder: slot.sortOrder })
     .onConflictDoNothing();
   revalidatePath("/today");
   return { ok: true };
