@@ -26,7 +26,7 @@ import {
   weekLabel,
   weekStartIso,
 } from "@/lib/time";
-import type { Priority } from "@/lib/types";
+import type { Priority, TaskStatus } from "@/lib/types";
 import { ensureOpenReview, getOpenReviewId } from "./priority-cap";
 import { computeStreak, lastCompletedReview } from "./streak";
 import { loadTaskPriorities } from "./task-priority";
@@ -39,7 +39,7 @@ export type ReviewTask = {
   id: string;
   title: string;
   priority: Priority | null;
-  status: "inbox" | "next_action" | "waiting_on" | "done";
+  status: TaskStatus;
   dueDate: string | null;
   projectId: string | null;
   projectName: string | null;

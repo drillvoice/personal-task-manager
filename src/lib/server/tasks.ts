@@ -14,12 +14,12 @@ import {
 } from "@/lib/db/schema";
 import { isPriorityTagName, priorityFromTagNames } from "@/lib/priority";
 import { weekStartIso } from "@/lib/time";
-import type { Priority } from "@/lib/types";
+import type { Priority, ProjectStatus, TaskStatus } from "@/lib/types";
 
 export type TasksViewProject = {
   id: string | null; // null = Inbox pseudo-project
   name: string;
-  status: "active" | "someday_maybe" | "on_hold" | "completed" | "archived";
+  status: ProjectStatus;
   // This week's snapshot from project_weekly_notes (read-only here).
   notes: string;
   // The project's current narrative (projects.notes) — editable in the card.
@@ -31,7 +31,7 @@ export type TasksViewTask = {
   id: string;
   title: string;
   priority: Priority | null;
-  status: "inbox" | "next_action" | "waiting_on" | "done";
+  status: TaskStatus;
   dueDate: string | null;
   notes: string;
   projectId: string | null;
