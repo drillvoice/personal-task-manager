@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { Plus } from "lucide-react";
 import { ProjectCard } from "@/components/project-card";
@@ -62,14 +62,14 @@ export function TasksView({
         ) ?? null)
       : null;
 
-  useEffect(() => {
-    if (selectedTaskId !== null && selectedTask === null) {
-      setSelectedTaskId(null);
-    }
-  }, [selectedTaskId, selectedTask]);
+  // Everything downstream reads the *resolved* task's id, never the raw state.
+  // A task that completed or was deleted resolves to null, so its id can't
+  // linger — which is what the toggle below would otherwise read as "already
+  // selected", swallowing the next click on that row.
+  const activeTaskId = selectedTask?.id ?? null;
 
   const onSelectTask = isDesktop
-    ? (id: string) => setSelectedTaskId((prev) => (prev === id ? null : id))
+    ? (id: string) => setSelectedTaskId(activeTaskId === id ? null : id)
     : undefined;
 
   const availableTags = useMemo(
@@ -242,7 +242,7 @@ export function TasksView({
                 projects={projectOptions}
                 people={people}
                 tagOptions={tagOptions}
-                selectedTaskId={selectedTaskId}
+                selectedTaskId={activeTaskId}
                 onSelectTask={onSelectTask}
               />
             ))}
@@ -275,7 +275,7 @@ export function TasksView({
                 projects={projectOptions}
                 people={people}
                 tagOptions={tagOptions}
-                selectedTaskId={selectedTaskId}
+                selectedTaskId={activeTaskId}
                 onSelectTask={onSelectTask}
               />
             ));
@@ -311,7 +311,7 @@ export function TasksView({
                 projects={projectOptions}
                 people={people}
                 tagOptions={tagOptions}
-                selected={t.id === selectedTaskId}
+                selected={t.id === activeTaskId}
                 onSelect={onSelectTask ? () => onSelectTask(t.id) : undefined}
               />
             ));

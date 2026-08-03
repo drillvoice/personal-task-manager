@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  useTransition,
-} from "react";
+import { useLayoutEffect, useRef, useState, useTransition } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { Plus } from "lucide-react";
@@ -39,14 +33,13 @@ export function ProjectsTable({
       ? (data.rows.find((r) => r.id === selectedProjectId) ?? null)
       : null;
 
-  useEffect(() => {
-    if (selectedProjectId !== null && selectedProject === null) {
-      setSelectedProjectId(null);
-    }
-  }, [selectedProjectId, selectedProject]);
+  // Read the *resolved* project's id downstream, never the raw state: a
+  // project archived out of view resolves to null, so its id can't linger and
+  // read as "already selected" against the toggle below.
+  const activeProjectId = selectedProject?.id ?? null;
 
   const onSelectProject = isDesktop
-    ? (id: string) => setSelectedProjectId((prev) => (prev === id ? null : id))
+    ? (id: string) => setSelectedProjectId(activeProjectId === id ? null : id)
     : undefined;
 
   return (
@@ -160,7 +153,7 @@ export function ProjectsTable({
                   className="font-display sticky left-0 z-10 max-w-[220px] px-3 py-2.5 align-top text-[13px] font-semibold"
                   style={{
                     background:
-                      row.id === selectedProjectId
+                      row.id === activeProjectId
                         ? "var(--color-accent-soft)"
                         : "var(--color-paper-raised)",
                   }}
@@ -173,7 +166,7 @@ export function ProjectsTable({
                         ? () => onSelectProject(row.id)
                         : undefined
                     }
-                    aria-pressed={row.id === selectedProjectId}
+                    aria-pressed={row.id === activeProjectId}
                     className="block max-w-full truncate text-left"
                     style={{
                       color:

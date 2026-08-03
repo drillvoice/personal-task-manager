@@ -12,6 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // docs/task-app-mockup.jsx is the design reference the UI was ported
+    // from, not application code — nothing imports it and tsconfig doesn't
+    // even include .jsx. Linting it only ever produced noise that trained us
+    // to ignore a red `pnpm lint`.
+    "docs/**",
   ]),
 ]);
 

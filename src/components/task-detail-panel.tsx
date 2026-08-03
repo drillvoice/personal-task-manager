@@ -48,10 +48,14 @@ export function TaskDetailPanel({
   // action settled. Reverts only if the server rejects the change.
   const [done, setDone] = useState(task.status === "done");
 
-  // Notes autosave fires from a debounced closure; read the latest field
-  // values through a ref so a stale snapshot can't overwrite newer edits.
+  // `commit` fires from event handlers and a debounced closure; read the
+  // latest field values through a ref so a stale snapshot can't overwrite
+  // newer edits. Refreshed after commit rather than during render — every
+  // reader runs after paint, so it always sees the current values.
   const fieldsRef = useRef({ title, projectId, assigneeIds, tagIds, dueDate });
-  fieldsRef.current = { title, projectId, assigneeIds, tagIds, dueDate };
+  useEffect(() => {
+    fieldsRef.current = { title, projectId, assigneeIds, tagIds, dueDate };
+  });
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
