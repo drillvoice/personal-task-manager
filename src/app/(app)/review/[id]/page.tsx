@@ -27,17 +27,25 @@ export default async function ReviewDetailPage({
         >
           ← review history
         </Link>
-        <h1 className="font-display mt-1 text-xl font-bold">
-          {review.weekLabel}
-        </h1>
-        <p
-          className="font-mono text-[11px]"
-          style={{ color: "var(--color-ink-soft)" }}
-        >
-          {review.completedAt
-            ? `completed ${shortDateLabel(review.completedAt)}`
-            : "in progress"}
-        </p>
+        <div className="mt-1 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h1 className="font-display text-xl font-bold">
+              {review.weekLabel}
+            </h1>
+            <p
+              className="font-mono text-[11px]"
+              style={{ color: "var(--color-ink-soft)" }}
+            >
+              {review.completedAt
+                ? `completed ${shortDateLabel(review.completedAt)}`
+                : "in progress"}
+            </p>
+          </div>
+          <ReviewDetailActions
+            reviewId={review.id}
+            completed={review.completedAt !== null}
+          />
+        </div>
       </header>
 
       <section className="mb-4">
@@ -132,7 +140,7 @@ export default async function ReviewDetailPage({
         )}
       </section>
 
-      <section className="mb-6">
+      <section>
         <h2
           className="font-mono mb-2 text-[11px] font-semibold"
           style={{ color: "var(--color-accent)" }}
@@ -159,11 +167,6 @@ export default async function ReviewDetailPage({
           </p>
         )}
       </section>
-
-      <ReviewDetailActions
-        reviewId={review.id}
-        completed={review.completedAt !== null}
-      />
     </div>
   );
 }
