@@ -32,19 +32,19 @@ export function ReviewDetailActions({
   };
 
   return (
-    <div className="border-t pt-4" style={{ borderColor: "var(--color-line)" }}>
+    <div>
       {error && (
         <p
-          className="font-mono mb-3 text-[11px]"
+          className="font-mono mb-2 text-[11px] sm:text-right"
           style={{ color: "var(--color-danger)" }}
         >
           {error}
         </p>
       )}
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 sm:justify-end">
         <Link
           href={`/review/${reviewId}/export`}
-          className="font-mono rounded-full border px-4 py-2 text-[12px] font-semibold"
+          className="font-mono rounded-full border px-3 py-1.5 text-[12px] font-semibold"
           style={{
             borderColor: "var(--color-ink)",
             color: "var(--color-ink)",
@@ -56,7 +56,7 @@ export function ReviewDetailActions({
           type="button"
           onClick={edit}
           disabled={pending}
-          className="font-mono rounded-full border px-4 py-2 text-[12px] font-semibold"
+          className="font-mono rounded-full border px-3 py-1.5 text-[12px] font-semibold"
           style={{
             borderColor: "var(--color-ink)",
             color: "var(--color-ink)",
@@ -72,7 +72,7 @@ export function ReviewDetailActions({
               type="button"
               onClick={remove}
               disabled={pending}
-              className="font-mono rounded-full px-4 py-2 text-[12px] font-semibold"
+              className="font-mono rounded-full px-3 py-1.5 text-[12px] font-semibold"
               style={{
                 background: "var(--color-danger)",
                 color: "var(--color-paper)",
@@ -85,7 +85,7 @@ export function ReviewDetailActions({
               type="button"
               onClick={() => setConfirming(false)}
               disabled={pending}
-              className="font-mono px-2 py-2 text-[12px]"
+              className="font-mono px-2 py-1.5 text-[12px]"
               style={{ color: "var(--color-ink-soft)" }}
             >
               Cancel
@@ -96,7 +96,7 @@ export function ReviewDetailActions({
             type="button"
             onClick={() => setConfirming(true)}
             disabled={pending}
-            className="font-mono rounded-full border px-4 py-2 text-[12px] font-semibold"
+            className="font-mono rounded-full border px-3 py-1.5 text-[12px] font-semibold"
             style={{
               borderColor: "var(--color-danger)",
               color: "var(--color-danger)",

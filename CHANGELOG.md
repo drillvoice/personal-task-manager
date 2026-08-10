@@ -18,6 +18,9 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
   previously it could only be set through quick capture's `#p1`.
 
 ### Changed
+- **A past review's `Export` / `Reopen to edit` / `Delete` buttons moved to the
+  top of the page.** They sit alongside the week title instead of below the
+  reflection, where a long review pushed them off-screen.
 - **Autosaved text now survives a save that never reaches the server.** Task
   notes, project notes, meeting prep/notes and note bodies previously took the
   page down to the error screen if a save failed outright — offline, a deploy
