@@ -211,7 +211,10 @@ export async function loadMeetingDetail(
         assignees: assigneesByTask.get(r.task.id) ?? [],
         tags: allTags.filter((tg) => !isPriorityTagName(tg.name)),
         allTagIds: allTags.map((tg) => tg.id),
+        // Meeting rows never render either marker; the task editor opens via
+        // loadTaskEditData, which reads the real values.
         weekly: false,
+        inTodayPlan: false,
       };
     }),
   };

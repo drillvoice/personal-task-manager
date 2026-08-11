@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Check, Users, X } from "lucide-react";
+import { Check, Sun, Users, X } from "lucide-react";
 import { EntityPicker } from "@/components/entity-picker";
 import { AutosaveTextarea } from "@/components/autosave-textarea";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
@@ -12,7 +12,11 @@ import {
 } from "@/components/entity-create-options";
 import type { ContactOption } from "@/lib/server/people";
 import type { TagOption, TasksViewTask } from "@/lib/server/tasks";
-import { setTaskDone } from "@/app/(app)/today/actions";
+import {
+  addToTodayPlan,
+  removeFromTodayPlan,
+  setTaskDone,
+} from "@/app/(app)/today/actions";
 import {
   deleteTask,
   updateTask,
@@ -50,6 +54,9 @@ export function TaskDetailPanel({
   // optimistic value would snap back to the stale `task.status` after the
   // action settled. Reverts only if the server rejects the change.
   const [done, setDone] = useState(task.status === "done");
+  // Same snapshot reasoning as `done` — local state, reverted if the server
+  // rejects (the daily plan caps at three tasks).
+  const [inTodayPlan, setInTodayPlan] = useState(task.inTodayPlan);
 
   // `commit` fires from event handlers and a debounced closure; read the
   // latest field values through a ref so a stale snapshot can't overwrite
@@ -101,6 +108,23 @@ export function TaskDetailPanel({
       const res = await setTaskDone(task.id, next);
       if (!res.ok) {
         setDone(!next);
+        setError(res.error);
+      }
+    });
+  };
+
+  const toggleTodayPlan = () => {
+    const next = !inTodayPlan;
+    setInTodayPlan(next);
+    setError(null);
+    startTransition(async () => {
+      if (!next) {
+        await removeFromTodayPlan(task.id);
+        return;
+      }
+      const res = await addToTodayPlan(task.id);
+      if (!res.ok) {
+        setInTodayPlan(false);
         setError(res.error);
       }
     });
@@ -158,29 +182,58 @@ export function TaskDetailPanel({
         style={{ borderColor: "var(--color-line)", color: "var(--color-ink)" }}
       />
 
-      <button
-        type="button"
-        onClick={toggleDone}
-        disabled={pending}
-        aria-pressed={done}
-        className="font-mono mb-4 flex items-center gap-2 text-[11px] font-medium"
-        style={{ color: "var(--color-ink-soft)" }}
-      >
-        <span
-          className="flex h-[18px] w-[18px] items-center justify-center rounded-[4px] border-[1.5px]"
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={toggleDone}
+          disabled={pending}
+          aria-pressed={done}
+          className="font-mono flex items-center gap-2 text-[11px] font-medium"
+          style={{ color: "var(--color-ink-soft)" }}
+        >
+          <span
+            className="flex h-[18px] w-[18px] items-center justify-center rounded-[4px] border-[1.5px]"
+            style={{
+              background: done ? "var(--color-teal)" : "transparent",
+              borderColor: done ? "var(--color-teal)" : "var(--color-ink-soft)",
+            }}
+          >
+            <Check
+              size={12}
+              color={done ? "var(--color-paper-raised)" : "transparent"}
+              strokeWidth={3}
+            />
+          </span>
+          {done ? "Completed" : "Mark complete"}
+        </button>
+
+        <button
+          type="button"
+          onClick={toggleTodayPlan}
+          disabled={pending}
+          aria-pressed={inTodayPlan}
+          title={
+            inTodayPlan
+              ? "Remove from today's three top tasks"
+              : "Make this one of today's three top tasks"
+          }
+          className="font-mono flex shrink-0 items-center gap-1.5 rounded-[4px] border px-2 py-1 text-[11px] font-medium"
           style={{
-            background: done ? "var(--color-teal)" : "transparent",
-            borderColor: done ? "var(--color-teal)" : "var(--color-ink-soft)",
+            background: inTodayPlan
+              ? "var(--color-accent-soft)"
+              : "transparent",
+            borderColor: inTodayPlan
+              ? "var(--color-accent)"
+              : "var(--color-line)",
+            color: inTodayPlan
+              ? "var(--color-accent)"
+              : "var(--color-ink-soft)",
           }}
         >
-          <Check
-            size={12}
-            color={done ? "var(--color-paper-raised)" : "transparent"}
-            strokeWidth={3}
-          />
-        </span>
-        {done ? "Completed" : "Mark complete"}
-      </button>
+          <Sun size={12} />
+          {inTodayPlan ? "On today" : "Add to today"}
+        </button>
+      </div>
 
       <div className="mb-3.5">
         <span

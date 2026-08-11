@@ -33,6 +33,13 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
   every other delete in the app uses.
 
 ### Added
+- **Add a task to today from the Tasks view.** The task detail panel (the
+  right-hand editor on **Tasks**, and the same panel opened as a modal
+  elsewhere) now has an **Add to today** toggle beside *Mark complete*. It puts
+  the task into the next free slot of Today's three; the button then reads
+  **On today**, and clicking it again takes the task back off. If today's three
+  slots are already full, the panel says so and nothing changes — the cap still
+  holds.
 - **Notes — a filing cabinet for discrete facts.** New sidebar entry (`Notes`,
   reachable via `g 8`) for durable, dateless reference material: "Pyxis is a
   polling company we could use in NSW", "Momentum Logistics was good for

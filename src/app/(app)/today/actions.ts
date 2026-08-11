@@ -38,6 +38,7 @@ async function addToPlanForDate(
     .values({ dailyPlanId: planId, taskId, sortOrder: slot.sortOrder })
     .onConflictDoNothing();
   revalidatePath("/today");
+  revalidatePath("/tasks");
   return { ok: true };
 }
 
@@ -67,6 +68,7 @@ async function removeFromPlanForDate(taskId: string, dateIso: string) {
       ),
     );
   revalidatePath("/today");
+  revalidatePath("/tasks");
 }
 
 export async function addToTodayPlan(taskId: string) {
