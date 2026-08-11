@@ -2,6 +2,8 @@ import "server-only";
 import { and, asc, eq, ne, or, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
+  dailyPlanItems,
+  dailyPlans,
   people,
   projectWeeklyNotes,
   projects,
@@ -13,7 +15,7 @@ import {
   weeklyReviews,
 } from "@/lib/db/schema";
 import { isPriorityTagName, priorityFromTagNames } from "@/lib/priority";
-import { weekStartIso } from "@/lib/time";
+import { todayIso, weekStartIso } from "@/lib/time";
 import type { Priority, ProjectStatus, TaskStatus } from "@/lib/types";
 
 export type TasksViewProject = {
@@ -46,6 +48,8 @@ export type TasksViewTask = {
   allTagIds: string[];
   // On this week's top-3 (weekly review priorities).
   weekly: boolean;
+  // In one of today's three daily-plan slots.
+  inTodayPlan: boolean;
 };
 
 export type TagOption = { id: string; name: string; color: string };
@@ -60,84 +64,99 @@ export async function loadTaskTagOptions(userId: string): Promise<TagOption[]> {
 
 export async function loadTasksData(userId: string) {
   const currentWeek = weekStartIso();
-  const [projectRows, taskRows, tagRows, assigneeRows, noteRows, weeklyRows] =
-    await Promise.all([
-      db
-        .select()
-        .from(projects)
-        .where(eq(projects.userId, userId))
-        .orderBy(asc(projects.name)),
-      db
-        .select({
-          task: tasks,
-          projectName: projects.name,
-        })
-        .from(tasks)
-        .leftJoin(projects, eq(tasks.projectId, projects.id))
-        .where(
-          and(
-            eq(tasks.userId, userId),
-            // Done tasks older than 30 days are unreachable from this view
-            // (the Done chip shows recent completions only), so don't ship
-            // an ever-growing archive on every page load.
-            or(
-              ne(tasks.status, "done"),
-              sql`${tasks.completedAt} >= now() - interval '30 days'`,
-            ),
-          ),
-        )
-        .orderBy(asc(tasks.sortOrder), asc(tasks.createdAt)),
-      db
-        .select({
-          taskId: taskTags.taskId,
-          id: tags.id,
-          name: tags.name,
-          color: tags.color,
-        })
-        .from(taskTags)
-        .innerJoin(tags, eq(taskTags.tagId, tags.id))
-        .innerJoin(tasks, eq(taskTags.taskId, tasks.id))
-        .where(eq(tasks.userId, userId)),
-      db
-        .select({
-          taskId: taskAssignees.taskId,
-          id: people.id,
-          name: people.name,
-        })
-        .from(taskAssignees)
-        .innerJoin(people, eq(taskAssignees.personId, people.id))
-        .innerJoin(tasks, eq(taskAssignees.taskId, tasks.id))
-        .where(eq(tasks.userId, userId))
-        .orderBy(asc(people.name)),
-      db
-        .select({
-          projectId: projectWeeklyNotes.projectId,
-          note: projectWeeklyNotes.note,
-        })
-        .from(projectWeeklyNotes)
-        .innerJoin(projects, eq(projectWeeklyNotes.projectId, projects.id))
-        .where(
-          and(
-            eq(projects.userId, userId),
-            eq(projectWeeklyNotes.weekStartDate, currentWeek),
+  const [
+    projectRows,
+    taskRows,
+    tagRows,
+    assigneeRows,
+    noteRows,
+    weeklyRows,
+    todayPlanRows,
+  ] = await Promise.all([
+    db
+      .select()
+      .from(projects)
+      .where(eq(projects.userId, userId))
+      .orderBy(asc(projects.name)),
+    db
+      .select({
+        task: tasks,
+        projectName: projects.name,
+      })
+      .from(tasks)
+      .leftJoin(projects, eq(tasks.projectId, projects.id))
+      .where(
+        and(
+          eq(tasks.userId, userId),
+          // Done tasks older than 30 days are unreachable from this view
+          // (the Done chip shows recent completions only), so don't ship
+          // an ever-growing archive on every page load.
+          or(
+            ne(tasks.status, "done"),
+            sql`${tasks.completedAt} >= now() - interval '30 days'`,
           ),
         ),
-      db
-        .select({ taskId: weeklyPriorities.taskId })
-        .from(weeklyPriorities)
-        .innerJoin(
-          weeklyReviews,
-          eq(weeklyPriorities.weeklyReviewId, weeklyReviews.id),
-        )
-        .where(
-          and(
-            eq(weeklyReviews.userId, userId),
-            eq(weeklyReviews.weekStartDate, currentWeek),
-          ),
+      )
+      .orderBy(asc(tasks.sortOrder), asc(tasks.createdAt)),
+    db
+      .select({
+        taskId: taskTags.taskId,
+        id: tags.id,
+        name: tags.name,
+        color: tags.color,
+      })
+      .from(taskTags)
+      .innerJoin(tags, eq(taskTags.tagId, tags.id))
+      .innerJoin(tasks, eq(taskTags.taskId, tasks.id))
+      .where(eq(tasks.userId, userId)),
+    db
+      .select({
+        taskId: taskAssignees.taskId,
+        id: people.id,
+        name: people.name,
+      })
+      .from(taskAssignees)
+      .innerJoin(people, eq(taskAssignees.personId, people.id))
+      .innerJoin(tasks, eq(taskAssignees.taskId, tasks.id))
+      .where(eq(tasks.userId, userId))
+      .orderBy(asc(people.name)),
+    db
+      .select({
+        projectId: projectWeeklyNotes.projectId,
+        note: projectWeeklyNotes.note,
+      })
+      .from(projectWeeklyNotes)
+      .innerJoin(projects, eq(projectWeeklyNotes.projectId, projects.id))
+      .where(
+        and(
+          eq(projects.userId, userId),
+          eq(projectWeeklyNotes.weekStartDate, currentWeek),
         ),
-    ]);
+      ),
+    db
+      .select({ taskId: weeklyPriorities.taskId })
+      .from(weeklyPriorities)
+      .innerJoin(
+        weeklyReviews,
+        eq(weeklyPriorities.weeklyReviewId, weeklyReviews.id),
+      )
+      .where(
+        and(
+          eq(weeklyReviews.userId, userId),
+          eq(weeklyReviews.weekStartDate, currentWeek),
+        ),
+      ),
+    db
+      .select({ taskId: dailyPlanItems.taskId })
+      .from(dailyPlanItems)
+      .innerJoin(dailyPlans, eq(dailyPlanItems.dailyPlanId, dailyPlans.id))
+      .where(
+        and(eq(dailyPlans.userId, userId), eq(dailyPlans.date, todayIso())),
+      ),
+  ]);
 
   const weeklyIds = new Set(weeklyRows.map((r) => r.taskId));
+  const todayPlanIds = new Set(todayPlanRows.map((r) => r.taskId));
 
   const notesByProject = new Map(noteRows.map((n) => [n.projectId, n.note]));
 
@@ -202,6 +221,7 @@ export async function loadTasksData(userId: string) {
       tags: allTags.filter((tg) => !isPriorityTagName(tg.name)),
       allTagIds: allTags.map((tg) => tg.id),
       weekly: weeklyIds.has(r.task.id),
+      inTodayPlan: todayPlanIds.has(r.task.id),
     };
     if (r.task.projectId) {
       const p = projectsById.get(r.task.projectId);
