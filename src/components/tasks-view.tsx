@@ -146,7 +146,7 @@ export function TasksView({
         <h1 className="font-display text-xl font-bold">Tasks</h1>
         <div className="flex items-center gap-2">
           <div
-            className="flex gap-1 rounded-card border p-0.5 bg-paper-raised border-line"
+            className="flex gap-1 card p-0.5"
           >
             {(["by_project", "all_tasks"] as const).map((m) => (
               <button
@@ -276,7 +276,7 @@ export function TasksView({
 
       {mode === "all_tasks" && (
         <div
-          className="rounded-card border p-1 bg-paper-raised border-line"
+          className="card p-1"
         >
           {(() => {
             const results = allTasksFlat.filter(matches);

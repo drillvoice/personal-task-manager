@@ -156,7 +156,7 @@ export function PeopleView({
       {people.length > 0 && (
         <div className="mb-2 flex justify-end">
           <div
-            className="flex gap-1 rounded-card border p-0.5 bg-paper-raised border-line"
+            className="flex gap-1 card p-0.5"
           >
             {(
               [
@@ -188,7 +188,7 @@ export function PeopleView({
 
       {(people.length === 0 || !groupByOrg) && (
         <div
-          className="mb-4 rounded-card border p-1 px-3 bg-paper-raised border-line"
+          className="mb-4 card p-1 px-3"
         >
           {people.length === 0 && (
             <p
@@ -220,7 +220,7 @@ export function PeopleView({
           ].map((bucket) => (
             <div
               key={bucket.id}
-              className="overflow-hidden rounded-card border bg-paper-raised border-line"
+              className="overflow-hidden card"
             >
               <div
                 className="flex items-center gap-1.5 border-b px-3 py-2 border-line bg-accent"
@@ -262,7 +262,7 @@ export function PeopleView({
         Organisations
       </h2>
       <div
-        className="mb-4 rounded-card border p-1 px-3 bg-paper-raised border-line"
+        className="mb-4 card p-1 px-3"
       >
         {orgs.length === 0 && (
           <p
@@ -282,7 +282,7 @@ export function PeopleView({
         Groups
       </h2>
       <div
-        className="rounded-card border p-1 px-3 bg-paper-raised border-line"
+        className="card p-1 px-3"
       >
         {groups.length === 0 && (
           <p

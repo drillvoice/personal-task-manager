@@ -23,7 +23,7 @@ export function AlsoDueList({
 
   return (
     <div
-      className="rounded-card border p-1 [&>*:last-child]:border-b-0 bg-paper-raised border-line"
+      className="card p-1 [&>*:last-child]:border-b-0"
     >
       {visible.map((t) => (
         <TaskRow

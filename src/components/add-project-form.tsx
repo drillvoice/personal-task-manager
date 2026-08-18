@@ -30,7 +30,7 @@ export function AddProjectForm({
 
   return (
     <div
-      className="mb-4 flex flex-wrap items-center gap-2 rounded-card border p-3 bg-paper-raised border-line"
+      className="mb-4 flex flex-wrap items-center gap-2 card p-3"
     >
       <input
         value={name}

@@ -90,7 +90,7 @@ export function AddTaskForm({
 
   return (
     <div
-      className="mb-4 rounded-card border p-4 bg-paper-raised border-line"
+      className="mb-4 card p-4"
       onKeyDown={(e) => {
         if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
           e.preventDefault();

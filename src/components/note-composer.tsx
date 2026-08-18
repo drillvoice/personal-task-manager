@@ -34,7 +34,7 @@ export function NoteComposer() {
         }}
         placeholder="Something worth remembering… use #tags to find it later"
         rows={2}
-        className="gtd-scrollbar w-full resize-y rounded-card border p-3 text-[13px] leading-relaxed outline-none bg-paper-raised border-line text-ink"
+        className="gtd-scrollbar w-full resize-y card p-3 text-[13px] leading-relaxed outline-none text-ink"
       />
       <div className="mt-1 flex items-center justify-end gap-3">
         {error && (

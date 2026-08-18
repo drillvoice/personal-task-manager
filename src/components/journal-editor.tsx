@@ -254,13 +254,13 @@ export function JournalEditor({
         onBlur={autosave.flush}
         placeholder="Jot what happened today. Type @ for a person, # for a tag."
         rows={18}
-        className="gtd-scrollbar w-full resize-y rounded-card border p-3 text-[13px] leading-relaxed outline-none bg-paper-raised border-line text-ink"
+        className="gtd-scrollbar w-full resize-y card p-3 text-[13px] leading-relaxed outline-none text-ink"
         style={{ fontFamily: "var(--font-mono)" }}
       />
 
       {menu && items.length > 0 && (
         <ul
-          className="gtd-scrollbar absolute top-full left-2 z-30 mt-1 max-h-56 w-64 overflow-y-auto rounded-card border py-1 shadow-lg bg-paper-raised border-line"
+          className="gtd-scrollbar absolute top-full left-2 z-30 mt-1 max-h-56 w-64 overflow-y-auto card py-1 shadow-lg"
         >
           {items.map((item, i) => (
             <li key={`${item.kind}-${item.name}-${i}`}>

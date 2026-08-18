@@ -70,7 +70,7 @@ export function ProjectDetailPanel({
 
   return (
     <div
-      className="rounded-card border p-4 bg-paper-raised border-line"
+      className="card p-4"
       onKeyDown={(e) => {
         if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
           e.preventDefault();

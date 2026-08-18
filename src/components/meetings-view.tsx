@@ -111,7 +111,7 @@ function NewMeetingForm({
 
   return (
     <div
-      className="mb-4 rounded-card border p-4 bg-paper-raised border-line"
+      className="mb-4 card p-4"
       onKeyDown={formKeyHandler}
     >
       <input
@@ -268,7 +268,7 @@ export function MeetingsView({
         Archive
       </h2>
       <div
-        className="mb-2 flex items-center gap-2 rounded-card border px-3 py-2 bg-paper-raised border-line"
+        className="mb-2 flex items-center gap-2 card px-3 py-2"
       >
         <Search className="text-ink-soft" size={14} />
         <input

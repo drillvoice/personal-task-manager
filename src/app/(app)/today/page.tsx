@@ -48,7 +48,7 @@ export default async function TodayPage() {
             </div>
             {today.weeklyPriorities.length === 0 ? (
               <p
-                className="font-mono rounded-card border p-3 text-[12px] bg-paper-raised border-line text-ink-soft"
+                className="font-mono card p-3 text-[12px] text-ink-soft"
               >
                 No weekly priorities set.{" "}
                 <Link href="/review" className="underline">
@@ -89,7 +89,7 @@ export default async function TodayPage() {
             </div>
             {today.alsoDue.length === 0 ? (
               <p
-                className="font-mono rounded-card border p-3 text-[12px] bg-paper-raised border-line text-ink-soft"
+                className="font-mono card p-3 text-[12px] text-ink-soft"
               >
                 Nothing else due today. Nice.
               </p>

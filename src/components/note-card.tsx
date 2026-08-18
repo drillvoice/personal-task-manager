@@ -32,7 +32,7 @@ export function NoteCard({
 
   return (
     <li
-      className="rounded-card border p-3 bg-paper-raised border-line"
+      className="card p-3"
       style={{ opacity: removing ? 0.5 : 1 }}
     >
       <div className={editing ? "hidden" : undefined}>

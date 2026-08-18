@@ -40,7 +40,7 @@ function CompletedReview({ data }: { data: ReviewCompletedData }) {
       <StreakHeader data={data} />
 
       <div
-        className="mb-4 rounded-card border p-4 bg-paper-raised border-line"
+        className="mb-4 card p-4"
       >
         <p
           className="font-mono mb-1 text-[11px] font-semibold text-teal"
@@ -193,7 +193,7 @@ function EditingReview({ data }: { data: ReviewEditingData }) {
         </p>
       )}
       <div
-        className="mb-6 rounded-card border p-1 bg-paper-raised border-line"
+        className="mb-6 card p-1"
       >
         {data.actionableTasks.length === 0 && (
           <p
@@ -347,7 +347,7 @@ function GetClear({
 
   return (
     <div
-      className="mb-6 rounded-card border p-4 bg-paper-raised border-line"
+      className="mb-6 card p-4"
     >
       <FlagLabel
         checked={inbox}
@@ -486,7 +486,7 @@ function ReviewProjectCard({
 
   return (
     <div
-      className="rounded-card border p-4 bg-paper-raised border-line"
+      className="card p-4"
     >
       <h3 className="font-display mb-2 text-[15px] font-semibold">{name}</h3>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_minmax(220px,300px)]">

@@ -34,7 +34,7 @@ export function JournalDayNav({
         onChange={(e) => {
           if (e.target.value) router.push(`/journal/${e.target.value}`);
         }}
-        className="font-mono rounded-card border px-2 py-1 text-[12px] outline-none bg-paper-raised border-line text-ink"
+        className="font-mono card px-2 py-1 text-[12px] outline-none text-ink"
       />
       <Link
         href={`/journal/${nextDate}`}

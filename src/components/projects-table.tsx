@@ -91,7 +91,7 @@ export function ProjectsTable({
       )}
 
       <div
-        className="gtd-scrollbar overflow-x-auto rounded-card border bg-paper-raised border-line"
+        className="gtd-scrollbar overflow-x-auto card"
       >
         <table className="gtd-history-table w-full text-[13px]">
           <thead>

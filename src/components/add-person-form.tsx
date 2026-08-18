@@ -66,7 +66,7 @@ export function AddPersonForm({
 
   return (
     <div
-      className="mb-4 rounded-card border p-4 bg-paper-raised border-line"
+      className="mb-4 card p-4"
       onKeyDown={formKeyHandler}
     >
       <input

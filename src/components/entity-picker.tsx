@@ -197,7 +197,7 @@ export function EntityPicker({
 
       {showDropdown && (
         <div
-          className="gtd-scrollbar absolute top-full right-0 left-0 z-30 mt-0.5 max-h-[280px] overflow-y-auto rounded-card border bg-paper-raised border-line"
+          className="gtd-scrollbar absolute top-full right-0 left-0 z-30 mt-0.5 max-h-[280px] overflow-y-auto card"
           onMouseDown={(e) => e.preventDefault()}
         >
           {suggestions.map((o, i) => (
