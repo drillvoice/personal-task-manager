@@ -3,7 +3,14 @@ import type { Priority } from "@/lib/types";
 const NAME_TO_PRIORITY: Record<string, Priority> = { p1: 1, p2: 2, p3: 3 };
 
 export function isPriorityTagName(name: string): boolean {
-  return name.toLowerCase() in NAME_TO_PRIORITY;
+  return priorityFromTagName(name) !== null;
+}
+
+// `in`/bracket lookup would walk Object.prototype, so a tag literally named
+// "constructor" would read as a priority tag and yield a function, not a 1-3.
+function priorityFromTagName(name: string): Priority | null {
+  const key = name.toLowerCase();
+  return Object.hasOwn(NAME_TO_PRIORITY, key) ? NAME_TO_PRIORITY[key] : null;
 }
 
 /**
@@ -14,8 +21,8 @@ export function isPriorityTagName(name: string): boolean {
 export function priorityFromTagNames(names: string[]): Priority | null {
   let best: Priority | null = null;
   for (const name of names) {
-    const p = NAME_TO_PRIORITY[name.toLowerCase()];
-    if (p !== undefined && (best === null || p < best)) best = p;
+    const p = priorityFromTagName(name);
+    if (p !== null && (best === null || p < best)) best = p;
   }
   return best;
 }

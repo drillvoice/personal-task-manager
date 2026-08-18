@@ -3,6 +3,7 @@ import { asc, eq, getTableColumns } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { projectWeeklyNotes, projects } from "@/lib/db/schema";
 import { weekLabel, weekStartIso } from "@/lib/time";
+import type { ProjectStatus } from "@/lib/types";
 
 export type ProjectSelectOption = { id: string | null; name: string };
 
@@ -30,7 +31,7 @@ export async function loadProjectOptions(
 export type ProjectsTableRow = {
   id: string;
   name: string;
-  status: "active" | "someday_maybe" | "on_hold" | "completed" | "archived";
+  status: ProjectStatus;
   notesByWeek: Record<string, string>;
 };
 
