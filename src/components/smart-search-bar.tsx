@@ -9,8 +9,8 @@ import {
   PROJECT_SIGIL,
   type ProjectOptionLike,
 } from "@/lib/parse-project";
+import type { Priority } from "@/lib/types";
 
-type Priority = 1 | 2 | 3;
 type StatusFilter = "next_action" | "waiting_on" | "done";
 
 export type SmartFilters = {
