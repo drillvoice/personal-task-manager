@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Button } from "@/components/button";
 import dynamic from "next/dynamic";
 import { Plus } from "lucide-react";
 import { ProjectCard } from "@/components/project-card";
@@ -164,13 +165,12 @@ export function TasksView({
               </button>
             ))}
           </div>
-          <button
-            type="button"
+          <Button
+            variant="accent"
             onClick={() => setShowAdd((s) => !s)}
-            className="font-mono flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-semibold bg-accent text-paper-raised"
           >
             <Plus size={12} /> New task
-          </button>
+          </Button>
         </div>
       </div>
 

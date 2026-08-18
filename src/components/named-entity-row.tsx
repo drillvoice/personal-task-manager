@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Button } from "@/components/button";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import type { OrganisationRow } from "@/lib/server/people";
 
@@ -122,22 +123,19 @@ export function NamedEntityRow({
           onConfirm={del}
         />
         <div className="ml-auto flex gap-2">
-          <button
-            type="button"
+          <Button
+            variant="quiet"
             onClick={() => setEditing(false)}
-            className="font-mono px-3 py-1.5 text-[12px] text-ink-soft"
           >
             Cancel
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            variant="primary"
             onClick={save}
             disabled={pending || !name.trim()}
-            className="font-mono px-3 py-1.5 text-[12px] font-semibold bg-ink text-paper"
-            style={{ opacity: pending || !name.trim() ? 0.6 : 1 }}
           >
             Save
-          </button>
+          </Button>
         </div>
       </div>
     </div>

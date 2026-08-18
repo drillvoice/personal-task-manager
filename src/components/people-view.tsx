@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { Button } from "@/components/button";
 import { Building2, Plus, Users } from "lucide-react";
 import { AddPersonForm } from "@/components/add-person-form";
 import { PersonRow } from "@/components/person-row";
@@ -136,13 +137,12 @@ export function PeopleView({
       <div className="min-w-0">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h1 className="font-display text-xl font-bold">People</h1>
-        <button
-          type="button"
+        <Button
+          variant="accent"
           onClick={() => setShowAdd((s) => !s)}
-          className="font-mono flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-semibold bg-accent text-paper-raised"
         >
           <Plus size={12} /> New person
-        </button>
+        </Button>
       </div>
 
       {showAdd && (

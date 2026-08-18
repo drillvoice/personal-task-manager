@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useOptimistic, useState, useTransition } from "react";
+import { Button } from "@/components/button";
 import { Check, Users } from "lucide-react";
 import { DueLabel } from "@/components/due-label";
 import { PriorityBadge } from "@/components/priority-badge";
@@ -186,22 +187,19 @@ function EditTaskForm({
           onConfirm={del}
         />
         <div className="ml-auto flex gap-2">
-          <button
-            type="button"
+          <Button
+            variant="quiet"
             onClick={onDone}
-            className="font-mono px-3 py-1.5 text-[12px] text-ink-soft"
           >
             Cancel
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            variant="primary"
             onClick={save}
             disabled={pending || !title.trim()}
-            className="font-mono px-3 py-1.5 text-[12px] font-semibold bg-ink text-paper"
-            style={{ opacity: pending || !title.trim() ? 0.6 : 1 }}
           >
             Save
-          </button>
+          </Button>
         </div>
       </div>
     </div>

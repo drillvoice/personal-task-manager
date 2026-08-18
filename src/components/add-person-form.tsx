@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Button } from "@/components/button";
 import { Users } from "lucide-react";
 import { EntityPicker } from "@/components/entity-picker";
 import {
@@ -145,22 +146,19 @@ export function AddPersonForm({
         </p>
       )}
       <div className="flex justify-end gap-2">
-        <button
-          type="button"
+        <Button
+          variant="primary"
           onClick={submit}
           disabled={pending || !name.trim()}
-          className="font-mono px-3 py-1.5 text-[12px] font-semibold bg-ink text-paper"
-          style={{ opacity: pending || !name.trim() ? 0.6 : 1 }}
         >
           Add person
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant="quiet"
           onClick={onDone}
-          className="font-mono px-3 py-1.5 text-[12px] text-ink-soft"
         >
           Cancel
-        </button>
+        </Button>
       </div>
     </div>
   );

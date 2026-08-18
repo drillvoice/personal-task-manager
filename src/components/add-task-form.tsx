@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { Button } from "@/components/button";
 import { Users } from "lucide-react";
 import { createTask } from "@/app/(app)/tasks/actions";
 import { EntityPicker } from "@/components/entity-picker";
@@ -170,22 +171,19 @@ export function AddTaskForm({
         </p>
       )}
       <div className="flex justify-end gap-2">
-        <button
-          type="button"
+        <Button
+          variant="primary"
           onClick={submit}
           disabled={pending || !title.trim()}
-          className="font-mono px-3 py-1.5 text-[12px] font-semibold bg-ink text-paper"
-          style={{ opacity: pending || !title.trim() ? 0.6 : 1 }}
         >
           Add task
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant="quiet"
           onClick={onCancel}
-          className="font-mono px-3 py-1.5 text-[12px] text-ink-soft"
         >
           Cancel
-        </button>
+        </Button>
       </div>
     </div>
   );
