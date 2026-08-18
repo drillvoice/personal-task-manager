@@ -112,6 +112,28 @@ reviewer couldn't comfortably take in as one diff.
 
 ## Standing rules
 
+**Fetch `origin` before starting anything substantial.** The local checkout
+goes stale silently — branches get merged on GitHub and nothing tells the
+working copy. Before a code review, a cross-cutting refactor, or any work
+you're going to break into stages, run:
+
+```
+git fetch origin && git status -sb && git log --oneline HEAD..origin/main
+```
+
+If you're behind, sync (or branch from `origin/main`) *before* reading the
+code, not after. This is cheap; skipping it is not. In August 2026 a full
+leanness review was written against `main` at `0db0b7e` while `origin/main`
+was already three commits further on — one of them a code-quality pass that
+had itself fixed the dead exports, the redundant selection effects, the
+duplicated `useIsDesktop`, the ownership helpers and the hand-rolled delete
+confirms. Most of the review's findings were already fixed, and the follow-up
+branch had to be rebuilt from scratch against real `main`.
+
+The same applies before opening a PR: a branch cut from a stale base is what
+produces "this branch has conflicts" on a change that never touched the
+conflicting lines.
+
 **Run `pnpm typecheck` before considering any task done.** TypeScript is the
 main correctness net; if it fails, the task isn't done.
 
