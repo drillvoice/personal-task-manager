@@ -18,19 +18,14 @@ export function LoginForm({ error }: { error?: string | null }) {
         type="button"
         onClick={submit}
         disabled={pending}
-        className="font-mono w-full px-3 py-3 text-[13px] font-semibold"
-        style={{
-          background: "var(--color-ink)",
-          color: "var(--color-paper)",
-          opacity: pending ? 0.6 : 1,
-        }}
+        className="font-mono w-full px-3 py-3 text-[13px] font-semibold bg-ink text-paper"
+        style={{ opacity: pending ? 0.6 : 1 }}
       >
         {pending ? "Redirecting to GitHub…" : "Sign in with GitHub"}
       </button>
       {error && (
         <p
-          className="font-mono text-center text-[11px]"
-          style={{ color: "var(--color-danger)" }}
+          className="font-mono text-center text-[11px] text-danger"
         >
           {error}
         </p>

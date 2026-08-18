@@ -30,22 +30,14 @@ export function AddProjectForm({
 
   return (
     <div
-      className="mb-4 flex flex-wrap items-center gap-2 rounded-[4px] border p-3"
-      style={{
-        background: "var(--color-paper-raised)",
-        borderColor: "var(--color-line)",
-      }}
+      className="mb-4 flex flex-wrap items-center gap-2 rounded-card border p-3 bg-paper-raised border-line"
     >
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="New project name…"
-        className="min-w-[180px] flex-1 border p-2 text-[13px] outline-none"
-        style={{
-          background: "transparent",
-          borderColor: "var(--color-line)",
-          color: "var(--color-ink)",
-        }}
+        className="min-w-[180px] flex-1 border p-2 text-[13px] outline-none border-line text-ink"
+        style={{ background: "transparent" }}
         autoFocus
         onKeyDown={(e) => {
           if (e.key === "Enter" && !e.shiftKey) {
@@ -59,20 +51,15 @@ export function AddProjectForm({
         onChange={(e) =>
           setStatus(e.target.value as "active" | "someday_maybe")
         }
-        className="border p-2 text-[13px] outline-none"
-        style={{
-          background: "transparent",
-          borderColor: "var(--color-line)",
-          color: "var(--color-ink)",
-        }}
+        className="border p-2 text-[13px] outline-none border-line text-ink"
+        style={{ background: "transparent" }}
       >
         <option value="active">active</option>
         <option value="someday_maybe">someday</option>
       </select>
       {error && (
         <span
-          className="font-mono text-[11px]"
-          style={{ color: "var(--color-danger)" }}
+          className="font-mono text-[11px] text-danger"
         >
           {error}
         </span>
@@ -80,8 +67,7 @@ export function AddProjectForm({
       <button
         type="button"
         onClick={onCancel}
-        className="font-mono px-3 py-1.5 text-[12px]"
-        style={{ color: "var(--color-ink-soft)" }}
+        className="font-mono px-3 py-1.5 text-[12px] text-ink-soft"
       >
         Cancel
       </button>
@@ -89,12 +75,8 @@ export function AddProjectForm({
         type="button"
         onClick={submit}
         disabled={pending || !name.trim()}
-        className="font-mono px-3 py-1.5 text-[12px] font-semibold"
-        style={{
-          background: "var(--color-ink)",
-          color: "var(--color-paper)",
-          opacity: pending || !name.trim() ? 0.6 : 1,
-        }}
+        className="font-mono px-3 py-1.5 text-[12px] font-semibold bg-ink text-paper"
+        style={{ opacity: pending || !name.trim() ? 0.6 : 1 }}
       >
         Add
       </button>

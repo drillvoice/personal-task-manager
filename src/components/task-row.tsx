@@ -114,18 +114,13 @@ function EditTaskForm({
 
   return (
     <div
-      className="border-b px-1 py-3"
-      style={{ borderColor: "var(--color-line)" }}
+      className="border-b px-1 py-3 border-line"
     >
       <input
         value={title}
         onChange={(e) => setTitle(e.target.value)}
-        className="mb-2 w-full border p-2 text-[13px] outline-none"
-        style={{
-          background: "transparent",
-          borderColor: "var(--color-line)",
-          color: "var(--color-ink)",
-        }}
+        className="mb-2 w-full border p-2 text-[13px] outline-none border-line text-ink"
+        style={{ background: "transparent" }}
         autoFocus
         onKeyDown={(e) => {
           if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); save(); }
@@ -175,16 +170,12 @@ function EditTaskForm({
               // showPicker throws where unsupported; native affordance remains.
             }
           }}
-          className="w-full border p-2 text-[13px] outline-none sm:w-[160px]"
-          style={{
-            background: "transparent",
-            borderColor: "var(--color-line)",
-            color: "var(--color-ink)",
-          }}
+          className="w-full border p-2 text-[13px] outline-none sm:w-[160px] border-line text-ink"
+          style={{ background: "transparent" }}
         />
       </div>
       {error && (
-        <p className="font-mono mb-2 text-[11px]" style={{ color: "var(--color-danger)" }}>
+        <p className="font-mono mb-2 text-[11px] text-danger">
           {error}
         </p>
       )}
@@ -198,8 +189,7 @@ function EditTaskForm({
           <button
             type="button"
             onClick={onDone}
-            className="font-mono px-3 py-1.5 text-[12px]"
-            style={{ color: "var(--color-ink-soft)" }}
+            className="font-mono px-3 py-1.5 text-[12px] text-ink-soft"
           >
             Cancel
           </button>
@@ -207,12 +197,8 @@ function EditTaskForm({
             type="button"
             onClick={save}
             disabled={pending || !title.trim()}
-            className="font-mono px-3 py-1.5 text-[12px] font-semibold"
-            style={{
-              background: "var(--color-ink)",
-              color: "var(--color-paper)",
-              opacity: pending || !title.trim() ? 0.6 : 1,
-            }}
+            className="font-mono px-3 py-1.5 text-[12px] font-semibold bg-ink text-paper"
+            style={{ opacity: pending || !title.trim() ? 0.6 : 1 }}
           >
             Save
           </button>
@@ -272,7 +258,7 @@ export function TaskRow({
       disabled={pending}
       aria-pressed={done}
       aria-label={done ? "Mark task incomplete" : "Mark task complete"}
-      className="flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded-[4px] border-[1.5px]"
+      className="flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded-card border-[1.5px]"
       style={{
         background: done ? "var(--color-teal)" : "transparent",
         borderColor: done ? "var(--color-teal)" : "var(--color-ink-soft)",
@@ -297,15 +283,14 @@ export function TaskRow({
   );
 
   const projectMeta = showProject && task.projectName && (
-    <span className="font-mono text-[11px]" style={{ color: "var(--color-ink-soft)" }}>
+    <span className="font-mono text-[11px] text-ink-soft">
       {task.projectName}
     </span>
   );
 
   const assigneeMeta = assigneeNames.length > 0 && (
     <span
-      className="font-mono flex items-center gap-1 text-[10px]"
-      style={{ color: "var(--color-ink-soft)" }}
+      className="font-mono flex items-center gap-1 text-[10px] text-ink-soft"
     >
       <Users size={10} />
       {assigneeNames.join(", ")}
@@ -316,8 +301,7 @@ export function TaskRow({
     <>
       {task.weekly && (
         <span
-          className="font-mono text-[10px] font-semibold"
-          style={{ color: "var(--color-accent)" }}
+          className="font-mono text-[10px] font-semibold text-accent"
           title="This week's priority"
         >
           ★ wk
@@ -337,8 +321,7 @@ export function TaskRow({
   if (layout === "stacked") {
     return (
       <div
-        className="border-b px-1 py-2.5"
-        style={{ borderColor: "var(--color-line)" }}
+        className="border-b px-1 py-2.5 border-line"
       >
         <div className="mb-1.5">{titleSpan}</div>
         <div className="flex flex-wrap items-center gap-2">
@@ -353,13 +336,10 @@ export function TaskRow({
 
   return (
     <div
-      className="group flex flex-wrap items-center gap-2 border-b px-1 py-2.5"
-      style={{
-        borderColor: "var(--color-line)",
-        cursor: draggable ? "grab" : onSelect ? "pointer" : undefined,
+      className="group flex flex-wrap items-center gap-2 border-b px-1 py-2.5 border-line"
+      style={{ cursor: draggable ? "grab" : onSelect ? "pointer" : undefined,
         background: selected ? "var(--color-paper)" : undefined,
-        boxShadow: selected ? "inset 2px 0 0 var(--color-accent)" : undefined,
-      }}
+        boxShadow: selected ? "inset 2px 0 0 var(--color-accent)" : undefined }}
       draggable={draggable}
       onDragStart={onTaskDragStart}
       onDragEnd={onTaskDragEnd}

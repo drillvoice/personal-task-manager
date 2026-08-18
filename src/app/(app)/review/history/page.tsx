@@ -56,8 +56,7 @@ export default async function ReviewHistoryPage() {
         <h1 className="font-display mb-1 text-xl font-bold">Review history</h1>
         <Link
           href="/review"
-          className="font-mono text-[11px]"
-          style={{ color: "var(--color-accent)" }}
+          className="font-mono text-[11px] text-accent"
         >
           ← current week
         </Link>
@@ -65,8 +64,7 @@ export default async function ReviewHistoryPage() {
 
       {rows.length === 0 && (
         <p
-          className="font-mono text-[12px]"
-          style={{ color: "var(--color-ink-soft)" }}
+          className="font-mono text-[12px] text-ink-soft"
         >
           No reviews yet. Start one from the Review tab.
         </p>
@@ -79,19 +77,14 @@ export default async function ReviewHistoryPage() {
             <li key={r.id}>
               <Link
                 href={`/review/${r.id}`}
-                className="block rounded-[4px] border p-3 transition-colors hover:border-[var(--color-ink-soft)]"
-                style={{
-                  background: "var(--color-paper-raised)",
-                  borderColor: "var(--color-line)",
-                }}
+                className="block rounded-card border p-3 transition-colors hover:border-[var(--color-ink-soft)] bg-paper-raised border-line"
               >
               <div className="mb-1 flex items-center justify-between">
                 <span className="font-display text-[14px] font-semibold">
                   {weekBeginningLabel(r.weekStartDate)}
                 </span>
                 <span
-                  className="font-mono text-[11px]"
-                  style={{ color: "var(--color-ink-soft)" }}
+                  className="font-mono text-[11px] text-ink-soft"
                 >
                   {r.completedAt
                     ? `completed ${formatInTimeZone(
@@ -134,8 +127,7 @@ export default async function ReviewHistoryPage() {
               )}
               {r.reflectionNotes && (
                 <p
-                  className="text-[13px]"
-                  style={{ color: "var(--color-ink)" }}
+                  className="text-[13px] text-ink"
                 >
                   {r.reflectionNotes}
                 </p>

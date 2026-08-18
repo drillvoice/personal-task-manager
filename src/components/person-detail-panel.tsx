@@ -14,7 +14,6 @@ import {
   updatePerson,
 } from "@/app/(app)/people/actions";
 import type { PersonWithOrg } from "@/lib/server/people";
-import { inputStyle } from "@/components/field-style";
 
 export function PersonDetailPanel({
   person,
@@ -88,17 +87,12 @@ export function PersonDetailPanel({
 
   return (
     <div
-      className="rounded-[4px] border p-4"
-      style={{
-        background: "var(--color-paper-raised)",
-        borderColor: "var(--color-line)",
-      }}
+      className="rounded-card border p-4 bg-paper-raised border-line"
       onKeyDown={formKeyHandler}
     >
       <div className="mb-3 flex items-center justify-between">
         <span
-          className="font-mono text-[10px] font-semibold tracking-[0.08em] uppercase"
-          style={{ color: "var(--color-ink-soft)" }}
+          className="font-mono text-[10px] font-semibold tracking-[0.08em] uppercase text-ink-soft"
         >
           Person
         </span>
@@ -106,8 +100,7 @@ export function PersonDetailPanel({
           type="button"
           onClick={onClose}
           aria-label="Close person panel"
-          className="-m-1 rounded p-1"
-          style={{ color: "var(--color-ink-soft)" }}
+          className="-m-1 rounded p-1 text-ink-soft"
         >
           <X size={16} />
         </button>
@@ -117,16 +110,14 @@ export function PersonDetailPanel({
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Name"
-        className="mb-2 w-full border p-2 text-[13px] outline-none"
-        style={inputStyle}
+        className="mb-2 w-full border p-2 text-[13px] outline-none bg-transparent border-line text-ink"
       />
       <div className="mb-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
         <input
           value={role}
           onChange={(e) => setRole(e.target.value)}
           placeholder="Role"
-          className="w-full border p-2 text-[13px] outline-none"
-          style={inputStyle}
+          className="w-full border p-2 text-[13px] outline-none bg-transparent border-line text-ink"
         />
         <EntityPicker
           mode="single"
@@ -144,16 +135,14 @@ export function PersonDetailPanel({
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Email"
           type="email"
-          className="w-full border p-2 text-[13px] outline-none"
-          style={inputStyle}
+          className="w-full border p-2 text-[13px] outline-none bg-transparent border-line text-ink"
         />
         <input
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
           placeholder="Phone"
           type="tel"
-          className="w-full border p-2 text-[13px] outline-none"
-          style={inputStyle}
+          className="w-full border p-2 text-[13px] outline-none bg-transparent border-line text-ink"
         />
       </div>
       <div className="mb-2">
@@ -175,13 +164,11 @@ export function PersonDetailPanel({
         onChange={(e) => setNotes(e.target.value)}
         placeholder="Notes…"
         rows={3}
-        className="mb-2 w-full resize-y border p-2 text-[13px] outline-none"
-        style={inputStyle}
+        className="mb-2 w-full resize-y border p-2 text-[13px] outline-none bg-transparent border-line text-ink"
       />
       {error && (
         <p
-          className="font-mono mb-2 text-[11px]"
-          style={{ color: "var(--color-danger)" }}
+          className="font-mono mb-2 text-[11px] text-danger"
         >
           {error}
         </p>
@@ -196,8 +183,7 @@ export function PersonDetailPanel({
           <button
             type="button"
             onClick={onClose}
-            className="font-mono px-3 py-1.5 text-[12px]"
-            style={{ color: "var(--color-ink-soft)" }}
+            className="font-mono px-3 py-1.5 text-[12px] text-ink-soft"
           >
             Cancel
           </button>
@@ -205,12 +191,8 @@ export function PersonDetailPanel({
             type="button"
             onClick={save}
             disabled={pending || !name.trim()}
-            className="font-mono px-3 py-1.5 text-[12px] font-semibold"
-            style={{
-              background: "var(--color-ink)",
-              color: "var(--color-paper)",
-              opacity: pending || !name.trim() ? 0.6 : 1,
-            }}
+            className="font-mono px-3 py-1.5 text-[12px] font-semibold bg-ink text-paper"
+            style={{ opacity: pending || !name.trim() ? 0.6 : 1 }}
           >
             Save
           </button>
@@ -218,19 +200,16 @@ export function PersonDetailPanel({
       </div>
 
       <div
-        className="mt-4 border-t pt-3"
-        style={{ borderColor: "var(--color-line)" }}
+        className="mt-4 border-t pt-3 border-line"
       >
         <h3
-          className="font-mono mb-2 text-[10px] font-semibold tracking-[0.08em] uppercase"
-          style={{ color: "var(--color-ink-soft)" }}
+          className="font-mono mb-2 text-[10px] font-semibold tracking-[0.08em] uppercase text-ink-soft"
         >
           Recent meetings
         </h3>
         {person.meetings.length === 0 ? (
           <p
-            className="font-mono text-[11px]"
-            style={{ color: "var(--color-ink-soft)" }}
+            className="font-mono text-[11px] text-ink-soft"
           >
             No meetings yet.
           </p>
@@ -240,12 +219,10 @@ export function PersonDetailPanel({
               <Link
                 key={m.id}
                 href={`/meetings/${m.id}`}
-                className="flex items-center justify-between gap-2 border-b py-2 last:border-b-0"
-                style={{ borderColor: "var(--color-line)" }}
+                className="flex items-center justify-between gap-2 border-b py-2 last:border-b-0 border-line"
               >
                 <span
-                  className="min-w-0 flex-1 truncate text-[13px]"
-                  style={{ color: "var(--color-ink)" }}
+                  className="min-w-0 flex-1 truncate text-[13px] text-ink"
                 >
                   {m.title}
                 </span>
@@ -253,8 +230,7 @@ export function PersonDetailPanel({
                   <DueLabel dateIso={m.meetingDate} />
                 ) : (
                   <span
-                    className="font-mono flex items-center gap-1 text-[11px] font-medium whitespace-nowrap"
-                    style={{ color: "var(--color-ink-soft)" }}
+                    className="font-mono flex items-center gap-1 text-[11px] font-medium whitespace-nowrap text-ink-soft"
                   >
                     <CalendarDays size={11} strokeWidth={2} />
                     {m.meetingDate}

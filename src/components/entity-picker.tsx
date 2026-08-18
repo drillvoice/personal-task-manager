@@ -137,14 +137,14 @@ export function EntityPicker({
         />
       )}
       <div
-        className="relative z-20 flex flex-wrap items-center gap-1.5 border p-2"
-        style={{ background: "transparent", borderColor: "var(--color-line)" }}
+        className="relative z-20 flex flex-wrap items-center gap-1.5 border p-2 border-line"
+        style={{ background: "transparent" }}
         onClick={() => inputRef.current?.focus()}
       >
         {Icon && (
-          <Icon
+          <Icon className="text-ink-soft"
             size={13}
-            style={{ color: "var(--color-ink-soft)", flexShrink: 0 }}
+            style={{ flexShrink: 0 }}
           />
         )}
         {selected.map((o) => {
@@ -191,18 +191,13 @@ export function EntityPicker({
           onBlur={() => setOpen(false)}
           onKeyDown={onKeyDown}
           placeholder={selected.length === 0 ? placeholder : ""}
-          className="min-w-[80px] flex-1 bg-transparent text-[13px] outline-none"
-          style={{ color: "var(--color-ink)" }}
+          className="min-w-[80px] flex-1 bg-transparent text-[13px] outline-none text-ink"
         />
       </div>
 
       {showDropdown && (
         <div
-          className="gtd-scrollbar absolute top-full right-0 left-0 z-30 mt-0.5 max-h-[280px] overflow-y-auto rounded-[4px] border"
-          style={{
-            background: "var(--color-paper-raised)",
-            borderColor: "var(--color-line)",
-          }}
+          className="gtd-scrollbar absolute top-full right-0 left-0 z-30 mt-0.5 max-h-[280px] overflow-y-auto rounded-card border bg-paper-raised border-line"
           onMouseDown={(e) => e.preventDefault()}
         >
           {suggestions.map((o, i) => (
@@ -212,18 +207,14 @@ export function EntityPicker({
               tabIndex={-1}
               onMouseEnter={() => setHighlight(i)}
               onClick={() => applySelection(o.id)}
-              className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-[13px]"
-              style={{
-                background:
-                  i === highlight ? "var(--color-paper)" : "transparent",
-                color: "var(--color-ink)",
-              }}
+              className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-[13px] text-ink"
+              style={{ background:
+                  i === highlight ? "var(--color-paper)" : "transparent" }}
             >
               <span>{o.name}</span>
               {o.memberIds && (
                 <span
-                  className="font-mono flex items-center gap-1 text-[11px]"
-                  style={{ color: "var(--color-ink-soft)" }}
+                  className="font-mono flex items-center gap-1 text-[11px] text-ink-soft"
                 >
                   <Users size={11} />
                   {o.memberIds.length}
@@ -238,14 +229,11 @@ export function EntityPicker({
               onMouseEnter={() => setHighlight(suggestions.length)}
               onClick={create}
               disabled={pending}
-              className="font-mono block w-full px-3 py-2 text-left text-[11px] font-semibold"
-              style={{
-                color: "var(--color-accent)",
-                background:
+              className="font-mono block w-full px-3 py-2 text-left text-[11px] font-semibold text-accent"
+              style={{ background:
                   highlight >= suggestions.length
                     ? "var(--color-paper)"
-                    : "transparent",
-              }}
+                    : "transparent" }}
             >
               + Create &ldquo;{query.trim()}&rdquo;
             </button>

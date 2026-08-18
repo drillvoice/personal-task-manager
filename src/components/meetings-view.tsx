@@ -35,19 +35,16 @@ function MeetingRow({ meeting }: { meeting: MeetingListItem }) {
   return (
     <Link
       href={`/meetings/${meeting.id}`}
-      className="flex flex-wrap items-center gap-2 border-b px-1 py-2.5"
-      style={{ borderColor: "var(--color-line)" }}
+      className="flex flex-wrap items-center gap-2 border-b px-1 py-2.5 border-line"
     >
       <span
-        className="min-w-[120px] flex-1 text-[14px]"
-        style={{ color: "var(--color-ink)" }}
+        className="min-w-[120px] flex-1 text-[14px] text-ink"
       >
         {meeting.title}
       </span>
       {meeting.attendees.length > 0 && (
         <span
-          className="font-mono flex items-center gap-1 text-[10px]"
-          style={{ color: "var(--color-ink-soft)" }}
+          className="font-mono flex items-center gap-1 text-[10px] text-ink-soft"
         >
           <Users size={10} />
           {meeting.attendees.map((a) => a.name).join(", ")}
@@ -60,8 +57,7 @@ function MeetingRow({ meeting }: { meeting: MeetingListItem }) {
       ))}
       {meeting.taskCount > 0 && (
         <span
-          className="font-mono text-[10px]"
-          style={{ color: "var(--color-ink-soft)" }}
+          className="font-mono text-[10px] text-ink-soft"
         >
           {meeting.taskCount} task{meeting.taskCount === 1 ? "" : "s"}
         </span>
@@ -70,8 +66,7 @@ function MeetingRow({ meeting }: { meeting: MeetingListItem }) {
         <DueLabel dateIso={meeting.meetingDate} />
       ) : (
         <span
-          className="font-mono flex items-center gap-1 text-[11px] font-medium"
-          style={{ color: "var(--color-ink-soft)" }}
+          className="font-mono flex items-center gap-1 text-[11px] font-medium text-ink-soft"
         >
           <CalendarDays size={11} strokeWidth={2} />
           {meeting.meetingDate}
@@ -116,23 +111,15 @@ function NewMeetingForm({
 
   return (
     <div
-      className="mb-4 rounded-[4px] border p-4"
-      style={{
-        background: "var(--color-paper-raised)",
-        borderColor: "var(--color-line)",
-      }}
+      className="mb-4 rounded-card border p-4 bg-paper-raised border-line"
       onKeyDown={formKeyHandler}
     >
       <input
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Meeting title…"
-        className="mb-2 w-full border p-2 text-[13px] outline-none"
-        style={{
-          background: "transparent",
-          borderColor: "var(--color-line)",
-          color: "var(--color-ink)",
-        }}
+        className="mb-2 w-full border p-2 text-[13px] outline-none border-line text-ink"
+        style={{ background: "transparent" }}
         autoFocus
         onKeyDown={(e) => {
           if (e.key === "Enter" && !e.shiftKey && !e.metaKey && !e.ctrlKey) {
@@ -157,18 +144,13 @@ function NewMeetingForm({
           type="date"
           value={meetingDate}
           onChange={(e) => setMeetingDate(e.target.value)}
-          className="w-full border p-2 text-[13px] outline-none sm:w-[160px]"
-          style={{
-            background: "transparent",
-            borderColor: "var(--color-line)",
-            color: "var(--color-ink)",
-          }}
+          className="w-full border p-2 text-[13px] outline-none sm:w-[160px] border-line text-ink"
+          style={{ background: "transparent" }}
         />
       </div>
       {error && (
         <p
-          className="font-mono mb-2 text-[11px]"
-          style={{ color: "var(--color-danger)" }}
+          className="font-mono mb-2 text-[11px] text-danger"
         >
           {error}
         </p>
@@ -178,20 +160,15 @@ function NewMeetingForm({
           type="button"
           onClick={submit}
           disabled={pending || !title.trim() || !meetingDate}
-          className="font-mono px-3 py-1.5 text-[12px] font-semibold"
-          style={{
-            background: "var(--color-ink)",
-            color: "var(--color-paper)",
-            opacity: pending || !title.trim() || !meetingDate ? 0.6 : 1,
-          }}
+          className="font-mono px-3 py-1.5 text-[12px] font-semibold bg-ink text-paper"
+          style={{ opacity: pending || !title.trim() || !meetingDate ? 0.6 : 1 }}
         >
           Create meeting
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="font-mono px-3 py-1.5 text-[12px]"
-          style={{ color: "var(--color-ink-soft)" }}
+          className="font-mono px-3 py-1.5 text-[12px] text-ink-soft"
         >
           Cancel
         </button>
@@ -253,11 +230,7 @@ export function MeetingsView({
         <button
           type="button"
           onClick={() => setShowAdd((s) => !s)}
-          className="font-mono flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-semibold"
-          style={{
-            background: "var(--color-accent)",
-            color: "var(--color-paper-raised)",
-          }}
+          className="font-mono flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-semibold bg-accent text-paper-raised"
         >
           <Plus size={12} /> New meeting
         </button>
@@ -271,18 +244,13 @@ export function MeetingsView({
       )}
 
       <h2
-        className="font-mono mb-1 text-[11px] font-semibold tracking-wide uppercase"
-        style={{ color: "var(--color-ink-soft)" }}
+        className="font-mono mb-1 text-[11px] font-semibold tracking-wide uppercase text-ink-soft"
       >
         Upcoming
       </h2>
       {upcoming.length === 0 ? (
         <p
-          className="font-mono mb-6 rounded-[4px] border border-dashed px-3 py-4 text-center text-[12px]"
-          style={{
-            borderColor: "var(--color-line)",
-            color: "var(--color-ink-soft)",
-          }}
+          className="font-mono mb-6 rounded-card border border-dashed px-3 py-4 text-center text-[12px] border-line text-ink-soft"
         >
           No upcoming meetings.
         </p>
@@ -295,25 +263,19 @@ export function MeetingsView({
       )}
 
       <h2
-        className="font-mono mb-2 text-[11px] font-semibold tracking-wide uppercase"
-        style={{ color: "var(--color-ink-soft)" }}
+        className="font-mono mb-2 text-[11px] font-semibold tracking-wide uppercase text-ink-soft"
       >
         Archive
       </h2>
       <div
-        className="mb-2 flex items-center gap-2 rounded-[4px] border px-3 py-2"
-        style={{
-          background: "var(--color-paper-raised)",
-          borderColor: "var(--color-line)",
-        }}
+        className="mb-2 flex items-center gap-2 rounded-card border px-3 py-2 bg-paper-raised border-line"
       >
-        <Search size={14} style={{ color: "var(--color-ink-soft)" }} />
+        <Search className="text-ink-soft" size={14} />
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by title, attendee, or tag…"
-          className="flex-1 bg-transparent text-[13px] outline-none"
-          style={{ color: "var(--color-ink)" }}
+          className="flex-1 bg-transparent text-[13px] outline-none text-ink"
         />
         {filtering && (
           <button
@@ -322,8 +284,7 @@ export function MeetingsView({
               setSearch("");
               setTagFilter(new Set());
             }}
-            className="font-mono text-[11px]"
-            style={{ color: "var(--color-ink-soft)" }}
+            className="font-mono text-[11px] text-ink-soft"
           >
             Clear
           </button>
@@ -353,11 +314,7 @@ export function MeetingsView({
       )}
       {archived.length === 0 ? (
         <p
-          className="font-mono rounded-[4px] border border-dashed px-3 py-4 text-center text-[12px]"
-          style={{
-            borderColor: "var(--color-line)",
-            color: "var(--color-ink-soft)",
-          }}
+          className="font-mono rounded-card border border-dashed px-3 py-4 text-center text-[12px] border-line text-ink-soft"
         >
           {filtering ? "No meetings match." : "No completed meetings yet."}
         </p>

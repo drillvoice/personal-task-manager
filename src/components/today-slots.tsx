@@ -175,8 +175,7 @@ export function PlanSlots({
 
       {error && !pickerOpen && (
         <p
-          className="font-mono mb-4 text-[11px]"
-          style={{ color: "var(--color-danger)" }}
+          className="font-mono mb-4 text-[11px] text-danger"
         >
           {error}
         </p>
@@ -184,47 +183,38 @@ export function PlanSlots({
 
       {pickerOpen && canAdd && (
         <div
-          className="mb-8 rounded-[4px] border p-3"
-          style={{
-            background: "var(--color-paper-raised)",
-            borderColor: "var(--color-line)",
-          }}
+          className="mb-8 rounded-card border p-3 bg-paper-raised border-line"
         >
           <div className="mb-2 flex items-center justify-between">
             <p
-              className="font-mono text-[11px] font-semibold"
-              style={{ color: "var(--color-ink-soft)" }}
+              className="font-mono text-[11px] font-semibold text-ink-soft"
             >
               {pickerLabel}
             </p>
             <button
               type="button"
               onClick={() => setPickerOpen(false)}
-              className="font-mono text-[11px]"
-              style={{ color: "var(--color-ink-soft)" }}
+              className="font-mono text-[11px] text-ink-soft"
             >
               Cancel
             </button>
           </div>
           {error && (
             <p
-              className="font-mono mb-2 text-[11px]"
-              style={{ color: "var(--color-danger)" }}
+              className="font-mono mb-2 text-[11px] text-danger"
             >
               {error}
             </p>
           )}
           {eligible === null ? (
             <p
-              className="font-mono text-[11px]"
-              style={{ color: "var(--color-ink-soft)" }}
+              className="font-mono text-[11px] text-ink-soft"
             >
               Loading tasks…
             </p>
           ) : eligible.length === 0 ? (
             <p
-              className="font-mono text-[11px]"
-              style={{ color: "var(--color-ink-soft)" }}
+              className="font-mono text-[11px] text-ink-soft"
             >
               No open tasks. Add one in the Tasks view first.
             </p>
@@ -236,16 +226,11 @@ export function PlanSlots({
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Filter tasks…"
                 autoFocus
-                className="font-mono mb-2 w-full rounded-[4px] border px-2 py-1.5 text-[12px] outline-none"
-                style={{
-                  background: "var(--color-paper)",
-                  borderColor: "var(--color-line)",
-                }}
+                className="font-mono mb-2 w-full rounded-card border px-2 py-1.5 text-[12px] outline-none bg-paper border-line"
               />
               {filtered && filtered.length === 0 ? (
                 <p
-                  className="font-mono py-1 text-[11px]"
-                  style={{ color: "var(--color-ink-soft)" }}
+                  className="font-mono py-1 text-[11px] text-ink-soft"
                 >
                   No tasks match “{query.trim()}”.
                 </p>
@@ -257,15 +242,13 @@ export function PlanSlots({
                         type="button"
                         onClick={() => pick(t.id)}
                         disabled={pending}
-                        className="flex w-full items-center gap-2 border-b px-1 py-2 text-left text-[13px]"
-                        style={{ borderColor: "var(--color-line)" }}
+                        className="flex w-full items-center gap-2 border-b px-1 py-2 text-left text-[13px] border-line"
                       >
-                        <Plus size={12} style={{ color: "var(--color-ink-soft)" }} />
+                        <Plus className="text-ink-soft" size={12} />
                         <span className="flex-1">{t.title}</span>
                         {t.weekly && (
                           <span
-                            className="font-mono text-[10px] font-semibold"
-                            style={{ color: "var(--color-accent)" }}
+                            className="font-mono text-[10px] font-semibold text-accent"
                             title="This week's priority"
                           >
                             ★ wk
@@ -275,8 +258,7 @@ export function PlanSlots({
                         <DueLabel dateIso={t.dueDate} />
                         {t.projectName && (
                           <span
-                            className="font-mono text-[11px]"
-                            style={{ color: "var(--color-ink-soft)" }}
+                            className="font-mono text-[11px] text-ink-soft"
                           >
                             {t.projectName}
                           </span>

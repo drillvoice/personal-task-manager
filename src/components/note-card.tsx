@@ -32,12 +32,8 @@ export function NoteCard({
 
   return (
     <li
-      className="rounded-[4px] border p-3"
-      style={{
-        background: "var(--color-paper-raised)",
-        borderColor: "var(--color-line)",
-        opacity: removing ? 0.5 : 1,
-      }}
+      className="rounded-card border p-3 bg-paper-raised border-line"
+      style={{ opacity: removing ? 0.5 : 1 }}
     >
       <div className={editing ? "hidden" : undefined}>
         <NoteBody body={body} onTagClick={onTagClick} />
@@ -56,8 +52,7 @@ export function NoteCard({
 
       <div className="mt-2 flex items-center justify-between gap-3">
         <p
-          className="font-mono text-[10px]"
-          style={{ color: "var(--color-ink-soft)" }}
+          className="font-mono text-[10px] text-ink-soft"
         >
           {shortDateLabel(note.updatedAt)}
         </p>
@@ -69,8 +64,7 @@ export function NoteCard({
               setEditing((open) => !open);
             }}
             title={editing ? "Done editing" : "Edit note"}
-            className="font-mono text-[10px]"
-            style={{ color: "var(--color-ink-soft)" }}
+            className="font-mono text-[10px] text-ink-soft"
           >
             {editing ? (
               "Done"

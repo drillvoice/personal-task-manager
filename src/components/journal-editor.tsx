@@ -254,22 +254,13 @@ export function JournalEditor({
         onBlur={autosave.flush}
         placeholder="Jot what happened today. Type @ for a person, # for a tag."
         rows={18}
-        className="gtd-scrollbar w-full resize-y rounded-[4px] border p-3 text-[13px] leading-relaxed outline-none"
-        style={{
-          background: "var(--color-paper-raised)",
-          borderColor: "var(--color-line)",
-          color: "var(--color-ink)",
-          fontFamily: "var(--font-mono)",
-        }}
+        className="gtd-scrollbar w-full resize-y rounded-card border p-3 text-[13px] leading-relaxed outline-none bg-paper-raised border-line text-ink"
+        style={{ fontFamily: "var(--font-mono)" }}
       />
 
       {menu && items.length > 0 && (
         <ul
-          className="gtd-scrollbar absolute top-full left-2 z-30 mt-1 max-h-56 w-64 overflow-y-auto rounded-[4px] border py-1 shadow-lg"
-          style={{
-            background: "var(--color-paper-raised)",
-            borderColor: "var(--color-line)",
-          }}
+          className="gtd-scrollbar absolute top-full left-2 z-30 mt-1 max-h-56 w-64 overflow-y-auto rounded-card border py-1 shadow-lg bg-paper-raised border-line"
         >
           {items.map((item, i) => (
             <li key={`${item.kind}-${item.name}-${i}`}>
@@ -284,16 +275,13 @@ export function JournalEditor({
                   setEngaged(true);
                   setActive(i);
                 }}
-                className="font-mono flex w-full items-center gap-2 px-3 py-1.5 text-left text-[12px]"
-                style={{
-                  background:
-                    i === active ? "var(--color-accent-soft)" : "transparent",
-                  color: "var(--color-ink)",
-                }}
+                className="font-mono flex w-full items-center gap-2 px-3 py-1.5 text-left text-[12px] text-ink"
+                style={{ background:
+                    i === active ? "var(--color-accent-soft)" : "transparent" }}
               >
                 {item.kind === "create-tag" ? (
-                  <span style={{ color: "var(--color-ink-soft)" }}>
-                    Create <span style={{ color: "var(--color-ink)" }}>#{item.name}</span>
+                  <span className="text-ink-soft">
+                    Create <span className="text-ink">#{item.name}</span>
                   </span>
                 ) : item.kind === "tag" ? (
                   <span style={{ color: item.color }}>#{item.name}</span>

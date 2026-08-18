@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from "react";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
-import { inputStyle } from "@/components/field-style";
 import type { OrganisationRow } from "@/lib/server/people";
 
 /**
@@ -53,21 +52,18 @@ export function NamedEntityRow({
   if (!editing) {
     return (
       <div
-        className="cursor-pointer border-b px-1 py-2.5"
-        style={{ borderColor: "var(--color-line)" }}
+        className="cursor-pointer border-b px-1 py-2.5 border-line"
         onClick={() => setEditing(true)}
       >
         <div className="flex items-baseline gap-2">
           <span
-            className="font-display text-[14px] font-semibold"
-            style={{ color: "var(--color-ink)" }}
+            className="font-display text-[14px] font-semibold text-ink"
           >
             {entity.name}
           </span>
           {subtitle && (
             <span
-              className="font-mono text-[11px]"
-              style={{ color: "var(--color-ink-soft)" }}
+              className="font-mono text-[11px] text-ink-soft"
             >
               {subtitle}
             </span>
@@ -75,8 +71,7 @@ export function NamedEntityRow({
         </div>
         {entity.notes && (
           <p
-            className="mt-1 text-[12px]"
-            style={{ color: "var(--color-ink-soft)" }}
+            className="mt-1 text-[12px] text-ink-soft"
           >
             {entity.notes}
           </p>
@@ -87,14 +82,12 @@ export function NamedEntityRow({
 
   return (
     <div
-      className="border-b px-1 py-3"
-      style={{ borderColor: "var(--color-line)" }}
+      className="border-b px-1 py-3 border-line"
     >
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
-        className="mb-2 w-full border p-2 text-[13px] outline-none"
-        style={inputStyle}
+        className="mb-2 w-full border p-2 text-[13px] outline-none bg-transparent border-line text-ink"
         autoFocus
         onKeyDown={(e) => {
           if (e.key === "Enter" && !e.shiftKey) {
@@ -110,16 +103,14 @@ export function NamedEntityRow({
         onChange={(e) => setNotes(e.target.value)}
         placeholder="Notes…"
         rows={2}
-        className="mb-2 w-full resize-y border p-2 text-[13px] outline-none"
-        style={inputStyle}
+        className="mb-2 w-full resize-y border p-2 text-[13px] outline-none bg-transparent border-line text-ink"
         onKeyDown={(e) => {
           if (e.key === "Escape") setEditing(false);
         }}
       />
       {error && (
         <p
-          className="font-mono mb-2 text-[11px]"
-          style={{ color: "var(--color-danger)" }}
+          className="font-mono mb-2 text-[11px] text-danger"
         >
           {error}
         </p>
@@ -134,8 +125,7 @@ export function NamedEntityRow({
           <button
             type="button"
             onClick={() => setEditing(false)}
-            className="font-mono px-3 py-1.5 text-[12px]"
-            style={{ color: "var(--color-ink-soft)" }}
+            className="font-mono px-3 py-1.5 text-[12px] text-ink-soft"
           >
             Cancel
           </button>
@@ -143,12 +133,8 @@ export function NamedEntityRow({
             type="button"
             onClick={save}
             disabled={pending || !name.trim()}
-            className="font-mono px-3 py-1.5 text-[12px] font-semibold"
-            style={{
-              background: "var(--color-ink)",
-              color: "var(--color-paper)",
-              opacity: pending || !name.trim() ? 0.6 : 1,
-            }}
+            className="font-mono px-3 py-1.5 text-[12px] font-semibold bg-ink text-paper"
+            style={{ opacity: pending || !name.trim() ? 0.6 : 1 }}
           >
             Save
           </button>

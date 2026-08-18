@@ -54,11 +54,7 @@ export function ProjectCard({
 
   return (
     <div
-      className="mb-2 rounded-[4px] border"
-      style={{
-        background: "var(--color-paper-raised)",
-        borderColor: "var(--color-line)",
-      }}
+      className="mb-2 rounded-card border bg-paper-raised border-line"
     >
       <button
         type="button"
@@ -70,8 +66,7 @@ export function ProjectCard({
           {project.name}
         </span>
         <span
-          className="font-mono text-[11px]"
-          style={{ color: "var(--color-ink-soft)" }}
+          className="font-mono text-[11px] text-ink-soft"
         >
           {activeCount} open
         </span>
@@ -80,11 +75,7 @@ export function ProjectCard({
         <div className="px-3 pb-3">
           {!hideNotes && project.notes && (
             <p
-              className="mb-2 border-b pb-2 text-[13px]"
-              style={{
-                color: "var(--color-ink-soft)",
-                borderColor: "var(--color-line)",
-              }}
+              className="mb-2 border-b pb-2 text-[13px] text-ink-soft border-line"
             >
               {project.notes}
             </p>
@@ -94,13 +85,12 @@ export function ProjectCard({
               <button
                 type="button"
                 onClick={() => setNotesOpen((s) => !s)}
-                className="font-mono flex items-center gap-1.5 py-1 text-[10px] font-semibold tracking-[0.08em] uppercase"
-                style={{ color: "var(--color-ink-soft)" }}
+                className="font-mono flex items-center gap-1.5 py-1 text-[10px] font-semibold tracking-[0.08em] uppercase text-ink-soft"
               >
                 <NotebookPen size={11} />
                 Project notes
                 {!notesOpen && project.currentNotes.trim() && (
-                  <span style={{ color: "var(--color-teal)" }}>·</span>
+                  <span className="text-teal">·</span>
                 )}
               </button>
               {notesOpen && (
@@ -120,8 +110,7 @@ export function ProjectCard({
           )}
           {visibleTasks.length === 0 && (
             <p
-              className="py-2 text-[12px]"
-              style={{ color: "var(--color-ink-soft)" }}
+              className="py-2 text-[12px] text-ink-soft"
             >
               No tasks.
             </p>
@@ -140,7 +129,7 @@ export function ProjectCard({
           ))}
           <div className="flex items-center gap-2 px-1 py-3">
 
-            <Plus size={14} style={{ color: "var(--color-ink-soft)" }} />
+            <Plus className="text-ink-soft" size={14} />
             <input
               value={action}
               onChange={(e) => setAction(e.target.value)}
@@ -152,8 +141,7 @@ export function ProjectCard({
               }}
               disabled={pending}
               placeholder="Add a task… (#tag, or a due date like 'in 3 days')"
-              className="flex-1 bg-transparent text-[13px] outline-none"
-              style={{ color: "var(--color-ink)" }}
+              className="flex-1 bg-transparent text-[13px] outline-none text-ink"
             />
           </div>
         </div>

@@ -68,11 +68,7 @@ export function QuickCapture() {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Quick capture a task"
-        className="fixed right-4 bottom-4 z-50 flex h-12 w-12 items-center justify-center rounded-full shadow-md md:right-6 md:bottom-6 print:hidden"
-        style={{
-          background: "var(--color-accent)",
-          color: "var(--color-paper-raised)",
-        }}
+        className="fixed right-4 bottom-4 z-50 flex h-12 w-12 items-center justify-center rounded-full shadow-md md:right-6 md:bottom-6 print:hidden bg-accent text-paper-raised"
       >
         <Plus size={20} />
       </button>
@@ -81,16 +77,11 @@ export function QuickCapture() {
 
   return (
     <div
-      className="fixed right-4 bottom-4 z-50 w-[min(360px,calc(100vw-2rem))] rounded-[4px] border p-3 shadow-md md:right-6 md:bottom-6 print:hidden"
-      style={{
-        background: "var(--color-paper-raised)",
-        borderColor: "var(--color-line)",
-      }}
+      className="fixed right-4 bottom-4 z-50 w-[min(360px,calc(100vw-2rem))] rounded-card border p-3 shadow-md md:right-6 md:bottom-6 print:hidden bg-paper-raised border-line"
     >
       <div className="mb-2 flex items-center justify-between">
         <span
-          className="font-mono text-[10px] font-semibold tracking-[0.08em] uppercase"
-          style={{ color: "var(--color-ink-soft)" }}
+          className="font-mono text-[10px] font-semibold tracking-[0.08em] uppercase text-ink-soft"
         >
           Quick capture
         </span>
@@ -98,8 +89,7 @@ export function QuickCapture() {
           type="button"
           onClick={() => setOpen(false)}
           aria-label="Close quick capture"
-          className="-m-1 rounded p-1"
-          style={{ color: "var(--color-ink-soft)" }}
+          className="-m-1 rounded p-1 text-ink-soft"
         >
           <X size={14} />
         </button>
@@ -117,12 +107,7 @@ export function QuickCapture() {
         }}
         disabled={pending}
         placeholder="Capture a task… (#tag, or a due date like 'in 3 days')"
-        className="w-full rounded-[4px] border p-2 text-[13px] outline-none"
-        style={{
-          background: "var(--color-paper)",
-          borderColor: "var(--color-line)",
-          color: "var(--color-ink)",
-        }}
+        className="w-full rounded-card border p-2 text-[13px] outline-none bg-paper border-line text-ink"
       />
       <p
         className="font-mono mt-1.5 text-[10px]"

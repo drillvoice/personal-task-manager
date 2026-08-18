@@ -3,7 +3,6 @@
 import { useState, useTransition } from "react";
 import { Users } from "lucide-react";
 import { EntityPicker } from "@/components/entity-picker";
-import { inputStyle } from "@/components/field-style";
 import {
   createGroup,
   createOrganisation,
@@ -67,19 +66,14 @@ export function AddPersonForm({
 
   return (
     <div
-      className="mb-4 rounded-[4px] border p-4"
-      style={{
-        background: "var(--color-paper-raised)",
-        borderColor: "var(--color-line)",
-      }}
+      className="mb-4 rounded-card border p-4 bg-paper-raised border-line"
       onKeyDown={formKeyHandler}
     >
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Name…"
-        className="mb-2 w-full border p-2 text-[13px] outline-none"
-        style={inputStyle}
+        className="mb-2 w-full border p-2 text-[13px] outline-none bg-transparent border-line text-ink"
         autoFocus
         onKeyDown={keyHandler}
       />
@@ -88,8 +82,7 @@ export function AddPersonForm({
           value={role}
           onChange={(e) => setRole(e.target.value)}
           placeholder="Role"
-          className="w-full border p-2 text-[13px] outline-none"
-          style={inputStyle}
+          className="w-full border p-2 text-[13px] outline-none bg-transparent border-line text-ink"
           onKeyDown={keyHandler}
         />
         <EntityPicker
@@ -108,8 +101,7 @@ export function AddPersonForm({
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Email"
           type="email"
-          className="w-full border p-2 text-[13px] outline-none"
-          style={inputStyle}
+          className="w-full border p-2 text-[13px] outline-none bg-transparent border-line text-ink"
           onKeyDown={keyHandler}
         />
         <input
@@ -117,8 +109,7 @@ export function AddPersonForm({
           onChange={(e) => setPhone(e.target.value)}
           placeholder="Phone"
           type="tel"
-          className="w-full border p-2 text-[13px] outline-none"
-          style={inputStyle}
+          className="w-full border p-2 text-[13px] outline-none bg-transparent border-line text-ink"
           onKeyDown={keyHandler}
         />
       </div>
@@ -141,16 +132,14 @@ export function AddPersonForm({
         onChange={(e) => setNotes(e.target.value)}
         placeholder="Notes…"
         rows={2}
-        className="mb-2 w-full resize-y border p-2 text-[13px] outline-none"
-        style={inputStyle}
+        className="mb-2 w-full resize-y border p-2 text-[13px] outline-none bg-transparent border-line text-ink"
         onKeyDown={(e) => {
           if (e.key === "Escape") onDone();
         }}
       />
       {error && (
         <p
-          className="font-mono mb-2 text-[11px]"
-          style={{ color: "var(--color-danger)" }}
+          className="font-mono mb-2 text-[11px] text-danger"
         >
           {error}
         </p>
@@ -160,20 +149,15 @@ export function AddPersonForm({
           type="button"
           onClick={submit}
           disabled={pending || !name.trim()}
-          className="font-mono px-3 py-1.5 text-[12px] font-semibold"
-          style={{
-            background: "var(--color-ink)",
-            color: "var(--color-paper)",
-            opacity: pending || !name.trim() ? 0.6 : 1,
-          }}
+          className="font-mono px-3 py-1.5 text-[12px] font-semibold bg-ink text-paper"
+          style={{ opacity: pending || !name.trim() ? 0.6 : 1 }}
         >
           Add person
         </button>
         <button
           type="button"
           onClick={onDone}
-          className="font-mono px-3 py-1.5 text-[12px]"
-          style={{ color: "var(--color-ink-soft)" }}
+          className="font-mono px-3 py-1.5 text-[12px] text-ink-soft"
         >
           Cancel
         </button>

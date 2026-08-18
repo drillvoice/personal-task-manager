@@ -14,12 +14,7 @@ export function JournalReader({
   if (!body.trim()) {
     return (
       <p
-        className="font-mono rounded-[4px] border p-3 text-[12px]"
-        style={{
-          background: "var(--color-paper-raised)",
-          borderColor: "var(--color-line)",
-          color: "var(--color-ink-soft)",
-        }}
+        className="font-mono rounded-card border p-3 text-[12px] bg-paper-raised border-line text-ink-soft"
       >
         Nothing logged for this day.
       </p>
@@ -50,8 +45,7 @@ export function JournalReader({
               return (
                 <Link
                   href={url}
-                  className="font-medium no-underline"
-                  style={{ color: "var(--color-teal)" }}
+                  className="font-medium no-underline text-teal"
                 >
                   {children}
                 </Link>
@@ -66,7 +60,7 @@ export function JournalReader({
                 "var(--color-teal)";
               return (
                 <span
-                  className="font-mono mx-0.5 inline-flex items-center rounded-[4px] border px-1.5 py-0.5 text-[11px]"
+                  className="font-mono mx-0.5 inline-flex items-center rounded-card border px-1.5 py-0.5 text-[11px]"
                   style={{ color, borderColor: color }}
                 >
                   {children}
@@ -80,7 +74,7 @@ export function JournalReader({
                 colorByName.get(name.toLowerCase()) ?? "var(--color-teal)";
               return (
                 <span
-                  className="font-mono mx-0.5 inline-flex items-center rounded-[4px] border px-1.5 py-0.5 text-[11px]"
+                  className="font-mono mx-0.5 inline-flex items-center rounded-card border px-1.5 py-0.5 text-[11px]"
                   style={{ color, borderColor: color }}
                 >
                   #{name}
@@ -92,8 +86,7 @@ export function JournalReader({
                 href={url}
                 target="_blank"
                 rel="noreferrer"
-                className="underline"
-                style={{ color: "var(--color-accent)" }}
+                className="underline text-accent"
               >
                 {children}
               </a>

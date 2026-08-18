@@ -87,11 +87,7 @@ export function AppNav() {
 
   return (
     <nav
-      className="group fixed top-0 right-0 left-0 z-50 border-b py-3 md:right-auto md:bottom-0 md:w-16 md:overflow-hidden md:border-r md:border-b-0 md:py-6 md:transition-[width] md:duration-150 md:ease-out md:hover:w-[208px] md:hover:shadow-lg print:hidden"
-      style={{
-        background: "var(--color-paper-raised)",
-        borderColor: "var(--color-line)",
-      }}
+      className="group fixed top-0 right-0 left-0 z-50 border-b py-3 md:right-auto md:bottom-0 md:w-16 md:overflow-hidden md:border-r md:border-b-0 md:py-6 md:transition-[width] md:duration-150 md:ease-out md:hover:w-[208px] md:hover:shadow-lg print:hidden bg-paper-raised border-line"
     >
       <div className="mx-auto flex w-full max-w-[560px] items-center justify-between px-5 sm:px-4 md:max-w-none md:flex-col md:items-stretch md:justify-start md:gap-1 md:px-3">
         {items.map(({ href, label, Icon }, i) => {
@@ -114,11 +110,7 @@ export function AppNav() {
                 />
                 {armed && (
                   <span
-                    className="pointer-events-none absolute -top-2 -right-2 flex h-3.5 min-w-3.5 items-center justify-center rounded-full px-1 font-mono text-[9px] font-semibold"
-                    style={{
-                      background: "var(--color-accent)",
-                      color: "var(--color-paper-raised)",
-                    }}
+                    className="pointer-events-none absolute -top-2 -right-2 flex h-3.5 min-w-3.5 items-center justify-center rounded-full px-1 font-mono text-[9px] font-semibold bg-accent text-paper-raised"
                   >
                     {i + 1}
                   </span>

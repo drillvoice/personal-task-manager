@@ -146,11 +146,7 @@ export function TasksView({
         <h1 className="font-display text-xl font-bold">Tasks</h1>
         <div className="flex items-center gap-2">
           <div
-            className="flex gap-1 rounded-[4px] border p-0.5"
-            style={{
-              background: "var(--color-paper-raised)",
-              borderColor: "var(--color-line)",
-            }}
+            className="flex gap-1 rounded-card border p-0.5 bg-paper-raised border-line"
           >
             {(["by_project", "all_tasks"] as const).map((m) => (
               <button
@@ -171,11 +167,7 @@ export function TasksView({
           <button
             type="button"
             onClick={() => setShowAdd((s) => !s)}
-            className="font-mono flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-semibold"
-            style={{
-              background: "var(--color-accent)",
-              color: "var(--color-paper-raised)",
-            }}
+            className="font-mono flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-semibold bg-accent text-paper-raised"
           >
             <Plus size={12} /> New task
           </button>
@@ -258,8 +250,7 @@ export function TasksView({
             if (results.length === 0) {
               return (
                 <p
-                  className="p-3 text-[13px]"
-                  style={{ color: "var(--color-ink-soft)" }}
+                  className="p-3 text-[13px] text-ink-soft"
                 >
                   No tasks match.
                 </p>
@@ -285,19 +276,14 @@ export function TasksView({
 
       {mode === "all_tasks" && (
         <div
-          className="rounded-[4px] border p-1"
-          style={{
-            background: "var(--color-paper-raised)",
-            borderColor: "var(--color-line)",
-          }}
+          className="rounded-card border p-1 bg-paper-raised border-line"
         >
           {(() => {
             const results = allTasksFlat.filter(matches);
             if (results.length === 0) {
               return (
                 <p
-                  className="p-3 text-[13px]"
-                  style={{ color: "var(--color-ink-soft)" }}
+                  className="p-3 text-[13px] text-ink-soft"
                 >
                   No tasks match.
                 </p>
@@ -332,11 +318,7 @@ export function TasksView({
           />
         ) : (
           <div
-            className="font-mono flex min-h-[220px] items-center justify-center rounded-[4px] border border-dashed text-[11px]"
-            style={{
-              borderColor: "var(--color-line)",
-              color: "var(--color-ink-soft)",
-            }}
+            className="font-mono flex min-h-[220px] items-center justify-center rounded-card border border-dashed text-[11px] border-line text-ink-soft"
           >
             Select a task to edit
           </div>

@@ -12,7 +12,6 @@ import {
   updatePerson,
 } from "@/app/(app)/people/actions";
 import type { PersonWithOrg } from "@/lib/server/people";
-import { inputStyle } from "@/components/field-style";
 
 function PersonEditForm({
   person,
@@ -70,15 +69,13 @@ function PersonEditForm({
 
   return (
     <div
-      className="border-b px-1 py-3"
-      style={{ borderColor: "var(--color-line)" }}
+      className="border-b px-1 py-3 border-line"
     >
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Name"
-        className="mb-2 w-full border p-2 text-[13px] outline-none"
-        style={inputStyle}
+        className="mb-2 w-full border p-2 text-[13px] outline-none bg-transparent border-line text-ink"
         autoFocus
         onKeyDown={keyHandler}
       />
@@ -87,8 +84,7 @@ function PersonEditForm({
           value={role}
           onChange={(e) => setRole(e.target.value)}
           placeholder="Role"
-          className="w-full border p-2 text-[13px] outline-none"
-          style={inputStyle}
+          className="w-full border p-2 text-[13px] outline-none bg-transparent border-line text-ink"
           onKeyDown={keyHandler}
         />
         <EntityPicker
@@ -107,8 +103,7 @@ function PersonEditForm({
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Email"
           type="email"
-          className="w-full border p-2 text-[13px] outline-none"
-          style={inputStyle}
+          className="w-full border p-2 text-[13px] outline-none bg-transparent border-line text-ink"
           onKeyDown={keyHandler}
         />
         <input
@@ -116,8 +111,7 @@ function PersonEditForm({
           onChange={(e) => setPhone(e.target.value)}
           placeholder="Phone"
           type="tel"
-          className="w-full border p-2 text-[13px] outline-none"
-          style={inputStyle}
+          className="w-full border p-2 text-[13px] outline-none bg-transparent border-line text-ink"
           onKeyDown={keyHandler}
         />
       </div>
@@ -140,16 +134,14 @@ function PersonEditForm({
         onChange={(e) => setNotes(e.target.value)}
         placeholder="Notes…"
         rows={3}
-        className="mb-2 w-full resize-y border p-2 text-[13px] outline-none"
-        style={inputStyle}
+        className="mb-2 w-full resize-y border p-2 text-[13px] outline-none bg-transparent border-line text-ink"
         onKeyDown={(e) => {
           if (e.key === "Escape") onDone();
         }}
       />
       {error && (
         <p
-          className="font-mono mb-2 text-[11px]"
-          style={{ color: "var(--color-danger)" }}
+          className="font-mono mb-2 text-[11px] text-danger"
         >
           {error}
         </p>
@@ -164,8 +156,7 @@ function PersonEditForm({
           <button
             type="button"
             onClick={onDone}
-            className="font-mono px-3 py-1.5 text-[12px]"
-            style={{ color: "var(--color-ink-soft)" }}
+            className="font-mono px-3 py-1.5 text-[12px] text-ink-soft"
           >
             Cancel
           </button>
@@ -173,12 +164,8 @@ function PersonEditForm({
             type="button"
             onClick={save}
             disabled={pending || !name.trim()}
-            className="font-mono px-3 py-1.5 text-[12px] font-semibold"
-            style={{
-              background: "var(--color-ink)",
-              color: "var(--color-paper)",
-              opacity: pending || !name.trim() ? 0.6 : 1,
-            }}
+            className="font-mono px-3 py-1.5 text-[12px] font-semibold bg-ink text-paper"
+            style={{ opacity: pending || !name.trim() ? 0.6 : 1 }}
           >
             Save
           </button>
@@ -221,16 +208,12 @@ export function PersonRow({
 
   return (
     <div
-      className="cursor-pointer border-b px-1 py-2.5"
-      style={{
-        borderColor: "var(--color-line)",
-        background: selected ? "var(--color-paper)" : "transparent",
-      }}
+      className="cursor-pointer border-b px-1 py-2.5 border-line"
+      style={{ background: selected ? "var(--color-paper)" : "transparent" }}
       onClick={() => (onSelect ? onSelect() : setEditing(true))}
     >
       <span
-        className="font-display text-[14px] font-semibold"
-        style={{ color: "var(--color-ink)" }}
+        className="font-display text-[14px] font-semibold text-ink"
       >
         {person.name}
       </span>
@@ -238,16 +221,14 @@ export function PersonRow({
         <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
           {meta && (
             <span
-              className="font-mono text-[11px]"
-              style={{ color: "var(--color-ink-soft)" }}
+              className="font-mono text-[11px] text-ink-soft"
             >
               {meta}
             </span>
           )}
           {person.email && (
             <span
-              className="font-mono flex items-center gap-1 text-[11px]"
-              style={{ color: "var(--color-ink-soft)" }}
+              className="font-mono flex items-center gap-1 text-[11px] text-ink-soft"
             >
               <Mail size={11} />
               {person.email}
@@ -255,8 +236,7 @@ export function PersonRow({
           )}
           {person.phone && (
             <span
-              className="font-mono flex items-center gap-1 text-[11px]"
-              style={{ color: "var(--color-ink-soft)" }}
+              className="font-mono flex items-center gap-1 text-[11px] text-ink-soft"
             >
               <Phone size={11} />
               {person.phone}
@@ -269,11 +249,7 @@ export function PersonRow({
           {person.groups.map((g) => (
             <span
               key={g.id}
-              className="font-mono inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
-              style={{
-                background: "var(--color-teal-soft)",
-                color: "var(--color-teal)",
-              }}
+              className="font-mono inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium bg-teal-soft text-teal"
             >
               <Users size={10} />
               {g.name}
@@ -283,8 +259,7 @@ export function PersonRow({
       )}
       {person.notes && (
         <p
-          className="mt-1 text-[12px]"
-          style={{ color: "var(--color-ink-soft)" }}
+          className="mt-1 text-[12px] text-ink-soft"
         >
           {person.notes}
         </p>

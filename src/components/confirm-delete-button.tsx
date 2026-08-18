@@ -40,8 +40,7 @@ export function ConfirmDeleteButton({
         <button
           type="button"
           onClick={() => setConfirming(false)}
-          className="font-mono ml-2 text-[11px]"
-          style={{ color: "var(--color-ink-soft)" }}
+          className="font-mono ml-2 text-[11px] text-ink-soft"
         >
           Keep
         </button>

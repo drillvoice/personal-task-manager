@@ -39,8 +39,7 @@ export default async function LoginPage({
       <div className="text-center">
         <h1 className="font-display text-2xl font-bold">Task Manager</h1>
         <p
-          className="font-mono mt-2 text-[11px]"
-          style={{ color: "var(--color-ink-soft)" }}
+          className="font-mono mt-2 text-[11px] text-ink-soft"
         >
           A daily-use tool. Sign in with your GitHub account.
         </p>

@@ -83,22 +83,14 @@ export function AddTaskForm({
           // calendar affordance still works there.
         }
       }}
-      className="w-full border p-2 text-[13px] outline-none sm:w-[160px]"
-      style={{
-        background: "transparent",
-        borderColor: "var(--color-line)",
-        color: "var(--color-ink)",
-      }}
+      className="w-full border p-2 text-[13px] outline-none sm:w-[160px] border-line text-ink"
+      style={{ background: "transparent" }}
     />
   );
 
   return (
     <div
-      className="mb-4 rounded-[4px] border p-4"
-      style={{
-        background: "var(--color-paper-raised)",
-        borderColor: "var(--color-line)",
-      }}
+      className="mb-4 rounded-card border p-4 bg-paper-raised border-line"
       onKeyDown={(e) => {
         if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
           e.preventDefault();
@@ -110,12 +102,8 @@ export function AddTaskForm({
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Task title…"
-        className="mb-2 w-full border p-2 text-[13px] outline-none"
-        style={{
-          background: "transparent",
-          borderColor: "var(--color-line)",
-          color: "var(--color-ink)",
-        }}
+        className="mb-2 w-full border p-2 text-[13px] outline-none border-line text-ink"
+        style={{ background: "transparent" }}
         autoFocus
         onKeyDown={(e) => {
           if (e.key === "Enter" && !e.shiftKey) {
@@ -176,8 +164,7 @@ export function AddTaskForm({
       </div>
       {error && (
         <p
-          className="font-mono mb-2 text-[11px]"
-          style={{ color: "var(--color-danger)" }}
+          className="font-mono mb-2 text-[11px] text-danger"
         >
           {error}
         </p>
@@ -187,20 +174,15 @@ export function AddTaskForm({
           type="button"
           onClick={submit}
           disabled={pending || !title.trim()}
-          className="font-mono px-3 py-1.5 text-[12px] font-semibold"
-          style={{
-            background: "var(--color-ink)",
-            color: "var(--color-paper)",
-            opacity: pending || !title.trim() ? 0.6 : 1,
-          }}
+          className="font-mono px-3 py-1.5 text-[12px] font-semibold bg-ink text-paper"
+          style={{ opacity: pending || !title.trim() ? 0.6 : 1 }}
         >
           Add task
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="font-mono px-3 py-1.5 text-[12px]"
-          style={{ color: "var(--color-ink-soft)" }}
+          className="font-mono px-3 py-1.5 text-[12px] text-ink-soft"
         >
           Cancel
         </button>

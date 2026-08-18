@@ -72,12 +72,7 @@ export function TaskEditorProvider({ children }: { children: ReactNode }) {
               />
             ) : (
               <div
-                className="font-mono rounded-[4px] border p-6 text-[12px]"
-                style={{
-                  background: "var(--color-paper-raised)",
-                  borderColor: "var(--color-line)",
-                  color: "var(--color-ink-soft)",
-                }}
+                className="font-mono rounded-card border p-6 text-[12px] bg-paper-raised border-line text-ink-soft"
               >
                 Loading task…
               </div>

@@ -100,8 +100,7 @@ export function MeetingDetailView({
     <div className="p-4 pb-24">
       <Link
         href="/meetings"
-        className="font-mono mb-3 flex items-center gap-1 text-[11px]"
-        style={{ color: "var(--color-ink-soft)" }}
+        className="font-mono mb-3 flex items-center gap-1 text-[11px] text-ink-soft"
       >
         <ArrowLeft size={11} /> Meetings
       </Link>
@@ -114,8 +113,8 @@ export function MeetingDetailView({
           onKeyDown={(e) => {
             if (e.key === "Enter") e.currentTarget.blur();
           }}
-          className="font-display min-w-[200px] flex-1 border-b bg-transparent pb-1 text-xl font-bold outline-none"
-          style={{ borderColor: "transparent", color: "var(--color-ink)" }}
+          className="font-display min-w-[200px] flex-1 border-b bg-transparent pb-1 text-xl font-bold outline-none text-ink"
+          style={{ borderColor: "transparent" }}
           aria-label="Meeting title"
         />
         <input
@@ -123,12 +122,8 @@ export function MeetingDetailView({
           value={meetingDate}
           onChange={(e) => setMeetingDate(e.target.value)}
           onBlur={saveHeader}
-          className="border p-1.5 text-[13px] outline-none"
-          style={{
-            background: "transparent",
-            borderColor: "var(--color-line)",
-            color: "var(--color-ink)",
-          }}
+          className="border p-1.5 text-[13px] outline-none border-line text-ink"
+          style={{ background: "transparent" }}
           aria-label="Meeting date"
         />
         <button
@@ -179,8 +174,7 @@ export function MeetingDetailView({
       <div className="grid grid-cols-1 gap-6 md:grid-cols-[minmax(0,1fr)_minmax(280px,340px)]">
         <div>
           <h2
-            className="font-mono mb-1 text-[11px] font-semibold tracking-wide uppercase"
-            style={{ color: "var(--color-ink-soft)" }}
+            className="font-mono mb-1 text-[11px] font-semibold tracking-wide uppercase text-ink-soft"
           >
             Prep notes
           </h2>
@@ -195,8 +189,7 @@ export function MeetingDetailView({
             />
           </div>
           <h2
-            className="font-mono mb-1 text-[11px] font-semibold tracking-wide uppercase"
-            style={{ color: "var(--color-ink-soft)" }}
+            className="font-mono mb-1 text-[11px] font-semibold tracking-wide uppercase text-ink-soft"
           >
             Meeting notes
           </h2>
@@ -211,19 +204,14 @@ export function MeetingDetailView({
         <div>
           <div className="mb-2 flex items-center justify-between">
             <h2
-              className="font-mono text-[11px] font-semibold tracking-wide uppercase"
-              style={{ color: "var(--color-ink-soft)" }}
+              className="font-mono text-[11px] font-semibold tracking-wide uppercase text-ink-soft"
             >
               Tasks from this meeting
             </h2>
             <button
               type="button"
               onClick={() => setShowAdd((s) => !s)}
-              className="font-mono flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold"
-              style={{
-                background: "var(--color-accent)",
-                color: "var(--color-paper-raised)",
-              }}
+              className="font-mono flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold bg-accent text-paper-raised"
             >
               <Plus size={11} /> New task
             </button>
@@ -241,11 +229,7 @@ export function MeetingDetailView({
           )}
           {meeting.tasks.length === 0 && !showAdd ? (
             <p
-              className="font-mono rounded-[4px] border border-dashed px-3 py-4 text-center text-[12px]"
-              style={{
-                borderColor: "var(--color-line)",
-                color: "var(--color-ink-soft)",
-              }}
+              className="font-mono rounded-card border border-dashed px-3 py-4 text-center text-[12px] border-line text-ink-soft"
             >
               No tasks captured yet.
             </p>

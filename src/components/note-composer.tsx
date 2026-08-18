@@ -34,18 +34,12 @@ export function NoteComposer() {
         }}
         placeholder="Something worth remembering… use #tags to find it later"
         rows={2}
-        className="gtd-scrollbar w-full resize-y rounded-[4px] border p-3 text-[13px] leading-relaxed outline-none"
-        style={{
-          background: "var(--color-paper-raised)",
-          borderColor: "var(--color-line)",
-          color: "var(--color-ink)",
-        }}
+        className="gtd-scrollbar w-full resize-y rounded-card border p-3 text-[13px] leading-relaxed outline-none bg-paper-raised border-line text-ink"
       />
       <div className="mt-1 flex items-center justify-end gap-3">
         {error && (
           <p
-            className="font-mono text-[10px]"
-            style={{ color: "var(--color-danger)" }}
+            className="font-mono text-[10px] text-danger"
           >
             {error}
           </p>
@@ -54,11 +48,7 @@ export function NoteComposer() {
           type="button"
           onClick={submit}
           disabled={!body.trim() || pending}
-          className="font-mono rounded-[4px] px-3 py-1.5 text-[11px] disabled:opacity-40"
-          style={{
-            background: "var(--color-accent-soft)",
-            color: "var(--color-accent)",
-          }}
+          className="font-mono rounded-card px-3 py-1.5 text-[11px] disabled:opacity-40 bg-accent-soft text-accent"
         >
           {pending ? "Filing…" : "File note"}
         </button>
