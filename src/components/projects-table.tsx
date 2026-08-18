@@ -1,6 +1,7 @@
 "use client";
 
 import { useLayoutEffect, useRef, useState, useTransition } from "react";
+import { Button } from "@/components/button";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { Plus } from "lucide-react";
@@ -67,13 +68,12 @@ export function ProjectsTable({
               Show archived
             </Link>
           )}
-          <button
-            type="button"
+          <Button
+            variant="accent"
             onClick={() => setShowAdd((s) => !s)}
-            className="font-mono flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-semibold bg-accent text-paper-raised"
           >
             <Plus size={12} /> New project
-          </button>
+          </Button>
         </div>
       </div>
       <p
@@ -91,7 +91,7 @@ export function ProjectsTable({
       )}
 
       <div
-        className="gtd-scrollbar overflow-x-auto rounded-card border bg-paper-raised border-line"
+        className="gtd-scrollbar overflow-x-auto card"
       >
         <table className="gtd-history-table w-full text-[13px]">
           <thead>

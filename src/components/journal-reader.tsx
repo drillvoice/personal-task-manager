@@ -14,7 +14,7 @@ export function JournalReader({
   if (!body.trim()) {
     return (
       <p
-        className="font-mono rounded-card border p-3 text-[12px] bg-paper-raised border-line text-ink-soft"
+        className="font-mono card p-3 text-[12px] text-ink-soft"
       >
         Nothing logged for this day.
       </p>

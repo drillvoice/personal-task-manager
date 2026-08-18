@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { Button } from "@/components/button";
 import { Building2, Plus, Users } from "lucide-react";
 import { AddPersonForm } from "@/components/add-person-form";
 import { PersonRow } from "@/components/person-row";
@@ -136,13 +137,12 @@ export function PeopleView({
       <div className="min-w-0">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h1 className="font-display text-xl font-bold">People</h1>
-        <button
-          type="button"
+        <Button
+          variant="accent"
           onClick={() => setShowAdd((s) => !s)}
-          className="font-mono flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-semibold bg-accent text-paper-raised"
         >
           <Plus size={12} /> New person
-        </button>
+        </Button>
       </div>
 
       {showAdd && (
@@ -156,7 +156,7 @@ export function PeopleView({
       {people.length > 0 && (
         <div className="mb-2 flex justify-end">
           <div
-            className="flex gap-1 rounded-card border p-0.5 bg-paper-raised border-line"
+            className="flex gap-1 card p-0.5"
           >
             {(
               [
@@ -188,7 +188,7 @@ export function PeopleView({
 
       {(people.length === 0 || !groupByOrg) && (
         <div
-          className="mb-4 rounded-card border p-1 px-3 bg-paper-raised border-line"
+          className="mb-4 card p-1 px-3"
         >
           {people.length === 0 && (
             <p
@@ -220,7 +220,7 @@ export function PeopleView({
           ].map((bucket) => (
             <div
               key={bucket.id}
-              className="overflow-hidden rounded-card border bg-paper-raised border-line"
+              className="overflow-hidden card"
             >
               <div
                 className="flex items-center gap-1.5 border-b px-3 py-2 border-line bg-accent"
@@ -262,7 +262,7 @@ export function PeopleView({
         Organisations
       </h2>
       <div
-        className="mb-4 rounded-card border p-1 px-3 bg-paper-raised border-line"
+        className="mb-4 card p-1 px-3"
       >
         {orgs.length === 0 && (
           <p
@@ -282,7 +282,7 @@ export function PeopleView({
         Groups
       </h2>
       <div
-        className="rounded-card border p-1 px-3 bg-paper-raised border-line"
+        className="card p-1 px-3"
       >
         {groups.length === 0 && (
           <p

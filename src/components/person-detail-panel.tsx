@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import { Button } from "@/components/button";
 import { CalendarDays, Users, X } from "lucide-react";
 import Link from "next/link";
 import { DueLabel } from "@/components/due-label";
@@ -87,7 +88,7 @@ export function PersonDetailPanel({
 
   return (
     <div
-      className="rounded-card border p-4 bg-paper-raised border-line"
+      className="card p-4"
       onKeyDown={formKeyHandler}
     >
       <div className="mb-3 flex items-center justify-between">
@@ -180,22 +181,19 @@ export function PersonDetailPanel({
           onConfirm={del}
         />
         <div className="ml-auto flex gap-2">
-          <button
-            type="button"
+          <Button
+            variant="quiet"
             onClick={onClose}
-            className="font-mono px-3 py-1.5 text-[12px] text-ink-soft"
           >
             Cancel
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            variant="primary"
             onClick={save}
             disabled={pending || !name.trim()}
-            className="font-mono px-3 py-1.5 text-[12px] font-semibold bg-ink text-paper"
-            style={{ opacity: pending || !name.trim() ? 0.6 : 1 }}
           >
             Save
-          </button>
+          </Button>
         </div>
       </div>
 

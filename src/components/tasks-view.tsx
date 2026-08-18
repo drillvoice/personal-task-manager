@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Button } from "@/components/button";
 import dynamic from "next/dynamic";
 import { Plus } from "lucide-react";
 import { ProjectCard } from "@/components/project-card";
@@ -146,7 +147,7 @@ export function TasksView({
         <h1 className="font-display text-xl font-bold">Tasks</h1>
         <div className="flex items-center gap-2">
           <div
-            className="flex gap-1 rounded-card border p-0.5 bg-paper-raised border-line"
+            className="flex gap-1 card p-0.5"
           >
             {(["by_project", "all_tasks"] as const).map((m) => (
               <button
@@ -164,13 +165,12 @@ export function TasksView({
               </button>
             ))}
           </div>
-          <button
-            type="button"
+          <Button
+            variant="accent"
             onClick={() => setShowAdd((s) => !s)}
-            className="font-mono flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-semibold bg-accent text-paper-raised"
           >
             <Plus size={12} /> New task
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -276,7 +276,7 @@ export function TasksView({
 
       {mode === "all_tasks" && (
         <div
-          className="rounded-card border p-1 bg-paper-raised border-line"
+          className="card p-1"
         >
           {(() => {
             const results = allTasksFlat.filter(matches);

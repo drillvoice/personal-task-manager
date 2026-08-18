@@ -46,7 +46,7 @@ export function AutosaveTextarea({
         onBlur={flush}
         placeholder={placeholder}
         rows={rows}
-        className="gtd-scrollbar w-full resize-y rounded-card border p-3 text-[13px] leading-relaxed outline-none bg-paper-raised border-line text-ink"
+        className="gtd-scrollbar w-full resize-y card p-3 text-[13px] leading-relaxed outline-none text-ink"
       />
       <p
         className="font-mono mt-1 text-right text-[10px]"

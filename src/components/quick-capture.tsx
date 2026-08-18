@@ -77,7 +77,7 @@ export function QuickCapture() {
 
   return (
     <div
-      className="fixed right-4 bottom-4 z-50 w-[min(360px,calc(100vw-2rem))] rounded-card border p-3 shadow-md md:right-6 md:bottom-6 print:hidden bg-paper-raised border-line"
+      className="fixed right-4 bottom-4 z-50 w-[min(360px,calc(100vw-2rem))] card p-3 shadow-md md:right-6 md:bottom-6 print:hidden"
     >
       <div className="mb-2 flex items-center justify-between">
         <span

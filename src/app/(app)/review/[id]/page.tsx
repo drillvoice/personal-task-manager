@@ -60,7 +60,7 @@ export default async function ReviewDetailPage({
           </p>
         ) : (
           <ul
-            className="rounded-card border p-3 bg-paper-raised border-line"
+            className="card p-3"
           >
             {review.priorities.map((p, i) => (
               <li
@@ -109,7 +109,7 @@ export default async function ReviewDetailPage({
             {review.projectNotes.map((p, i) => (
               <div
                 key={i}
-                className="rounded-card border p-3 bg-paper-raised border-line"
+                className="card p-3"
               >
                 <h3 className="font-display mb-1 text-[14px] font-semibold">
                   {p.name}
@@ -133,7 +133,7 @@ export default async function ReviewDetailPage({
         </h2>
         {review.reflectionNotes.trim() ? (
           <p
-            className="rounded-card border p-3 text-[13px] leading-relaxed whitespace-pre-wrap bg-paper-raised border-line text-ink"
+            className="card p-3 text-[13px] leading-relaxed whitespace-pre-wrap text-ink"
           >
             {review.reflectionNotes}
           </p>

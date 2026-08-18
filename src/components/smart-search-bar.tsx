@@ -195,7 +195,7 @@ export function SmartSearchBar({
           />
         )}
         <div
-          className="relative z-20 flex items-center gap-2 rounded-card border px-3 py-2 bg-paper-raised border-line"
+          className="relative z-20 flex items-center gap-2 card px-3 py-2"
         >
           <Search className="text-ink-soft" size={14} />
           <input
@@ -228,7 +228,7 @@ export function SmartSearchBar({
 
         {showPicker && (
           <div
-            className="gtd-scrollbar absolute top-full right-0 left-0 z-30 mt-0.5 max-h-[240px] overflow-y-auto rounded-card border bg-paper-raised border-line"
+            className="gtd-scrollbar absolute top-full right-0 left-0 z-30 mt-0.5 max-h-[240px] overflow-y-auto card"
             onMouseDown={(e) => e.preventDefault()}
           >
             {suggestions.map((p, i) => (

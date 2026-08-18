@@ -77,7 +77,7 @@ export default async function ReviewHistoryPage() {
             <li key={r.id}>
               <Link
                 href={`/review/${r.id}`}
-                className="block rounded-card border p-3 transition-colors hover:border-[var(--color-ink-soft)] bg-paper-raised border-line"
+                className="block card p-3 transition-colors hover:border-[var(--color-ink-soft)]"
               >
               <div className="mb-1 flex items-center justify-between">
                 <span className="font-display text-[14px] font-semibold">

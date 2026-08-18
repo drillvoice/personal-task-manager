@@ -183,7 +183,7 @@ export function PlanSlots({
 
       {pickerOpen && canAdd && (
         <div
-          className="mb-8 rounded-card border p-3 bg-paper-raised border-line"
+          className="mb-8 card p-3"
         >
           <div className="mb-2 flex items-center justify-between">
             <p

@@ -140,7 +140,7 @@ export function TaskDetailPanel({
 
   return (
     <div
-      className="rounded-card border p-4 bg-paper-raised border-line"
+      className="card p-4"
     >
       <div className="mb-2 flex items-center justify-between">
         <span

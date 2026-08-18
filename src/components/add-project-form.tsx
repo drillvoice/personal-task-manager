@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Button } from "@/components/button";
 import { createProject } from "@/app/(app)/projects/actions";
 
 export function AddProjectForm({
@@ -30,7 +31,7 @@ export function AddProjectForm({
 
   return (
     <div
-      className="mb-4 flex flex-wrap items-center gap-2 rounded-card border p-3 bg-paper-raised border-line"
+      className="mb-4 flex flex-wrap items-center gap-2 card p-3"
     >
       <input
         value={name}
@@ -64,22 +65,19 @@ export function AddProjectForm({
           {error}
         </span>
       )}
-      <button
-        type="button"
+      <Button
+        variant="quiet"
         onClick={onCancel}
-        className="font-mono px-3 py-1.5 text-[12px] text-ink-soft"
       >
         Cancel
-      </button>
-      <button
-        type="button"
+      </Button>
+      <Button
+        variant="primary"
         onClick={submit}
         disabled={pending || !name.trim()}
-        className="font-mono px-3 py-1.5 text-[12px] font-semibold bg-ink text-paper"
-        style={{ opacity: pending || !name.trim() ? 0.6 : 1 }}
       >
         Add
-      </button>
+      </Button>
     </div>
   );
 }

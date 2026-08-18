@@ -54,7 +54,7 @@ export function ProjectCard({
 
   return (
     <div
-      className="mb-2 rounded-card border bg-paper-raised border-line"
+      className="mb-2 card"
     >
       <button
         type="button"

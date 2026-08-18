@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { Button } from "@/components/button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CalendarDays, Plus, Search, Users } from "lucide-react";
@@ -111,7 +112,7 @@ function NewMeetingForm({
 
   return (
     <div
-      className="mb-4 rounded-card border p-4 bg-paper-raised border-line"
+      className="mb-4 card p-4"
       onKeyDown={formKeyHandler}
     >
       <input
@@ -156,22 +157,19 @@ function NewMeetingForm({
         </p>
       )}
       <div className="flex justify-end gap-2">
-        <button
-          type="button"
+        <Button
+          variant="primary"
           onClick={submit}
           disabled={pending || !title.trim() || !meetingDate}
-          className="font-mono px-3 py-1.5 text-[12px] font-semibold bg-ink text-paper"
-          style={{ opacity: pending || !title.trim() || !meetingDate ? 0.6 : 1 }}
         >
           Create meeting
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant="quiet"
           onClick={onCancel}
-          className="font-mono px-3 py-1.5 text-[12px] text-ink-soft"
         >
           Cancel
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -227,13 +225,12 @@ export function MeetingsView({
     <div className="p-4 pb-24">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h1 className="font-display text-xl font-bold">Meetings</h1>
-        <button
-          type="button"
+        <Button
+          variant="accent"
           onClick={() => setShowAdd((s) => !s)}
-          className="font-mono flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-semibold bg-accent text-paper-raised"
         >
           <Plus size={12} /> New meeting
-        </button>
+        </Button>
       </div>
 
       {showAdd && (
@@ -268,7 +265,7 @@ export function MeetingsView({
         Archive
       </h2>
       <div
-        className="mb-2 flex items-center gap-2 rounded-card border px-3 py-2 bg-paper-raised border-line"
+        className="mb-2 flex items-center gap-2 card px-3 py-2"
       >
         <Search className="text-ink-soft" size={14} />
         <input

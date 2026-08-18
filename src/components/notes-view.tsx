@@ -67,7 +67,7 @@ export function NotesView({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search notes…"
-          className="w-full rounded-card border py-2 pr-9 pl-9 text-[13px] outline-none bg-paper-raised border-line text-ink"
+          className="w-full card py-2 pr-9 pl-9 text-[13px] outline-none text-ink"
         />
         {search && (
           <button

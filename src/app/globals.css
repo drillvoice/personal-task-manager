@@ -25,6 +25,14 @@
   --radius-card: 4px;
 }
 
+/* The paper card: a raised panel on a ruled border. Composed with whatever
+   padding, spacing and layout each site needs, so it deliberately sets none. */
+@utility card {
+  border-radius: var(--radius-card);
+  border: 1px solid var(--color-line);
+  background: var(--color-paper-raised);
+}
+
 html,
 body {
   background: var(--color-paper);
