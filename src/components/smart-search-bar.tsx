@@ -195,13 +195,9 @@ export function SmartSearchBar({
           />
         )}
         <div
-          className="relative z-20 flex items-center gap-2 rounded-[4px] border px-3 py-2"
-          style={{
-            background: "var(--color-paper-raised)",
-            borderColor: "var(--color-line)",
-          }}
+          className="relative z-20 flex items-center gap-2 rounded-card border px-3 py-2 bg-paper-raised border-line"
         >
-          <Search size={14} style={{ color: "var(--color-ink-soft)" }} />
+          <Search className="text-ink-soft" size={14} />
           <input
             ref={inputRef}
             value={filters.search}
@@ -217,15 +213,13 @@ export function SmartSearchBar({
             onBlur={() => setPickerOpen(false)}
             onKeyDown={onKeyDown}
             placeholder="Search tasks, or press ⏎ to add one…"
-            className="flex-1 bg-transparent text-[13px] outline-none"
-            style={{ color: "var(--color-ink)" }}
+            className="flex-1 bg-transparent text-[13px] outline-none text-ink"
           />
           {active && (
             <button
               type="button"
               onClick={clear}
-              className="font-mono text-[11px]"
-              style={{ color: "var(--color-ink-soft)" }}
+              className="font-mono text-[11px] text-ink-soft"
             >
               Clear
             </button>
@@ -234,11 +228,7 @@ export function SmartSearchBar({
 
         {showPicker && (
           <div
-            className="gtd-scrollbar absolute top-full right-0 left-0 z-30 mt-0.5 max-h-[240px] overflow-y-auto rounded-[4px] border"
-            style={{
-              background: "var(--color-paper-raised)",
-              borderColor: "var(--color-line)",
-            }}
+            className="gtd-scrollbar absolute top-full right-0 left-0 z-30 mt-0.5 max-h-[240px] overflow-y-auto rounded-card border bg-paper-raised border-line"
             onMouseDown={(e) => e.preventDefault()}
           >
             {suggestions.map((p, i) => (
@@ -248,12 +238,9 @@ export function SmartSearchBar({
                 tabIndex={-1}
                 onMouseEnter={() => setHighlight(i)}
                 onClick={() => applyProject(p)}
-                className="block w-full px-3 py-2 text-left text-[13px]"
-                style={{
-                  background:
-                    i === highlight ? "var(--color-paper)" : "transparent",
-                  color: "var(--color-ink)",
-                }}
+                className="block w-full px-3 py-2 text-left text-[13px] text-ink"
+                style={{ background:
+                    i === highlight ? "var(--color-paper)" : "transparent" }}
               >
                 {p.name}
               </button>
@@ -302,8 +289,8 @@ export function SmartSearchBar({
         })}
 
         <span
-          className="mx-1"
-          style={{ width: 1, height: 16, background: "var(--color-line)" }}
+          className="mx-1 bg-line"
+          style={{ width: 1, height: 16 }}
         />
 
         {(Object.entries(STATUS_LABEL) as [StatusFilter, string][]).map(
@@ -335,8 +322,8 @@ export function SmartSearchBar({
         {availableTags.length > 0 && (
           <>
             <span
-              className="mx-1"
-              style={{ width: 1, height: 16, background: "var(--color-line)" }}
+              className="mx-1 bg-line"
+              style={{ width: 1, height: 16 }}
             />
             {availableTags.map((tag) => {
               const on = filters.tags.has(tag);

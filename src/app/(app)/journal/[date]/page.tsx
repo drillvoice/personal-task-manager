@@ -34,8 +34,7 @@ export default async function JournalDatePage({
       <header className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
           <p
-            className="font-mono mb-1 text-[11px]"
-            style={{ color: "var(--color-ink-soft)" }}
+            className="font-mono mb-1 text-[11px] text-ink-soft"
           >
             {isToday ? "Today" : "Journal"}
           </p>

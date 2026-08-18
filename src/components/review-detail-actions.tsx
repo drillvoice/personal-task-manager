@@ -35,8 +35,7 @@ export function ReviewDetailActions({
     <div>
       {error && (
         <p
-          className="font-mono mb-2 text-[11px] sm:text-right"
-          style={{ color: "var(--color-danger)" }}
+          className="font-mono mb-2 text-[11px] sm:text-right text-danger"
         >
           {error}
         </p>
@@ -44,11 +43,7 @@ export function ReviewDetailActions({
       <div className="flex flex-wrap items-center gap-2 sm:justify-end">
         <Link
           href={`/review/${reviewId}/export`}
-          className="font-mono rounded-full border px-3 py-1.5 text-[12px] font-semibold"
-          style={{
-            borderColor: "var(--color-ink)",
-            color: "var(--color-ink)",
-          }}
+          className="font-mono rounded-full border px-3 py-1.5 text-[12px] font-semibold border-ink text-ink"
         >
           Export
         </Link>
@@ -56,12 +51,8 @@ export function ReviewDetailActions({
           type="button"
           onClick={edit}
           disabled={pending}
-          className="font-mono rounded-full border px-3 py-1.5 text-[12px] font-semibold"
-          style={{
-            borderColor: "var(--color-ink)",
-            color: "var(--color-ink)",
-            opacity: pending ? 0.6 : 1,
-          }}
+          className="font-mono rounded-full border px-3 py-1.5 text-[12px] font-semibold border-ink text-ink"
+          style={{ opacity: pending ? 0.6 : 1 }}
         >
           {completed ? "Reopen to edit" : "Continue editing"}
         </button>
@@ -72,12 +63,8 @@ export function ReviewDetailActions({
               type="button"
               onClick={remove}
               disabled={pending}
-              className="font-mono rounded-full px-3 py-1.5 text-[12px] font-semibold"
-              style={{
-                background: "var(--color-danger)",
-                color: "var(--color-paper)",
-                opacity: pending ? 0.6 : 1,
-              }}
+              className="font-mono rounded-full px-3 py-1.5 text-[12px] font-semibold bg-danger text-paper"
+              style={{ opacity: pending ? 0.6 : 1 }}
             >
               Confirm delete
             </button>
@@ -85,8 +72,7 @@ export function ReviewDetailActions({
               type="button"
               onClick={() => setConfirming(false)}
               disabled={pending}
-              className="font-mono px-2 py-1.5 text-[12px]"
-              style={{ color: "var(--color-ink-soft)" }}
+              className="font-mono px-2 py-1.5 text-[12px] text-ink-soft"
             >
               Cancel
             </button>
@@ -96,11 +82,7 @@ export function ReviewDetailActions({
             type="button"
             onClick={() => setConfirming(true)}
             disabled={pending}
-            className="font-mono rounded-full border px-3 py-1.5 text-[12px] font-semibold"
-            style={{
-              borderColor: "var(--color-danger)",
-              color: "var(--color-danger)",
-            }}
+            className="font-mono rounded-full border px-3 py-1.5 text-[12px] font-semibold border-danger text-danger"
           >
             Delete
           </button>

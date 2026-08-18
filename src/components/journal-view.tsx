@@ -30,8 +30,7 @@ export function JournalView({
   return (
     <div>
       <div
-        className="mb-2 inline-flex rounded-[4px] border p-0.5"
-        style={{ borderColor: "var(--color-line)" }}
+        className="mb-2 inline-flex rounded-card border p-0.5 border-line"
       >
         {(["edit", "read"] as const).map((m) => {
           const activeMode = mode === m;

@@ -40,21 +40,15 @@ function CompletedReview({ data }: { data: ReviewCompletedData }) {
       <StreakHeader data={data} />
 
       <div
-        className="mb-4 rounded-[4px] border p-4"
-        style={{
-          background: "var(--color-paper-raised)",
-          borderColor: "var(--color-line)",
-        }}
+        className="mb-4 rounded-card border p-4 bg-paper-raised border-line"
       >
         <p
-          className="font-mono mb-1 text-[11px] font-semibold"
-          style={{ color: "var(--color-teal)" }}
+          className="font-mono mb-1 text-[11px] font-semibold text-teal"
         >
           ✓ Review filed to history
         </p>
         <p
-          className="font-mono mb-3 text-[11px]"
-          style={{ color: "var(--color-ink-soft)" }}
+          className="font-mono mb-3 text-[11px] text-ink-soft"
         >
           Completed {shortDateLabel(c.completedAt)} · week of {c.weekLabel}
         </p>
@@ -89,7 +83,7 @@ function CompletedReview({ data }: { data: ReviewCompletedData }) {
           </ul>
         )}
         {c.reflectionNotes && (
-          <p className="text-[13px]" style={{ color: "var(--color-ink)" }}>
+          <p className="text-[13px] text-ink">
             {c.reflectionNotes}
           </p>
         )}
@@ -99,20 +93,15 @@ function CompletedReview({ data }: { data: ReviewCompletedData }) {
         type="button"
         onClick={start}
         disabled={pending}
-        className="font-mono w-full rounded-full px-5 py-3 text-[13px] font-semibold"
-        style={{
-          background: "var(--color-ink)",
-          color: "var(--color-paper)",
-          opacity: pending ? 0.6 : 1,
-        }}
+        className="font-mono w-full rounded-full px-5 py-3 text-[13px] font-semibold bg-ink text-paper"
+        style={{ opacity: pending ? 0.6 : 1 }}
       >
         Start next review
       </button>
       <div className="mt-3 text-center">
         <Link
           href="/review/history"
-          className="font-mono text-[11px]"
-          style={{ color: "var(--color-accent)" }}
+          className="font-mono text-[11px] text-accent"
         >
           View history →
         </Link>
@@ -166,8 +155,7 @@ function EditingReview({ data }: { data: ReviewEditingData }) {
       <div className="mb-6 space-y-3">
         {data.activeProjects.length === 0 && (
           <p
-            className="font-mono text-[11px]"
-            style={{ color: "var(--color-ink-soft)" }}
+            className="font-mono text-[11px] text-ink-soft"
           >
             No active projects. Add one from the Projects tab.
           </p>
@@ -191,7 +179,7 @@ function EditingReview({ data }: { data: ReviewEditingData }) {
         n={3}
         label="SET WEEKLY PRIORITIES"
         extra={
-          <span style={{ color: "var(--color-ink-soft)" }}>
+          <span className="text-ink-soft">
             {" "}
             ({selectedCount}/{WEEKLY_PRIORITY_CAP} selected)
           </span>
@@ -199,23 +187,17 @@ function EditingReview({ data }: { data: ReviewEditingData }) {
       />
       {priorityError && (
         <p
-          className="font-mono mb-2 text-[11px]"
-          style={{ color: "var(--color-danger)" }}
+          className="font-mono mb-2 text-[11px] text-danger"
         >
           {priorityError}
         </p>
       )}
       <div
-        className="mb-6 rounded-[4px] border p-1"
-        style={{
-          background: "var(--color-paper-raised)",
-          borderColor: "var(--color-line)",
-        }}
+        className="mb-6 rounded-card border p-1 bg-paper-raised border-line"
       >
         {data.actionableTasks.length === 0 && (
           <p
-            className="p-3 text-[13px]"
-            style={{ color: "var(--color-ink-soft)" }}
+            className="p-3 text-[13px] text-ink-soft"
           >
             No open tasks to pick from.
           </p>
@@ -226,18 +208,15 @@ function EditingReview({ data }: { data: ReviewEditingData }) {
           return (
             <label
               key={t.id}
-              className="flex items-center gap-3 border-b px-2 py-2.5 text-[14px]"
-              style={{
-                borderColor: "var(--color-line)",
-                opacity: disabled ? 0.4 : 1,
-              }}
+              className="flex items-center gap-3 border-b px-2 py-2.5 text-[14px] border-line"
+              style={{ opacity: disabled ? 0.4 : 1 }}
             >
               <button
                 type="button"
                 onClick={() => !disabled && togglePriority(t.id)}
                 disabled={pending || disabled}
                 aria-pressed={on}
-                className="flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded-[4px] border-[1.5px]"
+                className="flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded-card border-[1.5px]"
                 style={{
                   background: on ? "var(--color-teal)" : "transparent",
                   borderColor: on
@@ -249,13 +228,12 @@ function EditingReview({ data }: { data: ReviewEditingData }) {
                   <Check size={12} color="var(--color-paper-raised)" strokeWidth={3} />
                 )}
               </button>
-              <Flag size={12} style={{ color: "var(--color-ink-soft)" }} />
+              <Flag className="text-ink-soft" size={12} />
               <PriorityBadge priority={t.priority} />
               <span className="flex-1">{t.title}</span>
               {t.projectName && (
                 <span
-                  className="font-mono text-[11px]"
-                  style={{ color: "var(--color-ink-soft)" }}
+                  className="font-mono text-[11px] text-ink-soft"
                 >
                   {t.projectName}
                 </span>
@@ -294,8 +272,7 @@ function StreakHeader({
     <>
       <h1 className="font-display mb-1 text-xl font-bold">Weekly review</h1>
       <p
-        className="font-mono mb-6 text-[11px]"
-        style={{ color: "var(--color-ink-soft)" }}
+        className="font-mono mb-6 text-[11px] text-ink-soft"
       >
         {line}
       </p>
@@ -314,8 +291,7 @@ function SectionHeading({
 }) {
   return (
     <h2
-      className="font-mono mb-2 text-[11px] font-semibold"
-      style={{ color: "var(--color-accent)" }}
+      className="font-mono mb-2 text-[11px] font-semibold text-accent"
     >
       {n} · {label}
       {extra}
@@ -371,11 +347,7 @@ function GetClear({
 
   return (
     <div
-      className="mb-6 rounded-[4px] border p-4"
-      style={{
-        background: "var(--color-paper-raised)",
-        borderColor: "var(--color-line)",
-      }}
+      className="mb-6 rounded-card border p-4 bg-paper-raised border-line"
     >
       <FlagLabel
         checked={inbox}
@@ -383,8 +355,7 @@ function GetClear({
         label="Inbox processed to zero"
       />
       <div
-        className="border-t"
-        style={{ borderColor: "var(--color-line)" }}
+        className="border-t border-line"
       />
       <FlagLabel
         checked={loops}
@@ -392,8 +363,7 @@ function GetClear({
         label="Loose open loops captured"
       />
       <div
-        className="border-t"
-        style={{ borderColor: "var(--color-line)" }}
+        className="border-t border-line"
       />
       <FlagLabel
         checked={lastWeekCalendar}
@@ -407,8 +377,7 @@ function GetClear({
         label="Review last week's calendar"
       />
       <div
-        className="border-t"
-        style={{ borderColor: "var(--color-line)" }}
+        className="border-t border-line"
       />
       <FlagLabel
         checked={thisWeekCalendar}
@@ -422,10 +391,9 @@ function GetClear({
         label="Review this week's calendar"
       />
       <div
-        className="mt-3 flex items-center gap-2 border-t pt-3"
-        style={{ borderColor: "var(--color-line)" }}
+        className="mt-3 flex items-center gap-2 border-t pt-3 border-line"
       >
-        <Plus size={14} style={{ color: "var(--color-ink-soft)" }} />
+        <Plus className="text-ink-soft" size={14} />
         <input
           value={capture}
           onChange={(e) => setCapture(e.target.value)}
@@ -437,8 +405,7 @@ function GetClear({
           }}
           disabled={pending}
           placeholder="Quick capture something you just remembered… (#tag, or a due date like 'in 3 days')"
-          className="flex-1 bg-transparent text-[13px] outline-none"
-          style={{ color: "var(--color-ink)" }}
+          className="flex-1 bg-transparent text-[13px] outline-none text-ink"
         />
       </div>
     </div>
@@ -460,7 +427,7 @@ function FlagLabel({
         type="button"
         onClick={onChange}
         aria-pressed={checked}
-        className="flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded-[4px] border-[1.5px]"
+        className="flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded-card border-[1.5px]"
         style={{
           background: checked ? "var(--color-teal)" : "transparent",
           borderColor: checked ? "var(--color-teal)" : "var(--color-ink-soft)",
@@ -519,11 +486,7 @@ function ReviewProjectCard({
 
   return (
     <div
-      className="rounded-[4px] border p-4"
-      style={{
-        background: "var(--color-paper-raised)",
-        borderColor: "var(--color-line)",
-      }}
+      className="rounded-card border p-4 bg-paper-raised border-line"
     >
       <h3 className="font-display mb-2 text-[15px] font-semibold">{name}</h3>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_minmax(220px,300px)]">
@@ -531,17 +494,12 @@ function ReviewProjectCard({
           {previousNotes && (
             <div className="mb-2">
               <p
-                className="font-mono mb-1 text-[10px] tracking-wide uppercase"
-                style={{ color: "var(--color-ink-soft)" }}
+                className="font-mono mb-1 text-[10px] tracking-wide uppercase text-ink-soft"
               >
                 From {previousWeekLabel}
               </p>
               <p
-                className="rounded-[4px] border border-dashed p-2 text-[13px] leading-relaxed whitespace-pre-wrap"
-                style={{
-                  borderColor: "var(--color-line)",
-                  color: "var(--color-ink-soft)",
-                }}
+                className="rounded-card border border-dashed p-2 text-[13px] leading-relaxed whitespace-pre-wrap border-line text-ink-soft"
               >
                 {previousNotes}
               </p>
@@ -553,18 +511,13 @@ function ReviewProjectCard({
             onBlur={saveNotes}
             rows={6}
             placeholder="Any update? What's the state of this project?"
-            className="w-full resize-y border bg-transparent p-3 text-[13px] leading-relaxed outline-none"
-            style={{
-              borderColor: "var(--color-line)",
-              color: "var(--color-ink)",
-            }}
+            className="w-full resize-y border bg-transparent p-3 text-[13px] leading-relaxed outline-none border-line text-ink"
           />
         </div>
         <div>
           {tasks.length === 0 && (
             <p
-              className="py-1 text-[12px]"
-              style={{ color: "var(--color-ink-soft)" }}
+              className="py-1 text-[12px] text-ink-soft"
             >
               No open tasks.
             </p>
@@ -578,7 +531,7 @@ function ReviewProjectCard({
             />
           ))}
           <div className="mt-2 flex items-center gap-2 pt-2">
-            <Plus size={14} style={{ color: "var(--color-ink-soft)" }} />
+            <Plus className="text-ink-soft" size={14} />
             <input
               value={action}
               onChange={(e) => setAction(e.target.value)}
@@ -590,8 +543,7 @@ function ReviewProjectCard({
               }}
               disabled={pending}
               placeholder="Add a next action… (#tag, or a due date like 'in 3 days')"
-              className="flex-1 bg-transparent text-[13px] outline-none"
-              style={{ color: "var(--color-ink)" }}
+              className="flex-1 bg-transparent text-[13px] outline-none text-ink"
             />
           </div>
         </div>
@@ -625,8 +577,7 @@ function ReviewProjectTaskRow({
 
   return (
     <div
-      className="flex items-center gap-2 border-b px-1 py-2 text-[13px]"
-      style={{ borderColor: "var(--color-line)" }}
+      className="flex items-center gap-2 border-b px-1 py-2 text-[13px] border-line"
     >
       <PriorityBadge priority={task.priority} />
       <span
@@ -688,12 +639,8 @@ function FinishButton() {
       type="button"
       onClick={submit}
       disabled={pending}
-      className="font-mono w-full rounded-full px-5 py-3 text-[13px] font-semibold"
-      style={{
-        background: "var(--color-ink)",
-        color: "var(--color-paper)",
-        opacity: pending ? 0.6 : 1,
-      }}
+      className="font-mono w-full rounded-full px-5 py-3 text-[13px] font-semibold bg-ink text-paper"
+      style={{ opacity: pending ? 0.6 : 1 }}
     >
       Finish review
     </button>

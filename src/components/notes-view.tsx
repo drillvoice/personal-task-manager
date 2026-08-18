@@ -43,14 +43,12 @@ export function NotesView({
     <div className="p-4">
       <header className="mb-4">
         <p
-          className="font-mono mb-1 text-[11px] tracking-wide uppercase"
-          style={{ color: "var(--color-ink-soft)" }}
+          className="font-mono mb-1 text-[11px] tracking-wide uppercase text-ink-soft"
         >
           Filing cabinet
         </p>
         <h1
-          className="font-display text-xl font-bold"
-          style={{ color: "var(--color-ink)" }}
+          className="font-display text-xl font-bold text-ink"
         >
           Notes
         </h1>
@@ -69,12 +67,7 @@ export function NotesView({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search notes…"
-          className="w-full rounded-[4px] border py-2 pr-9 pl-9 text-[13px] outline-none"
-          style={{
-            background: "var(--color-paper-raised)",
-            borderColor: "var(--color-line)",
-            color: "var(--color-ink)",
-          }}
+          className="w-full rounded-card border py-2 pr-9 pl-9 text-[13px] outline-none bg-paper-raised border-line text-ink"
         />
         {search && (
           <button
@@ -90,11 +83,7 @@ export function NotesView({
 
       {notes.length === 0 ? (
         <p
-          className="font-mono rounded-[4px] border border-dashed p-6 text-center text-[12px]"
-          style={{
-            borderColor: "var(--color-line)",
-            color: "var(--color-ink-soft)",
-          }}
+          className="font-mono rounded-card border border-dashed p-6 text-center text-[12px] border-line text-ink-soft"
         >
           {query ? `No notes matching "${query}"` : "No notes yet"}
         </p>

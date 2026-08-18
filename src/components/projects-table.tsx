@@ -70,19 +70,14 @@ export function ProjectsTable({
           <button
             type="button"
             onClick={() => setShowAdd((s) => !s)}
-            className="font-mono flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-semibold"
-            style={{
-              background: "var(--color-accent)",
-              color: "var(--color-paper-raised)",
-            }}
+            className="font-mono flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-semibold bg-accent text-paper-raised"
           >
             <Plus size={12} /> New project
           </button>
         </div>
       </div>
       <p
-        className="mb-4 text-[13px]"
-        style={{ color: "var(--color-ink-soft)" }}
+        className="mb-4 text-[13px] text-ink-soft"
       >
         Click a cell to write the week&rsquo;s update — it saves when you
         click away. Columns fill in as you add notes across weeks.
@@ -96,22 +91,15 @@ export function ProjectsTable({
       )}
 
       <div
-        className="gtd-scrollbar overflow-x-auto rounded-[4px] border"
-        style={{
-          background: "var(--color-paper-raised)",
-          borderColor: "var(--color-line)",
-        }}
+        className="gtd-scrollbar overflow-x-auto rounded-card border bg-paper-raised border-line"
       >
         <table className="gtd-history-table w-full text-[13px]">
           <thead>
             <tr>
               <th
-                className="font-display sticky left-0 top-0 z-20 whitespace-nowrap px-3 py-2 text-left text-[13px] font-semibold"
-                style={{
-                  background: "var(--color-paper-raised)",
-                  width: "1%",
-                  maxWidth: 220,
-                }}
+                className="font-display sticky left-0 top-0 z-20 whitespace-nowrap px-3 py-2 text-left text-[13px] font-semibold bg-paper-raised"
+                style={{ width: "1%",
+                  maxWidth: 220 }}
               >
                 Project
               </th>
@@ -140,8 +128,7 @@ export function ProjectsTable({
               <tr>
                 <td
                   colSpan={data.weeks.length + 1}
-                  className="px-3 py-6 text-center text-[13px]"
-                  style={{ color: "var(--color-ink-soft)" }}
+                  className="px-3 py-6 text-center text-[13px] text-ink-soft"
                 >
                   No projects yet. Add one to start tracking weekly context.
                 </td>
@@ -179,8 +166,7 @@ export function ProjectsTable({
                     {row.name}
                     {row.status === "archived" && (
                       <span
-                        className="font-mono ml-1.5 text-[10px] font-medium"
-                        style={{ color: "var(--color-ink-soft)" }}
+                        className="font-mono ml-1.5 text-[10px] font-medium text-ink-soft"
                       >
                         archived
                       </span>
@@ -212,11 +198,7 @@ export function ProjectsTable({
           />
         ) : (
           <div
-            className="font-mono flex min-h-[220px] items-center justify-center rounded-[4px] border border-dashed text-[11px]"
-            style={{
-              borderColor: "var(--color-line)",
-              color: "var(--color-ink-soft)",
-            }}
+            className="font-mono flex min-h-[220px] items-center justify-center rounded-card border border-dashed text-[11px] border-line text-ink-soft"
           >
             Select a project
           </div>
@@ -302,19 +284,15 @@ function NoteCell({
       />
       {error ? (
         <p
-          className="font-mono px-1.5 text-[10px]"
-          style={{ color: "var(--color-danger)" }}
+          className="font-mono px-1.5 text-[10px] text-danger"
         >
           {error}
         </p>
       ) : (
         <p
-          className="font-mono px-1.5 text-[10px]"
-          style={{
-            color: "var(--color-ink-soft)",
-            opacity: pending ? 1 : 0,
-            transition: "opacity 150ms",
-          }}
+          className="font-mono px-1.5 text-[10px] text-ink-soft"
+          style={{ opacity: pending ? 1 : 0,
+            transition: "opacity 150ms" }}
         >
           {pending ? "saving…" : " "}
         </p>

@@ -29,8 +29,7 @@ export default async function TodayPage() {
     <div className="p-4">
       <header className="mb-6">
         <p
-          className="font-mono mb-1 text-[11px]"
-          style={{ color: "var(--color-ink-soft)" }}
+          className="font-mono mb-1 text-[11px] text-ink-soft"
         >
           {dateHeader}
         </p>
@@ -42,20 +41,14 @@ export default async function TodayPage() {
           <section className="mb-8">
             <div className="mb-2 flex items-center justify-between">
               <h2
-                className="font-mono text-[11px] font-semibold"
-                style={{ color: "var(--color-ink-soft)" }}
+                className="font-mono text-[11px] font-semibold text-ink-soft"
               >
                 This week&rsquo;s three
               </h2>
             </div>
             {today.weeklyPriorities.length === 0 ? (
               <p
-                className="font-mono rounded-[4px] border p-3 text-[12px]"
-                style={{
-                  background: "var(--color-paper-raised)",
-                  borderColor: "var(--color-line)",
-                  color: "var(--color-ink-soft)",
-                }}
+                className="font-mono rounded-card border p-3 text-[12px] bg-paper-raised border-line text-ink-soft"
               >
                 No weekly priorities set.{" "}
                 <Link href="/review" className="underline">
@@ -71,8 +64,7 @@ export default async function TodayPage() {
           <section className="mb-8">
             <div className="mb-2 flex items-center justify-between">
               <h2
-                className="font-mono text-[11px] font-semibold"
-                style={{ color: "var(--color-ink-soft)" }}
+                className="font-mono text-[11px] font-semibold text-ink-soft"
               >
                 Today&rsquo;s three
               </h2>
@@ -90,20 +82,14 @@ export default async function TodayPage() {
           <section className="mb-8">
             <div className="mb-2 flex items-center justify-between">
               <h2
-                className="font-mono text-[11px] font-semibold"
-                style={{ color: "var(--color-ink-soft)" }}
+                className="font-mono text-[11px] font-semibold text-ink-soft"
               >
                 Also due today
               </h2>
             </div>
             {today.alsoDue.length === 0 ? (
               <p
-                className="font-mono rounded-[4px] border p-3 text-[12px]"
-                style={{
-                  background: "var(--color-paper-raised)",
-                  borderColor: "var(--color-line)",
-                  color: "var(--color-ink-soft)",
-                }}
+                className="font-mono rounded-card border p-3 text-[12px] bg-paper-raised border-line text-ink-soft"
               >
                 Nothing else due today. Nice.
               </p>
@@ -115,8 +101,7 @@ export default async function TodayPage() {
           <section>
             <div className="mb-2 flex items-center justify-between">
               <h2
-                className="font-mono text-[11px] font-semibold"
-                style={{ color: "var(--color-ink-soft)" }}
+                className="font-mono text-[11px] font-semibold text-ink-soft"
               >
                 Tomorrow&rsquo;s three
               </h2>

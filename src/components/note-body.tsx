@@ -29,8 +29,7 @@ export function NoteBody({
         type="button"
         onClick={() => onTagClick(name)}
         title={`Search for #${name}`}
-        className="font-mono mx-0.5 inline-flex items-center rounded-[4px] border px-1.5 py-0.5 text-[11px]"
-        style={{ color: "var(--color-teal)", borderColor: "var(--color-teal)" }}
+        className="font-mono mx-0.5 inline-flex items-center rounded-card border px-1.5 py-0.5 text-[11px] text-teal border-teal"
       >
         #{name}
       </button>,
@@ -41,8 +40,7 @@ export function NoteBody({
 
   return (
     <p
-      className="text-[13px] leading-relaxed whitespace-pre-wrap"
-      style={{ color: "var(--color-ink)" }}
+      className="text-[13px] leading-relaxed whitespace-pre-wrap text-ink"
     >
       {segments.map((segment, i) => (
         <Fragment key={i}>{segment}</Fragment>

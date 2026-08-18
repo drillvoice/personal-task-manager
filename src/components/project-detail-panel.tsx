@@ -7,7 +7,6 @@ import {
   updateProjectStatus,
 } from "@/app/(app)/projects/actions";
 import type { ProjectsTableRow } from "@/lib/server/projects";
-import { inputStyle } from "@/components/field-style";
 
 type EditableStatus = "active" | "someday_maybe" | "archived";
 
@@ -71,11 +70,7 @@ export function ProjectDetailPanel({
 
   return (
     <div
-      className="rounded-[4px] border p-4"
-      style={{
-        background: "var(--color-paper-raised)",
-        borderColor: "var(--color-line)",
-      }}
+      className="rounded-card border p-4 bg-paper-raised border-line"
       onKeyDown={(e) => {
         if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
           e.preventDefault();
@@ -85,8 +80,7 @@ export function ProjectDetailPanel({
     >
       <div className="mb-3 flex items-center justify-between">
         <span
-          className="font-mono text-[10px] font-semibold tracking-[0.08em] uppercase"
-          style={{ color: "var(--color-ink-soft)" }}
+          className="font-mono text-[10px] font-semibold tracking-[0.08em] uppercase text-ink-soft"
         >
           Project
         </span>
@@ -94,8 +88,7 @@ export function ProjectDetailPanel({
           type="button"
           onClick={onClose}
           aria-label="Close project panel"
-          className="-m-1 rounded p-1"
-          style={{ color: "var(--color-ink-soft)" }}
+          className="-m-1 rounded p-1 text-ink-soft"
         >
           <X size={16} />
         </button>
@@ -107,13 +100,11 @@ export function ProjectDetailPanel({
         onBlur={saveName}
         placeholder="Name"
         aria-label="Project name"
-        className="mb-3 w-full border p-2 text-[13px] outline-none"
-        style={inputStyle}
+        className="mb-3 w-full border p-2 text-[13px] outline-none bg-transparent border-line text-ink"
       />
 
       <span
-        className="font-mono mb-1.5 block text-[10px] font-semibold tracking-[0.08em] uppercase"
-        style={{ color: "var(--color-ink-soft)" }}
+        className="font-mono mb-1.5 block text-[10px] font-semibold tracking-[0.08em] uppercase text-ink-soft"
       >
         Status
       </span>
@@ -141,15 +132,14 @@ export function ProjectDetailPanel({
           </button>
         ))}
       </div>
-      <p className="text-[12px]" style={{ color: "var(--color-ink-soft)" }}>
+      <p className="text-[12px] text-ink-soft">
         Archived projects are hidden from Tasks and the weekly Review. Assigning
         a task to one brings it back automatically.
       </p>
 
       {error && (
         <p
-          className="font-mono mt-2 text-[11px]"
-          style={{ color: "var(--color-danger)" }}
+          className="font-mono mt-2 text-[11px] text-danger"
         >
           {error}
         </p>

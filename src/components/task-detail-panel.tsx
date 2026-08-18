@@ -140,16 +140,11 @@ export function TaskDetailPanel({
 
   return (
     <div
-      className="rounded-[4px] border p-4"
-      style={{
-        background: "var(--color-paper-raised)",
-        borderColor: "var(--color-line)",
-      }}
+      className="rounded-card border p-4 bg-paper-raised border-line"
     >
       <div className="mb-2 flex items-center justify-between">
         <span
-          className="font-mono text-[10px] font-semibold tracking-[0.08em] uppercase"
-          style={{ color: "var(--color-ink-soft)" }}
+          className="font-mono text-[10px] font-semibold tracking-[0.08em] uppercase text-ink-soft"
         >
           Task
         </span>
@@ -157,8 +152,7 @@ export function TaskDetailPanel({
           type="button"
           onClick={onClose}
           aria-label="Close task panel"
-          className="-m-1 rounded p-1"
-          style={{ color: "var(--color-ink-soft)" }}
+          className="-m-1 rounded p-1 text-ink-soft"
         >
           <X size={16} />
         </button>
@@ -178,8 +172,7 @@ export function TaskDetailPanel({
           }
         }}
         aria-label="Task title"
-        className="font-display mb-3 w-full border-b bg-transparent pb-2.5 text-[17px] font-semibold outline-none"
-        style={{ borderColor: "var(--color-line)", color: "var(--color-ink)" }}
+        className="font-display mb-3 w-full border-b bg-transparent pb-2.5 text-[17px] font-semibold outline-none border-line text-ink"
       />
 
       <div className="mb-4 flex items-center justify-between gap-3">
@@ -188,11 +181,10 @@ export function TaskDetailPanel({
           onClick={toggleDone}
           disabled={pending}
           aria-pressed={done}
-          className="font-mono flex items-center gap-2 text-[11px] font-medium"
-          style={{ color: "var(--color-ink-soft)" }}
+          className="font-mono flex items-center gap-2 text-[11px] font-medium text-ink-soft"
         >
           <span
-            className="flex h-[18px] w-[18px] items-center justify-center rounded-[4px] border-[1.5px]"
+            className="flex h-[18px] w-[18px] items-center justify-center rounded-card border-[1.5px]"
             style={{
               background: done ? "var(--color-teal)" : "transparent",
               borderColor: done ? "var(--color-teal)" : "var(--color-ink-soft)",
@@ -217,7 +209,7 @@ export function TaskDetailPanel({
               ? "Remove from today's three top tasks"
               : "Make this one of today's three top tasks"
           }
-          className="font-mono flex shrink-0 items-center gap-1.5 rounded-[4px] border px-2 py-1 text-[11px] font-medium"
+          className="font-mono flex shrink-0 items-center gap-1.5 rounded-card border px-2 py-1 text-[11px] font-medium"
           style={{
             background: inTodayPlan
               ? "var(--color-accent-soft)"
@@ -237,8 +229,7 @@ export function TaskDetailPanel({
 
       <div className="mb-3.5">
         <span
-          className="font-mono mb-1.5 block text-[10px] font-semibold tracking-[0.08em] uppercase"
-          style={{ color: "var(--color-ink-soft)" }}
+          className="font-mono mb-1.5 block text-[10px] font-semibold tracking-[0.08em] uppercase text-ink-soft"
         >
           Project
         </span>
@@ -258,8 +249,7 @@ export function TaskDetailPanel({
 
       <div className="mb-3.5">
         <span
-          className="font-mono mb-1.5 block text-[10px] font-semibold tracking-[0.08em] uppercase"
-          style={{ color: "var(--color-ink-soft)" }}
+          className="font-mono mb-1.5 block text-[10px] font-semibold tracking-[0.08em] uppercase text-ink-soft"
         >
           People
         </span>
@@ -279,8 +269,7 @@ export function TaskDetailPanel({
 
       <div className="mb-3.5">
         <span
-          className="font-mono mb-1.5 block text-[10px] font-semibold tracking-[0.08em] uppercase"
-          style={{ color: "var(--color-ink-soft)" }}
+          className="font-mono mb-1.5 block text-[10px] font-semibold tracking-[0.08em] uppercase text-ink-soft"
         >
           Tags
         </span>
@@ -299,8 +288,7 @@ export function TaskDetailPanel({
 
       <div className="mb-3.5">
         <span
-          className="font-mono mb-1.5 block text-[10px] font-semibold tracking-[0.08em] uppercase"
-          style={{ color: "var(--color-ink-soft)" }}
+          className="font-mono mb-1.5 block text-[10px] font-semibold tracking-[0.08em] uppercase text-ink-soft"
         >
           Due
         </span>
@@ -318,19 +306,14 @@ export function TaskDetailPanel({
               // showPicker throws where unsupported; native affordance remains.
             }
           }}
-          className="w-full border p-2 text-[13px] outline-none"
-          style={{
-            background: "transparent",
-            borderColor: "var(--color-line)",
-            color: "var(--color-ink)",
-          }}
+          className="w-full border p-2 text-[13px] outline-none border-line text-ink"
+          style={{ background: "transparent" }}
         />
       </div>
 
       <div className="mb-1">
         <span
-          className="font-mono mb-1.5 block text-[10px] font-semibold tracking-[0.08em] uppercase"
-          style={{ color: "var(--color-ink-soft)" }}
+          className="font-mono mb-1.5 block text-[10px] font-semibold tracking-[0.08em] uppercase text-ink-soft"
         >
           Notes
         </span>
@@ -344,16 +327,14 @@ export function TaskDetailPanel({
 
       {error && (
         <p
-          className="font-mono mb-2 text-[11px]"
-          style={{ color: "var(--color-danger)" }}
+          className="font-mono mb-2 text-[11px] text-danger"
         >
           {error}
         </p>
       )}
 
       <div
-        className="flex items-center justify-between border-t pt-3"
-        style={{ borderColor: "var(--color-line)" }}
+        className="flex items-center justify-between border-t pt-3 border-line"
       >
         <span>
         <ConfirmDeleteButton
@@ -363,8 +344,7 @@ export function TaskDetailPanel({
         />
         </span>
         <span
-          className="font-mono text-[10px]"
-          style={{ color: "var(--color-ink-soft)" }}
+          className="font-mono text-[10px] text-ink-soft"
         >
           esc closes
         </span>

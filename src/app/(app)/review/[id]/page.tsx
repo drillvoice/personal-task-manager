@@ -22,8 +22,7 @@ export default async function ReviewDetailPage({
       <header className="mb-4">
         <Link
           href="/review/history"
-          className="font-mono text-[11px]"
-          style={{ color: "var(--color-accent)" }}
+          className="font-mono text-[11px] text-accent"
         >
           ← review history
         </Link>
@@ -33,8 +32,7 @@ export default async function ReviewDetailPage({
               {review.weekLabel}
             </h1>
             <p
-              className="font-mono text-[11px]"
-              style={{ color: "var(--color-ink-soft)" }}
+              className="font-mono text-[11px] text-ink-soft"
             >
               {review.completedAt
                 ? `completed ${shortDateLabel(review.completedAt)}`
@@ -50,25 +48,19 @@ export default async function ReviewDetailPage({
 
       <section className="mb-4">
         <h2
-          className="font-mono mb-2 text-[11px] font-semibold"
-          style={{ color: "var(--color-accent)" }}
+          className="font-mono mb-2 text-[11px] font-semibold text-accent"
         >
           WEEKLY PRIORITIES
         </h2>
         {review.priorities.length === 0 ? (
           <p
-            className="font-mono text-[12px]"
-            style={{ color: "var(--color-ink-soft)" }}
+            className="font-mono text-[12px] text-ink-soft"
           >
             None set.
           </p>
         ) : (
           <ul
-            className="rounded-[4px] border p-3"
-            style={{
-              background: "var(--color-paper-raised)",
-              borderColor: "var(--color-line)",
-            }}
+            className="rounded-card border p-3 bg-paper-raised border-line"
           >
             {review.priorities.map((p, i) => (
               <li
@@ -102,15 +94,13 @@ export default async function ReviewDetailPage({
 
       <section className="mb-4">
         <h2
-          className="font-mono mb-2 text-[11px] font-semibold"
-          style={{ color: "var(--color-accent)" }}
+          className="font-mono mb-2 text-[11px] font-semibold text-accent"
         >
           PROJECT NOTES
         </h2>
         {review.projectNotes.length === 0 ? (
           <p
-            className="font-mono text-[12px]"
-            style={{ color: "var(--color-ink-soft)" }}
+            className="font-mono text-[12px] text-ink-soft"
           >
             No project notes for this week.
           </p>
@@ -119,18 +109,13 @@ export default async function ReviewDetailPage({
             {review.projectNotes.map((p, i) => (
               <div
                 key={i}
-                className="rounded-[4px] border p-3"
-                style={{
-                  background: "var(--color-paper-raised)",
-                  borderColor: "var(--color-line)",
-                }}
+                className="rounded-card border p-3 bg-paper-raised border-line"
               >
                 <h3 className="font-display mb-1 text-[14px] font-semibold">
                   {p.name}
                 </h3>
                 <p
-                  className="text-[13px] leading-relaxed whitespace-pre-wrap"
-                  style={{ color: "var(--color-ink)" }}
+                  className="text-[13px] leading-relaxed whitespace-pre-wrap text-ink"
                 >
                   {p.note}
                 </p>
@@ -142,26 +127,19 @@ export default async function ReviewDetailPage({
 
       <section>
         <h2
-          className="font-mono mb-2 text-[11px] font-semibold"
-          style={{ color: "var(--color-accent)" }}
+          className="font-mono mb-2 text-[11px] font-semibold text-accent"
         >
           REFLECTION
         </h2>
         {review.reflectionNotes.trim() ? (
           <p
-            className="rounded-[4px] border p-3 text-[13px] leading-relaxed whitespace-pre-wrap"
-            style={{
-              background: "var(--color-paper-raised)",
-              borderColor: "var(--color-line)",
-              color: "var(--color-ink)",
-            }}
+            className="rounded-card border p-3 text-[13px] leading-relaxed whitespace-pre-wrap bg-paper-raised border-line text-ink"
           >
             {review.reflectionNotes}
           </p>
         ) : (
           <p
-            className="font-mono text-[12px]"
-            style={{ color: "var(--color-ink-soft)" }}
+            className="font-mono text-[12px] text-ink-soft"
           >
             No reflection written.
           </p>

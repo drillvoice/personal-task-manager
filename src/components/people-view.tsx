@@ -139,11 +139,7 @@ export function PeopleView({
         <button
           type="button"
           onClick={() => setShowAdd((s) => !s)}
-          className="font-mono flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-semibold"
-          style={{
-            background: "var(--color-accent)",
-            color: "var(--color-paper-raised)",
-          }}
+          className="font-mono flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-semibold bg-accent text-paper-raised"
         >
           <Plus size={12} /> New person
         </button>
@@ -160,11 +156,7 @@ export function PeopleView({
       {people.length > 0 && (
         <div className="mb-2 flex justify-end">
           <div
-            className="flex gap-1 rounded-[4px] border p-0.5"
-            style={{
-              background: "var(--color-paper-raised)",
-              borderColor: "var(--color-line)",
-            }}
+            className="flex gap-1 rounded-card border p-0.5 bg-paper-raised border-line"
           >
             {(
               [
@@ -196,16 +188,11 @@ export function PeopleView({
 
       {(people.length === 0 || !groupByOrg) && (
         <div
-          className="mb-4 rounded-[4px] border p-1 px-3"
-          style={{
-            background: "var(--color-paper-raised)",
-            borderColor: "var(--color-line)",
-          }}
+          className="mb-4 rounded-card border p-1 px-3 bg-paper-raised border-line"
         >
           {people.length === 0 && (
             <p
-              className="p-3 text-[13px]"
-              style={{ color: "var(--color-ink-soft)" }}
+              className="p-3 text-[13px] text-ink-soft"
             >
               No people yet.
             </p>
@@ -233,29 +220,19 @@ export function PeopleView({
           ].map((bucket) => (
             <div
               key={bucket.id}
-              className="overflow-hidden rounded-[4px] border"
-              style={{
-                background: "var(--color-paper-raised)",
-                borderColor: "var(--color-line)",
-              }}
+              className="overflow-hidden rounded-card border bg-paper-raised border-line"
             >
               <div
-                className="flex items-center gap-1.5 border-b px-3 py-2"
-                style={{
-                  borderColor: "var(--color-line)",
-                  background: "var(--color-accent)",
-                }}
+                className="flex items-center gap-1.5 border-b px-3 py-2 border-line bg-accent"
               >
-                <Building2 size={14} style={{ color: "var(--color-paper-raised)" }} />
+                <Building2 className="text-paper-raised" size={14} />
                 <h3
-                  className="font-display text-[15px] font-bold"
-                  style={{ color: "var(--color-paper-raised)" }}
+                  className="font-display text-[15px] font-bold text-paper-raised"
                 >
                   {bucket.name}
                 </h3>
                 <span
-                  className="font-mono ml-auto text-[11px]"
-                  style={{ color: "var(--color-paper-raised)" }}
+                  className="font-mono ml-auto text-[11px] text-paper-raised"
                 >
                   {bucket.people.length}
                 </span>
@@ -280,22 +257,16 @@ export function PeopleView({
       )}
 
       <h2
-        className="font-mono mb-2 text-[11px] font-semibold tracking-wide uppercase"
-        style={{ color: "var(--color-ink-soft)" }}
+        className="font-mono mb-2 text-[11px] font-semibold tracking-wide uppercase text-ink-soft"
       >
         Organisations
       </h2>
       <div
-        className="mb-4 rounded-[4px] border p-1 px-3"
-        style={{
-          background: "var(--color-paper-raised)",
-          borderColor: "var(--color-line)",
-        }}
+        className="mb-4 rounded-card border p-1 px-3 bg-paper-raised border-line"
       >
         {orgs.length === 0 && (
           <p
-            className="p-3 text-[13px]"
-            style={{ color: "var(--color-ink-soft)" }}
+            className="p-3 text-[13px] text-ink-soft"
           >
             No organisations yet — create one from the person form.
           </p>
@@ -306,22 +277,16 @@ export function PeopleView({
       </div>
 
       <h2
-        className="font-mono mb-2 text-[11px] font-semibold tracking-wide uppercase"
-        style={{ color: "var(--color-ink-soft)" }}
+        className="font-mono mb-2 text-[11px] font-semibold tracking-wide uppercase text-ink-soft"
       >
         Groups
       </h2>
       <div
-        className="rounded-[4px] border p-1 px-3"
-        style={{
-          background: "var(--color-paper-raised)",
-          borderColor: "var(--color-line)",
-        }}
+        className="rounded-card border p-1 px-3 bg-paper-raised border-line"
       >
         {groups.length === 0 && (
           <p
-            className="p-3 text-[13px]"
-            style={{ color: "var(--color-ink-soft)" }}
+            className="p-3 text-[13px] text-ink-soft"
           >
             No groups yet — create one from the person form, then add it as a
             meeting attendee to bring in everyone at once.
@@ -341,7 +306,7 @@ export function PeopleView({
         </div>
         {people.length > 0 && (
           <div aria-hidden className="invisible mb-2 flex justify-end">
-            <div className="flex gap-1 rounded-[4px] border p-0.5">
+            <div className="flex gap-1 rounded-card border p-0.5">
               <span className="font-mono rounded px-2.5 py-1 text-[11px] font-medium">
                 By organisation
               </span>
@@ -359,11 +324,7 @@ export function PeopleView({
           />
         ) : (
           <div
-            className="font-mono flex min-h-[220px] items-center justify-center rounded-[4px] border border-dashed text-[11px]"
-            style={{
-              borderColor: "var(--color-line)",
-              color: "var(--color-ink-soft)",
-            }}
+            className="font-mono flex min-h-[220px] items-center justify-center rounded-card border border-dashed text-[11px] border-line text-ink-soft"
           >
             Select a person to edit
           </div>

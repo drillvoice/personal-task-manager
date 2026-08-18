@@ -22,8 +22,7 @@ export default async function ReviewExportPage({
       <div className="mb-6 flex items-center gap-3 print:hidden">
         <Link
           href={`/review/${review.id}`}
-          className="font-mono text-[11px]"
-          style={{ color: "var(--color-accent)" }}
+          className="font-mono text-[11px] text-accent"
         >
           ← back to review
         </Link>
