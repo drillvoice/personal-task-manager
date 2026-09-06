@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { Check, Flag, Plus } from "lucide-react";
+import { Archive, Check, Flag, Plus } from "lucide-react";
 import { PriorityBadge } from "@/components/priority-badge";
 import { AutosaveTextarea } from "@/components/autosave-textarea";
 import {
@@ -14,6 +14,7 @@ import {
   updateReflection,
   updateReviewFlag,
 } from "@/app/(app)/review/actions";
+import { updateProjectStatus } from "@/app/(app)/projects/actions";
 import { setTaskDone } from "@/app/(app)/today/actions";
 import type {
   ReviewCompletedData,
@@ -488,7 +489,10 @@ function ReviewProjectCard({
     <div
       className="card p-4"
     >
-      <h3 className="font-display mb-2 text-[15px] font-semibold">{name}</h3>
+      <div className="mb-2 flex items-start justify-between gap-3">
+        <h3 className="font-display text-[15px] font-semibold">{name}</h3>
+        <ArchiveProjectButton projectId={projectId} />
+      </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_minmax(220px,300px)]">
         <div>
           {previousNotes && (
@@ -549,6 +553,66 @@ function ReviewProjectCard({
         </div>
       </div>
     </div>
+  );
+}
+
+// Archiving drops the project from this view entirely (the review only loads
+// active projects), so the icon arms a confirm step rather than firing on a
+// single stray click.
+function ArchiveProjectButton({ projectId }: { projectId: string }) {
+  const [confirming, setConfirming] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  const archive = () => {
+    setConfirming(false);
+    startTransition(async () => {
+      const res = await updateProjectStatus({ projectId, status: "archived" });
+      if (!res.ok) setError(res.error);
+    });
+  };
+
+  if (error) {
+    return (
+      <span className="font-mono flex-shrink-0 text-[11px] text-danger">
+        {error}
+      </span>
+    );
+  }
+
+  if (!confirming) {
+    return (
+      <button
+        type="button"
+        onClick={() => setConfirming(true)}
+        disabled={pending}
+        aria-label="Archive project"
+        title="Archive project"
+        className="-m-1 flex-shrink-0 rounded p-1 text-ink-soft"
+      >
+        <Archive size={14} />
+      </button>
+    );
+  }
+
+  return (
+    <span className="flex flex-shrink-0 items-center gap-2">
+      <button
+        type="button"
+        onClick={archive}
+        disabled={pending}
+        className="font-mono text-[11px] font-semibold text-accent"
+      >
+        Archive project?
+      </button>
+      <button
+        type="button"
+        onClick={() => setConfirming(false)}
+        className="font-mono text-[11px] text-ink-soft"
+      >
+        Keep
+      </button>
+    </span>
   );
 }
 

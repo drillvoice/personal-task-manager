@@ -5,6 +5,14 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 
 ## [Unreleased]
 
+### Added
+- **A project can be archived straight from the weekly review.** Each project
+  card in *Review projects* now carries an archive icon in its top right; the
+  first click arms an `Archive project?` / `Keep` confirm, and confirming takes
+  the project out of the review (and out of the Tasks view) without a detour
+  to the Projects tab. Archived projects stay visible on Project overview via
+  *Show archived*, and adding a task to one still reactivates it.
+
 ### Fixed
 - **Editing a task's tags no longer wipes its priority.** Adding or removing
   any tag — from the Tasks detail panel, the Today editor, or the inline edit
