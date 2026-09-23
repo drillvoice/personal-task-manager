@@ -29,16 +29,12 @@ export function TaskDetailPanel({
   people,
   tagOptions,
   onClose,
-  onNotesSaved,
 }: {
   task: TasksViewTask;
   projects: { id: string; name: string }[];
   people: ContactOption[];
   tagOptions: TagOption[];
   onClose: () => void;
-  // Notes autosave without revalidating, so `task.notes` goes stale; a parent
-  // that remounts this panel for the same task has to seed it from here.
-  onNotesSaved?: (notes: string) => void;
 }) {
   const [title, setTitle] = useState(task.title);
   const [projectId, setProjectId] = useState<string>(task.projectId ?? "");
@@ -322,12 +318,9 @@ export function TaskDetailPanel({
           Notes
         </span>
         <AutosaveTextarea
+          draftKey={`task-notes:${task.id}`}
           initialValue={task.notes}
-          onSave={async (v) => {
-            const res = await updateTaskNotes({ id: task.id, notes: v });
-            if (res.ok) onNotesSaved?.(v);
-            return res;
-          }}
+          onSave={(v) => updateTaskNotes({ id: task.id, notes: v })}
           placeholder="Links, context, working detail…"
           rows={6}
         />

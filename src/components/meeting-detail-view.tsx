@@ -180,6 +180,7 @@ export function MeetingDetailView({
           </h2>
           <div className="mb-4">
             <AutosaveTextarea
+              draftKey={`meeting-prep:${meeting.id}`}
               initialValue={meeting.prepNotes}
               onSave={(v) =>
                 updateMeetingPrepNotes({ id: meeting.id, notes: v })
@@ -194,6 +195,7 @@ export function MeetingDetailView({
             Meeting notes
           </h2>
           <AutosaveTextarea
+            draftKey={`meeting-notes:${meeting.id}`}
             initialValue={meeting.meetingNotes}
             onSave={(v) => updateMeetingNotes({ id: meeting.id, notes: v })}
             placeholder="What actually happened…"

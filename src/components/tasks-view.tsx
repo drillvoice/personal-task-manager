@@ -47,11 +47,6 @@ export function TasksView({
   const [filters, setFilters] = useState<SmartFilters>(makeEmptyFilters());
   const [showAdd, setShowAdd] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
-  // Notes saved from the detail panel this visit. Notes autosave without
-  // revalidating, so the server props still hold the pre-edit text; without
-  // this, reselecting the task would reopen the panel on the old notes and the
-  // next keystroke would save over the newer ones.
-  const [savedNotes, setSavedNotes] = useState<Record<string, string>>({});
   const isDesktop = useIsDesktop();
 
   const allTasksFlat = useMemo(
@@ -315,17 +310,11 @@ export function TasksView({
         {selectedTask ? (
           <TaskDetailPanel
             key={selectedTask.id}
-            task={{
-              ...selectedTask,
-              notes: savedNotes[selectedTask.id] ?? selectedTask.notes,
-            }}
+            task={selectedTask}
             projects={realProjects}
             people={people}
             tagOptions={tagOptions}
             onClose={() => setSelectedTaskId(null)}
-            onNotesSaved={(notes) =>
-              setSavedNotes((prev) => ({ ...prev, [selectedTask.id]: notes }))
-            }
           />
         ) : (
           <div

@@ -95,6 +95,7 @@ export function ProjectCard({
               </button>
               {notesOpen && (
                 <AutosaveTextarea
+                  draftKey={`project-notes:${project.id}`}
                   initialValue={project.currentNotes}
                   onSave={(v) =>
                     updateProjectCurrentNotes({
