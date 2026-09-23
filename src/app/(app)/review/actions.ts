@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -22,20 +22,37 @@ import {
   ensureOpenReview,
   getOpenReviewId,
 } from "@/lib/server/priority-cap";
-import { weekStartIso } from "@/lib/time";
 
-// The week the open review covers, alongside its id. Project notes saved
-// during a review file under this week, not necessarily the current calendar
-// week — a reopened past review edits the notes for the week it covers.
-async function currentReview(
+/*
+ * Edits from the review editor name the review the page was rendered for, and
+ * land only while that review is still open. Resolving "the open review" on
+ * the server instead meant a page left open after the review was filed
+ * elsewhere — or reached again via Back — quietly started a fresh review (or
+ * wrote into a different one) on the next click or keystroke.
+ */
+const REVIEW_FILED =
+  "this review has already been filed — reload for the current one";
+
+function isOpenReview(userId: string, reviewId: string) {
+  return and(
+    eq(weeklyReviews.id, reviewId),
+    eq(weeklyReviews.userId, userId),
+    isNull(weeklyReviews.completedAt),
+  );
+}
+
+// The week the review covers. Project notes saved during a review file under
+// this week, not necessarily the current calendar week — a reopened past
+// review edits the notes for the week it covers.
+async function openReviewWeek(
   userId: string,
-): Promise<{ id: string; weekStartDate: string }> {
-  const id = await ensureOpenReview(userId);
+  reviewId: string,
+): Promise<string | null> {
   const [row] = await db
     .select({ weekStartDate: weeklyReviews.weekStartDate })
     .from(weeklyReviews)
-    .where(eq(weeklyReviews.id, id));
-  return { id, weekStartDate: row?.weekStartDate ?? weekStartIso() };
+    .where(isOpenReview(userId, reviewId));
+  return row?.weekStartDate ?? null;
 }
 
 async function assertOwnsProject(userId: string, projectId: string) {
@@ -49,20 +66,23 @@ async function assertOwnsTask(userId: string, taskId: string) {
 }
 
 export async function updateReviewFlag(
+  reviewId: string,
   field:
     | "inboxCleared"
     | "loopsCaptured"
     | "lastWeekCalendarReviewed"
     | "thisWeekCalendarReviewed",
   value: boolean,
-): Promise<void> {
+): Promise<{ ok: true } | { ok: false; error: string }> {
   const userId = await requireUserId();
-  const reviewId = await ensureOpenReview(userId);
-  await db
+  const [updated] = await db
     .update(weeklyReviews)
     .set({ [field]: value })
-    .where(eq(weeklyReviews.id, reviewId));
+    .where(isOpenReview(userId, reviewId))
+    .returning({ id: weeklyReviews.id });
+  if (!updated) return { ok: false, error: REVIEW_FILED };
   revalidatePath("/review");
+  return { ok: true };
 }
 
 const reflectionSchema = z.string().max(50000);
@@ -71,6 +91,7 @@ const reflectionSchema = z.string().max(50000);
 // textarea the user is typing into costs a full data reload per blur and
 // nothing user-visible goes stale (same convention as the meetings notes).
 export async function updateReflection(
+  reviewId: string,
   text: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const userId = await requireUserId();
@@ -78,22 +99,27 @@ export async function updateReflection(
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid" };
   }
-  const reviewId = await ensureOpenReview(userId);
-  await db
+  const [updated] = await db
     .update(weeklyReviews)
     .set({ reflectionNotes: parsed.data })
-    .where(eq(weeklyReviews.id, reviewId));
+    .where(isOpenReview(userId, reviewId))
+    .returning({ id: weeklyReviews.id });
+  if (!updated) return { ok: false, error: REVIEW_FILED };
   return { ok: true };
 }
 
 export async function updateProjectNotes(
+  reviewId: string,
   projectId: string,
   notes: string,
-): Promise<void> {
+): Promise<{ ok: true } | { ok: false; error: string }> {
   const userId = await requireUserId();
-  await assertOwnsProject(userId, projectId);
-
-  const { weekStartDate } = await currentReview(userId);
+  const [owned, weekStartDate] = await Promise.all([
+    ownsProject(userId, projectId),
+    openReviewWeek(userId, reviewId),
+  ]);
+  if (!owned) return { ok: false, error: "Project not found" };
+  if (!weekStartDate) return { ok: false, error: REVIEW_FILED };
   await db
     .insert(projectWeeklyNotes)
     .values({ projectId, weekStartDate, note: notes })
@@ -105,6 +131,7 @@ export async function updateProjectNotes(
   // re-rendering /review underneath the textarea being typed into is wasted
   // work on every blur.
   revalidatePath("/projects");
+  return { ok: true };
 }
 
 // Inline "#tag" tokens in a quick-capture title (e.g. "ring matthew #p1")
@@ -204,11 +231,15 @@ export async function quickAddTask(input: {
 }
 
 export async function toggleWeeklyPriority(
+  reviewId: string,
   taskId: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const userId = await requireUserId();
-  await assertOwnsTask(userId, taskId);
-  const reviewId = await ensureOpenReview(userId);
+  const [, weekStartDate] = await Promise.all([
+    assertOwnsTask(userId, taskId),
+    openReviewWeek(userId, reviewId),
+  ]);
+  if (!weekStartDate) return { ok: false, error: REVIEW_FILED };
 
   const [existing] = await db
     .select({ id: weeklyPriorities.id })
@@ -239,13 +270,14 @@ export async function toggleWeeklyPriority(
   return { ok: true };
 }
 
-export async function finishReview(): Promise<void> {
+// Already filed (from another tab, or a page reached via Back) is a no-op:
+// the revalidation below shows whatever /review should now be.
+export async function finishReview(reviewId: string): Promise<void> {
   const userId = await requireUserId();
-  const reviewId = await ensureOpenReview(userId);
   await db
     .update(weeklyReviews)
     .set({ completedAt: new Date() })
-    .where(eq(weeklyReviews.id, reviewId));
+    .where(isOpenReview(userId, reviewId));
   revalidatePath("/review");
   revalidatePath("/review/history");
 }

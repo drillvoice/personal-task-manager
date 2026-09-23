@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import { Archive, Check, Flag, Plus } from "lucide-react";
 import { PriorityBadge } from "@/components/priority-badge";
 import { AutosaveTextarea } from "@/components/autosave-textarea";
+import { useSavedDraft } from "@/components/use-autosave";
 import {
   finishReview,
   quickAddTask,
@@ -132,7 +133,7 @@ function EditingReview({ data }: { data: ReviewEditingData }) {
     setPriorityError(null);
     setSelected(flip);
     startTransition(async () => {
-      const res = await toggleWeeklyPriority(taskId);
+      const res = await toggleWeeklyPriority(data.review.id, taskId);
       if (!res.ok) {
         setSelected(flip);
         setPriorityError(res.error);
@@ -146,6 +147,7 @@ function EditingReview({ data }: { data: ReviewEditingData }) {
 
       <SectionHeading n={1} label="GET CLEAR" />
       <GetClear
+        reviewId={data.review.id}
         inboxCleared={data.review.inboxCleared}
         loopsCaptured={data.review.loopsCaptured}
         lastWeekCalendarReviewed={data.review.lastWeekCalendarReviewed}
@@ -164,6 +166,7 @@ function EditingReview({ data }: { data: ReviewEditingData }) {
         {data.activeProjects.map((p) => (
           <ReviewProjectCard
             key={p.id}
+            reviewId={data.review.id}
             projectId={p.id}
             name={p.name}
             defaultNotes={p.notes}
@@ -245,9 +248,12 @@ function EditingReview({ data }: { data: ReviewEditingData }) {
       </div>
 
       <SectionHeading n={4} label="REFLECTION" />
-      <Reflection defaultValue={data.review.reflectionNotes} />
+      <Reflection
+        reviewId={data.review.id}
+        defaultValue={data.review.reflectionNotes}
+      />
 
-      <FinishButton />
+      <FinishButton reviewId={data.review.id} />
     </div>
   );
 }
@@ -301,11 +307,13 @@ function SectionHeading({
 }
 
 function GetClear({
+  reviewId,
   inboxCleared,
   loopsCaptured,
   lastWeekCalendarReviewed,
   thisWeekCalendarReviewed,
 }: {
+  reviewId: string;
   inboxCleared: boolean;
   loopsCaptured: boolean;
   lastWeekCalendarReviewed: boolean;
@@ -320,6 +328,7 @@ function GetClear({
     thisWeekCalendarReviewed,
   );
   const [capture, setCapture] = useState("");
+  const [flagError, setFlagError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   const toggleFlag = (
@@ -332,8 +341,13 @@ function GetClear({
     setter: (v: boolean) => void,
   ) => {
     setter(!current);
+    setFlagError(null);
     startTransition(async () => {
-      await updateReviewFlag(field, !current);
+      const res = await updateReviewFlag(reviewId, field, !current);
+      if (!res.ok) {
+        setter(current);
+        setFlagError(res.error);
+      }
     });
   };
 
@@ -391,6 +405,11 @@ function GetClear({
         }
         label="Review this week's calendar"
       />
+      {flagError && (
+        <p className="font-mono py-1 text-[11px] text-danger">
+          Not saved — {flagError}
+        </p>
+      )}
       <div
         className="mt-3 flex items-center gap-2 border-t pt-3 border-line"
       >
@@ -444,6 +463,7 @@ function FlagLabel({
 }
 
 function ReviewProjectCard({
+  reviewId,
   projectId,
   name,
   defaultNotes,
@@ -453,6 +473,7 @@ function ReviewProjectCard({
   weeklyOn,
   togglePriority,
 }: {
+  reviewId: string;
   projectId: string;
   name: string;
   defaultNotes: string;
@@ -466,13 +487,23 @@ function ReviewProjectCard({
   weeklyOn: Set<string>;
   togglePriority: (id: string) => void;
 }) {
-  const [notes, setNotes] = useState(defaultNotes);
+  // Saved on blur without revalidating /review, so a remount (Back, the
+  // client cache) must open on the last saved text, not `defaultNotes`.
+  const draft = useSavedDraft(
+    `review-project-notes:${reviewId}:${projectId}`,
+    defaultNotes,
+  );
+  const [notes, setNotes] = useState(draft.initial);
+  const [notesError, setNotesError] = useState<string | null>(null);
   const [action, setAction] = useState("");
   const [pending, startTransition] = useTransition();
 
   const saveNotes = () => {
+    const text = notes;
     startTransition(async () => {
-      await updateProjectNotes(projectId, notes);
+      const res = await updateProjectNotes(reviewId, projectId, text);
+      if (res.ok) draft.recordSaved(text);
+      setNotesError(res.ok ? null : res.error);
     });
   };
 
@@ -517,6 +548,11 @@ function ReviewProjectCard({
             placeholder="Any update? What's the state of this project?"
             className="w-full resize-y border bg-transparent p-3 text-[13px] leading-relaxed outline-none border-line text-ink"
           />
+          {notesError && (
+            <p className="font-mono mt-1 text-right text-[10px] text-danger">
+              Not saved — {notesError}
+            </p>
+          )}
         </div>
         <div>
           {tasks.length === 0 && (
@@ -682,12 +718,19 @@ function ReviewProjectTaskRow({
   );
 }
 
-function Reflection({ defaultValue }: { defaultValue: string }) {
+function Reflection({
+  reviewId,
+  defaultValue,
+}: {
+  reviewId: string;
+  defaultValue: string;
+}) {
   return (
     <div className="mb-6">
       <AutosaveTextarea
+        draftKey={`review-reflection:${reviewId}`}
         initialValue={defaultValue}
-        onSave={updateReflection}
+        onSave={(text) => updateReflection(reviewId, text)}
         placeholder="How did this week actually go?"
         rows={3}
       />
@@ -695,9 +738,10 @@ function Reflection({ defaultValue }: { defaultValue: string }) {
   );
 }
 
-function FinishButton() {
+function FinishButton({ reviewId }: { reviewId: string }) {
   const [pending, startTransition] = useTransition();
-  const submit = () => startTransition(async () => await finishReview());
+  const submit = () =>
+    startTransition(async () => await finishReview(reviewId));
   return (
     <button
       type="button"
