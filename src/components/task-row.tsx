@@ -59,12 +59,16 @@ function EditTaskForm({
   people = [],
   tagOptions = [],
   onDone,
+  onDelete,
+  deleteError,
 }: {
   task: TaskRowProps["task"];
   projects: ProjectOption[];
   people?: ContactOption[];
   tagOptions?: TagOption[];
   onDone: () => void;
+  onDelete: () => void;
+  deleteError: string | null;
 }) {
   const [title, setTitle] = useState(task.title);
   const [projectId, setProjectId] = useState<string>(task.projectId ?? "");
@@ -76,7 +80,7 @@ function EditTaskForm({
   // the task's priority on any unrelated tag edit.
   const [tagIds, setTagIds] = useState<string[]>(task.allTagIds ?? []);
   const [dueDate, setDueDate] = useState(task.dueDate ?? "");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(deleteError);
   const [pending, startTransition] = useTransition();
 
   const projectOptions = useMemo(
@@ -103,13 +107,6 @@ function EditTaskForm({
       } else {
         setError(res.error);
       }
-    });
-  };
-
-  const del = () => {
-    startTransition(async () => {
-      await deleteTask(task.id);
-      onDone();
     });
   };
 
@@ -184,7 +181,7 @@ function EditTaskForm({
         <ConfirmDeleteButton
           label="Delete task"
           pending={pending}
-          onConfirm={del}
+          onConfirm={onDelete}
         />
         <div className="ml-auto flex gap-2">
           <Button
@@ -224,6 +221,10 @@ export function TaskRow({
   // Optimistic: the strike-through lands on click, not after the server
   // roundtrip; reverts automatically if the action fails to revalidate.
   const [done, setOptimisticDone] = useOptimistic(task.status === "done");
+  // Hidden on confirm; the revalidated list then drops the row for real. A
+  // rejected delete brings the row back with its editor open and the error.
+  const [deleted, setOptimisticDeleted] = useOptimistic(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const assigneeNames = (task.assignees ?? []).map((a) => a.name);
   const tags = task.tags ?? [];
   const inlineEdit = Boolean(projects) && !onSelect;
@@ -235,6 +236,17 @@ export function TaskRow({
     });
   };
 
+  const remove = () => {
+    setDeleteError(null);
+    startTransition(async () => {
+      setOptimisticDeleted(true);
+      const res = await deleteTask(task.id);
+      if (!res.ok) setDeleteError(res.error);
+    });
+  };
+
+  if (deleted) return null;
+
   if (editing && projects && inlineEdit) {
     return (
       <EditTaskForm
@@ -243,6 +255,8 @@ export function TaskRow({
         people={people}
         tagOptions={tagOptions}
         onDone={() => setEditing(false)}
+        onDelete={remove}
+        deleteError={deleteError}
       />
     );
   }

@@ -13,6 +13,7 @@ plus DNS propagation if you want a custom domain.
 - [ ] **§7** Run the first database migration
 - [ ] **§8** Seed the database (optional)
 - [ ] **§9** Deploy and smoke-test end to end
+- [ ] **§10** Set up the keep-warm pinger (optional, recommended)
 
 ---
 
@@ -232,3 +233,38 @@ If any of the above fails:
 - **After a successful sign-in you get stuck in a redirect loop** — this
   almost always means an old session cookie from an earlier deploy is
   still around. Clear cookies for the Vercel URL, then retry.
+
+---
+
+## §10 · Keep-warm pinger (optional, recommended)
+
+**Why:** after about 5 idle minutes Neon suspends its compute, and the Vercel
+function goes cold too. The first page load after a break then waits for
+both to wake up — that's the "small delay" on opening the app. Pinging
+`/api/health` every few minutes keeps both awake. Vercel's own cron can't do
+this on the Hobby plan (daily jobs only), so use an external free pinger.
+
+**Prerequisite:** the Production URL must be publicly reachable. If Vercel
+→ Project → Settings → **Deployment Protection** has Vercel Authentication
+turned on for Production, the pinger gets a `401` and keeps nothing warm.
+(Preview-only protection, the Hobby default, is fine.)
+
+1. Check the endpoint first: open `https://<your-production-domain>/api/health`
+   in a browser. It should show `{"ok":true}`. A `503` means the function is
+   running but can't reach the database — check `DATABASE_URL` (§5).
+2. Sign up at <https://cron-job.org> (free) and create a cron job:
+   - **URL:** `https://<your-production-domain>/api/health`
+   - **Schedule:** every **4 minutes** (must be under Neon's 5-minute
+     suspend window — every 5 minutes is too slow and will miss it).
+   - **Time zone:** `Australia/Sydney`, limited to your waking hours, e.g.
+     06:00–23:00. In cron-job.org's custom schedule that means minutes
+     every 4 and hours 6–22.
+   - **Notify on failure:** on. It doubles as an uptime alert.
+3. Save the job, wait a few minutes, and check its history shows `200` responses.
+
+> **⚠️ Constraint between the ping window and Neon's free-tier allowance.**
+> Every minute the pinger keeps Neon awake counts against the free plan's
+> monthly compute hours. Pinging around the clock may use up the allowance
+> before the month ends, and then the database stops until the next cycle.
+> Keep the window to the hours you actually use the app, and check Neon
+> → your project → **Usage** after the first week to confirm there's headroom.

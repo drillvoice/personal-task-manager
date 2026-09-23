@@ -6,9 +6,9 @@ import { Archive, Check, Flag, Plus } from "lucide-react";
 import { PriorityBadge } from "@/components/priority-badge";
 import { AutosaveTextarea } from "@/components/autosave-textarea";
 import { useSavedDraft } from "@/components/use-autosave";
+import { useQuickAdd } from "@/components/use-quick-add";
 import {
   finishReview,
-  quickAddTask,
   startNewReview,
   toggleWeeklyPriority,
   updateProjectNotes,
@@ -327,9 +327,9 @@ function GetClear({
   const [thisWeekCalendar, setThisWeekCalendar] = useState(
     thisWeekCalendarReviewed,
   );
-  const [capture, setCapture] = useState("");
+  const capture = useQuickAdd(null);
   const [flagError, setFlagError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
 
   const toggleFlag = (
     field:
@@ -348,15 +348,6 @@ function GetClear({
         setter(current);
         setFlagError(res.error);
       }
-    });
-  };
-
-  const submitCapture = () => {
-    const title = capture.trim();
-    if (!title) return;
-    startTransition(async () => {
-      const res = await quickAddTask({ title, projectId: null });
-      if (res.ok) setCapture("");
     });
   };
 
@@ -415,19 +406,23 @@ function GetClear({
       >
         <Plus className="text-ink-soft" size={14} />
         <input
-          value={capture}
-          onChange={(e) => setCapture(e.target.value)}
+          value={capture.value}
+          onChange={(e) => capture.setValue(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
-              submitCapture();
+              capture.submit();
             }
           }}
-          disabled={pending}
           placeholder="Quick capture something you just remembered… (#tag, or a due date like 'in 3 days')"
           className="flex-1 bg-transparent text-[13px] outline-none text-ink"
         />
       </div>
+      {capture.error && (
+        <p className="font-mono mt-1 text-[11px] text-danger">
+          Not saved — {capture.error}
+        </p>
+      )}
     </div>
   );
 }
@@ -495,8 +490,8 @@ function ReviewProjectCard({
   );
   const [notes, setNotes] = useState(draft.initial);
   const [notesError, setNotesError] = useState<string | null>(null);
-  const [action, setAction] = useState("");
-  const [pending, startTransition] = useTransition();
+  const quickAdd = useQuickAdd(projectId);
+  const [, startTransition] = useTransition();
 
   const saveNotes = () => {
     const text = notes;
@@ -504,15 +499,6 @@ function ReviewProjectCard({
       const res = await updateProjectNotes(reviewId, projectId, text);
       if (res.ok) draft.recordSaved(text);
       setNotesError(res.ok ? null : res.error);
-    });
-  };
-
-  const submitAction = () => {
-    const title = action.trim();
-    if (!title) return;
-    startTransition(async () => {
-      const res = await quickAddTask({ title, projectId });
-      if (res.ok) setAction("");
     });
   };
 
@@ -573,19 +559,23 @@ function ReviewProjectCard({
           <div className="mt-2 flex items-center gap-2 pt-2">
             <Plus className="text-ink-soft" size={14} />
             <input
-              value={action}
-              onChange={(e) => setAction(e.target.value)}
+              value={quickAdd.value}
+              onChange={(e) => quickAdd.setValue(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
-                  submitAction();
+                  quickAdd.submit();
                 }
               }}
-              disabled={pending}
               placeholder="Add a next action… (#tag, or a due date like 'in 3 days')"
               className="flex-1 bg-transparent text-[13px] outline-none text-ink"
             />
           </div>
+          {quickAdd.error && (
+            <p className="font-mono mt-1 text-[11px] text-danger">
+              Not saved — {quickAdd.error}
+            </p>
+          )}
         </div>
       </div>
     </div>

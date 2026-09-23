@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Plus, X } from "lucide-react";
-import { quickAddTask } from "@/app/(app)/review/actions";
+import { useQuickAdd } from "@/components/use-quick-add";
 
 /**
  * Global quick capture — reachable from every screen (spec §6). Captures to
@@ -11,10 +11,13 @@ import { quickAddTask } from "@/app/(app)/review/actions";
  */
 export function QuickCapture() {
   const [open, setOpen] = useState(false);
-  const [title, setTitle] = useState("");
+  const {
+    value: title,
+    setValue: setTitle,
+    submit: save,
+    error,
+  } = useQuickAdd(null);
   const [captured, setCaptured] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
   const inputRef = useRef<HTMLInputElement>(null);
   const capturedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -46,20 +49,10 @@ export function QuickCapture() {
   }, [open]);
 
   const submit = () => {
-    const t = title.trim();
-    if (!t) return;
-    startTransition(async () => {
-      const res = await quickAddTask({ title: t, projectId: null });
-      if (res.ok) {
-        setTitle("");
-        setError(null);
-        setCaptured(true);
-        if (capturedTimer.current) clearTimeout(capturedTimer.current);
-        capturedTimer.current = setTimeout(() => setCaptured(false), 1500);
-      } else {
-        setError(res.error);
-      }
-    });
+    if (!save()) return;
+    setCaptured(true);
+    if (capturedTimer.current) clearTimeout(capturedTimer.current);
+    capturedTimer.current = setTimeout(() => setCaptured(false), 1500);
   };
 
   if (!open) {
@@ -105,7 +98,6 @@ export function QuickCapture() {
           }
           if (e.key === "Escape") setOpen(false);
         }}
-        disabled={pending}
         placeholder="Capture a task… (#tag, or a due date like 'in 3 days')"
         className="w-full rounded-card border p-2 text-[13px] outline-none bg-paper border-line text-ink"
       />
