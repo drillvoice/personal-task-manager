@@ -14,6 +14,16 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
   *Show archived*, and adding a task to one still reactivates it.
 
 ### Fixed
+- **Reopening a task no longer shows (and then saves over) its old notes.** On
+  the Tasks view, notes typed into the detail panel autosave without
+  refreshing the page, so clicking away and back to the same task reopened the
+  panel on the pre-edit text — and the next keystroke saved that stale text
+  over the newer notes. The view now remembers notes saved during the visit.
+- **The Today task editor lists archived projects again.** It built its
+  project picker from the Tasks view's groups, which exclude archived
+  projects, so a task couldn't be moved into one (and reactivate it) from
+  Today. It now uses the same picker list as everywhere else: archived last,
+  suffixed `(archived)`.
 - **Editing a task's tags no longer wipes its priority.** Adding or removing
   any tag — from the Tasks detail panel, the Today editor, or the inline edit
   form on a meeting — silently deleted the task's `p1`/`p2`/`p3` tag, and with
@@ -26,6 +36,17 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
   previously it could only be set through quick capture's `#p1`.
 
 ### Changed
+- **Fewer database round-trips on the hottest paths.** Each query over Neon's
+  HTTP driver is its own request, so chains of dependent queries were the main
+  source of click latency. Opening a task from Today now loads just that task
+  instead of the whole Tasks view; the Today and Review priority lookup is one
+  query instead of two in sequence; opening the "Add to today" picker is one
+  parallel round instead of about five sequential ones; removing a task from a
+  plan is a single statement; and task edits validate in one parallel round
+  before a single write batch. Rendering Today no longer creates empty
+  daily-plan rows (the first add does). The Tasks view stops shipping tag and
+  assignee links for long-completed tasks it never shows, and the Meetings
+  list counts tasks in SQL rather than fetching every task.
 - **A past review's `Export` / `Reopen to edit` / `Delete` buttons moved to the
   top of the page.** They sit alongside the week title instead of below the
   reflection, where a long review pushed them off-screen.
