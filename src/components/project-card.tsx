@@ -1,11 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { ChevronDown, ChevronRight, NotebookPen, Plus } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus } from "lucide-react";
 import { TaskRow } from "@/components/task-row";
-import { AutosaveTextarea } from "@/components/autosave-textarea";
 import { quickAddTask } from "@/app/(app)/review/actions";
-import { updateProjectCurrentNotes } from "@/app/(app)/projects/actions";
 import type { ProjectSelectOption as ProjectOption } from "@/lib/server/projects";
 import type { ContactOption } from "@/lib/server/people";
 import type {
@@ -19,7 +17,6 @@ export function ProjectCard({
   visibleTasks,
   defaultOpen,
   showTaskProject = false,
-  hideNotes = false,
   projects,
   people,
   tagOptions,
@@ -30,7 +27,6 @@ export function ProjectCard({
   visibleTasks: TasksViewTask[];
   defaultOpen: boolean;
   showTaskProject?: boolean;
-  hideNotes?: boolean;
   projects?: ProjectOption[];
   people?: ContactOption[];
   tagOptions?: TagOption[];
@@ -38,7 +34,6 @@ export function ProjectCard({
   onSelectTask?: (id: string) => void;
 }) {
   const [open, setOpen] = useState(defaultOpen);
-  const [notesOpen, setNotesOpen] = useState(false);
   const [action, setAction] = useState("");
   const [pending, startTransition] = useTransition();
   const activeCount = project.tasks.filter((t) => t.status !== "done").length;
@@ -73,42 +68,6 @@ export function ProjectCard({
       </button>
       {open && (
         <div className="px-3 pb-3">
-          {!hideNotes && project.notes && (
-            <p
-              className="mb-2 border-b pb-2 text-[13px] text-ink-soft border-line"
-            >
-              {project.notes}
-            </p>
-          )}
-          {!hideNotes && project.id !== null && (
-            <div className="mb-2">
-              <button
-                type="button"
-                onClick={() => setNotesOpen((s) => !s)}
-                className="font-mono flex items-center gap-1.5 py-1 text-[10px] font-semibold tracking-[0.08em] uppercase text-ink-soft"
-              >
-                <NotebookPen size={11} />
-                Project notes
-                {!notesOpen && project.currentNotes.trim() && (
-                  <span className="text-teal">·</span>
-                )}
-              </button>
-              {notesOpen && (
-                <AutosaveTextarea
-                  draftKey={`project-notes:${project.id}`}
-                  initialValue={project.currentNotes}
-                  onSave={(v) =>
-                    updateProjectCurrentNotes({
-                      projectId: project.id!,
-                      notes: v,
-                    })
-                  }
-                  placeholder="State of the project — the why, the context, what's true right now…"
-                  rows={5}
-                />
-              )}
-            </div>
-          )}
           {visibleTasks.length === 0 && (
             <p
               className="py-2 text-[12px] text-ink-soft"

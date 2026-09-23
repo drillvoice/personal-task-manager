@@ -13,6 +13,14 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
   to the Projects tab. Archived projects stay visible on Project overview via
   *Show archived*, and adding a task to one still reactivates it.
 
+### Removed
+- **The project "current narrative" editor.** It sat in the Tasks view's
+  project cards but had been hidden there since July, so it couldn't be
+  reached anywhere in the app. Its code is gone; the `projects.notes` column
+  and whatever text it already holds are untouched, so it can come back
+  without a migration. Weekly project notes (written in the review, shown on
+  the Projects table) are unaffected.
+
 ### Fixed
 - **Reopened text fields no longer show (and then save over) older text.**
   Notes, journal, meeting notes, task notes, the review reflection and review

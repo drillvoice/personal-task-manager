@@ -5,7 +5,6 @@ import {
   dailyPlanItems,
   dailyPlans,
   people,
-  projectWeeklyNotes,
   projects,
   tags,
   taskAssignees,
@@ -22,10 +21,6 @@ export type TasksViewProject = {
   id: string | null; // null = Inbox pseudo-project
   name: string;
   status: ProjectStatus;
-  // This week's snapshot from project_weekly_notes (read-only here).
-  notes: string;
-  // The project's current narrative (projects.notes) — editable in the card.
-  currentNotes: string;
   tasks: TasksViewTask[];
 };
 
@@ -161,7 +156,6 @@ export async function loadTaskForEdit(
 }
 
 export async function loadTasksData(userId: string) {
-  const currentWeek = weekStartIso();
   // Done tasks older than 30 days are unreachable from this view (the Done
   // chip shows recent completions only), so neither they nor their tag and
   // assignee links ship on every page load.
@@ -177,7 +171,6 @@ export async function loadTasksData(userId: string) {
     taskRows,
     tagRows,
     assigneeRows,
-    noteRows,
     weeklyRows,
     todayPlanRows,
   ] = await Promise.all([
@@ -217,27 +210,12 @@ export async function loadTasksData(userId: string) {
       .innerJoin(tasks, eq(taskAssignees.taskId, tasks.id))
       .where(visibleTask)
       .orderBy(asc(people.name)),
-    db
-      .select({
-        projectId: projectWeeklyNotes.projectId,
-        note: projectWeeklyNotes.note,
-      })
-      .from(projectWeeklyNotes)
-      .innerJoin(projects, eq(projectWeeklyNotes.projectId, projects.id))
-      .where(
-        and(
-          eq(projects.userId, userId),
-          eq(projectWeeklyNotes.weekStartDate, currentWeek),
-        ),
-      ),
     weeklyPriorityTaskIds(userId),
     todayPlanTaskIds(userId),
   ]);
 
   const weeklyIds = new Set(weeklyRows.map((r) => r.taskId));
   const todayPlanIds = new Set(todayPlanRows.map((r) => r.taskId));
-
-  const notesByProject = new Map(noteRows.map((n) => [n.projectId, n.note]));
 
   const tagsByTask = new Map<
     string,
@@ -270,8 +248,6 @@ export async function loadTasksData(userId: string) {
       id: p.id,
       name: p.name,
       status: p.status,
-      notes: notesByProject.get(p.id) ?? "",
-      currentNotes: p.notes,
       tasks: [],
     });
   }
@@ -280,8 +256,6 @@ export async function loadTasksData(userId: string) {
     id: null,
     name: "Inbox (no project)",
     status: "active",
-    notes: "",
-    currentNotes: "",
     tasks: [],
   };
 

@@ -100,7 +100,7 @@ A review is a **completable instance**, not a fixed weekly slot. Finishing one f
 ### B. Tasks (the working view)
 Two modes, toggled at the top of the same screen:
 
-- **By project** — projects shown as collapsible cards (active/someday/all filter), each expandable to its notes + tasks. Includes the Inbox pseudo-project for standalone tasks.
+- **By project** — projects shown as collapsible cards (active/someday/all filter), each expandable to its tasks. Includes the Inbox pseudo-project for standalone tasks.
 - **All tasks** — flat list across every project, each row tagged with its project name.
 
 Both modes share one **smart search/filter bar**: a free-text search over task titles, plus combinable toggle chips for **priority** (P1/P2/P3, color-coded — these filter by the `p1`/`p2`/`p3` tag, same underlying data as the tag chips below), **status** (Next action / Waiting on), and **tag** (dynamically generated from tags in use, excluding the priority tags already surfaced as their own chips). All filters AND together. In "By project" mode, an active filter collapses out non-matching projects and auto-expands matching ones to show just the relevant tasks.
@@ -111,6 +111,8 @@ A **"+ New task"** action opens an inline form (title, project dropdown incl. In
 
 ### C. Project Notes
 Not a separate module structurally — it's the current `notes` field on each project — a first-class, roomy writing surface (markdown-friendly) for the "state of the project" narrative. Distinct from the weekly snapshots in `project_weekly_notes`, which are historical and don't change once a week has passed.
+
+> **Not currently surfaced (removed September 2026).** The editor lived in the Tasks view's project cards, was later hidden there as clutter, and has now been taken out entirely. The `projects.notes` column and any text already in it are kept, so the narrative can be re-surfaced (e.g. in the Projects detail panel) without a migration. The weekly snapshots are unaffected — they are still written in the review and shown on the Projects table.
 
 ### D. Today View
 - Today's top 3 (from `daily_plan_items`), rendered as three explicit slots — including visibly empty/dashed slots if fewer than 3 are set, not a shrinking list. This is deliberate: the empty slot is what keeps the "only 3" constraint honest.
