@@ -13,7 +13,33 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
   to the Projects tab. Archived projects stay visible on Project overview via
   *Show archived*, and adding a task to one still reactivates it.
 
+### Removed
+- **The project "current narrative" editor.** It sat in the Tasks view's
+  project cards but had been hidden there since July, so it couldn't be
+  reached anywhere in the app. Its code is gone; the `projects.notes` column
+  and whatever text it already holds are untouched, so it can come back
+  without a migration. Weekly project notes (written in the review, shown on
+  the Projects table) are unaffected.
+
 ### Fixed
+- **Reopened text fields no longer show (and then save over) older text.**
+  Notes, journal, meeting notes, task notes, the review reflection and review
+  project notes save without refreshing the page, so a field that reopened
+  from the page's earlier data — reselecting a task on the Tasks view, or
+  coming back with the browser's Back button — showed the pre-edit text, and
+  the next keystroke saved that over the newer version. Fields now remember
+  what was saved this session and open on it until the server catches up.
+- **An open review page can't quietly start a new review.** Ticking a *Get
+  clear* box, typing a reflection or project note, picking a priority or
+  pressing *Finish* on a review that had already been filed (in another tab,
+  or a page reached via Back) created a fresh review, or wrote into whichever
+  review was open. Those edits now apply only to the review on screen, and
+  show "Not saved — this review has already been filed" otherwise.
+- **The Today task editor lists archived projects again.** It built its
+  project picker from the Tasks view's groups, which exclude archived
+  projects, so a task couldn't be moved into one (and reactivate it) from
+  Today. It now uses the same picker list as everywhere else: archived last,
+  suffixed `(archived)`.
 - **Editing a task's tags no longer wipes its priority.** Adding or removing
   any tag — from the Tasks detail panel, the Today editor, or the inline edit
   form on a meeting — silently deleted the task's `p1`/`p2`/`p3` tag, and with
@@ -26,6 +52,22 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
   previously it could only be set through quick capture's `#p1`.
 
 ### Changed
+- **Switching back to a tab you just visited is instant.** Pages stay in the
+  browser's router cache for 30 seconds instead of being re-rendered on every
+  visit. Any change you make clears that cache, so what you see after an edit
+  is always current; a change made on another device can take up to 30
+  seconds to appear on a tab you'd just looked at.
+- **Fewer database round-trips on the hottest paths.** Each query over Neon's
+  HTTP driver is its own request, so chains of dependent queries were the main
+  source of click latency. Opening a task from Today now loads just that task
+  instead of the whole Tasks view; the Today and Review priority lookup is one
+  query instead of two in sequence; opening the "Add to today" picker is one
+  parallel round instead of about five sequential ones; removing a task from a
+  plan is a single statement; and task edits validate in one parallel round
+  before a single write batch. Rendering Today no longer creates empty
+  daily-plan rows (the first add does). The Tasks view stops shipping tag and
+  assignee links for long-completed tasks it never shows, and the Meetings
+  list counts tasks in SQL rather than fetching every task.
 - **A past review's `Export` / `Reopen to edit` / `Delete` buttons moved to the
   top of the page.** They sit alongside the week title instead of below the
   reflection, where a long review pushed them off-screen.

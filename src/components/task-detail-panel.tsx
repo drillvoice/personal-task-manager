@@ -318,6 +318,7 @@ export function TaskDetailPanel({
           Notes
         </span>
         <AutosaveTextarea
+          draftKey={`task-notes:${task.id}`}
           initialValue={task.notes}
           onSave={(v) => updateTaskNotes({ id: task.id, notes: v })}
           placeholder="Links, context, working detail…"

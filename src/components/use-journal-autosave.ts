@@ -34,6 +34,7 @@ export function useJournalAutosave(
   const pendingCreates = useRef(new Map<string, string>());
 
   const autosave = useAutosave(
+    `journal:${date}`,
     initialBody,
     async (next): Promise<AutosaveResult> => {
       const creating = [...pendingCreates.current.values()];

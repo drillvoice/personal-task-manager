@@ -2,6 +2,9 @@ import type { Priority } from "@/lib/types";
 
 const NAME_TO_PRIORITY: Record<string, Priority> = { p1: 1, p2: 2, p3: 3 };
 
+/** Lower-cased priority tag names, for matching in SQL. */
+export const PRIORITY_TAG_NAMES = Object.keys(NAME_TO_PRIORITY);
+
 export function isPriorityTagName(name: string): boolean {
   return priorityFromTagName(name) !== null;
 }

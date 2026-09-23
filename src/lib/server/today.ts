@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, eq, inArray, lte, ne, not } from "drizzle-orm";
+import { and, asc, eq, lte, ne, notInArray } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   dailyPlanItems,
@@ -12,7 +12,6 @@ import {
 import { comparePriority } from "@/lib/priority";
 import { todayIso, tomorrowIso, weekStartIso } from "@/lib/time";
 import type { Priority, TaskStatus } from "@/lib/types";
-import { ensureDailyPlan } from "./priority-cap";
 import { loadTaskPriorities } from "./task-priority";
 
 export type TodayTask = {
@@ -33,10 +32,8 @@ export type TodaySlot = {
 };
 
 export type TodayData = {
-  planId: string;
   dateIso: string;
   slots: TodaySlot[];
-  tomorrowPlanId: string;
   tomorrowDateIso: string;
   tomorrowSlots: TodaySlot[];
   alsoDue: TodayTask[];
@@ -83,29 +80,20 @@ async function loadWeeklyPriorityRows(
     .orderBy(asc(weeklyPriorities.sortOrder));
 }
 
+// Read-only: a day with no plan row yet is just three empty slots. The row is
+// created by the first add (addToPlanForDate), so rendering Today never writes.
 async function loadPlanSlots(
   userId: string,
   dateIso: string,
-): Promise<{ planId: string; slots: TodaySlot[]; taskIds: string[] }> {
-  const planRows = await db
-    .select({
-      planId: dailyPlans.id,
-      task: tasks,
-      projectName: projects.name,
-    })
-    .from(dailyPlans)
-    .leftJoin(dailyPlanItems, eq(dailyPlanItems.dailyPlanId, dailyPlans.id))
-    .leftJoin(tasks, eq(dailyPlanItems.taskId, tasks.id))
+): Promise<{ slots: TodaySlot[]; taskIds: string[] }> {
+  const slotTasks = await db
+    .select({ task: tasks, projectName: projects.name })
+    .from(dailyPlanItems)
+    .innerJoin(dailyPlans, eq(dailyPlanItems.dailyPlanId, dailyPlans.id))
+    .innerJoin(tasks, eq(dailyPlanItems.taskId, tasks.id))
     .leftJoin(projects, eq(tasks.projectId, projects.id))
     .where(and(eq(dailyPlans.userId, userId), eq(dailyPlans.date, dateIso)))
     .orderBy(asc(dailyPlanItems.sortOrder));
-
-  const planId =
-    planRows[0]?.planId ?? (await ensureDailyPlan(userId, dateIso));
-
-  const slotTasks = planRows.flatMap((r) =>
-    r.task ? [{ task: r.task, projectName: r.projectName }] : [],
-  );
 
   const slots: TodaySlot[] = [1, 2, 3].map((n) => {
     const row = slotTasks[n - 1];
@@ -117,7 +105,7 @@ async function loadPlanSlots(
     };
   });
 
-  return { planId, slots, taskIds: slotTasks.map((r) => r.task.id) };
+  return { slots, taskIds: slotTasks.map((r) => r.task.id) };
 }
 
 export async function loadTodayData(userId: string): Promise<TodayData> {
@@ -165,10 +153,8 @@ export async function loadTodayData(userId: string): Promise<TodayData> {
   const inPlanIds = new Set(todayPlan.taskIds);
 
   return {
-    planId: todayPlan.planId,
     dateIso,
     slots: withPriority(todayPlan.slots),
-    tomorrowPlanId: tomorrowPlan.planId,
     tomorrowDateIso,
     tomorrowSlots: withPriority(tomorrowPlan.slots),
     alsoDue: alsoDueRows
@@ -191,23 +177,37 @@ export async function loadTodayData(userId: string): Promise<TodayData> {
 }
 
 /**
- * Tasks eligible for adding to today's plan, ranked by
+ * Tasks eligible for adding to the plan for `dateIso` (open, and not already
+ * in that plan), ranked by
  * (is-weekly-priority desc, due-date asc null-last, priority tag asc).
+ *
+ * Every query here is independent — the already-planned and weekly-priority
+ * ids come from subquery/joins rather than a looked-up plan or review id — so
+ * opening the picker costs one parallel round of requests.
  */
 export async function loadEligibleForPlan(
   userId: string,
-  excludeTaskIds: string[],
+  dateIso: string,
 ): Promise<TodayTask[]> {
-  const weekStart = weekStartIso();
-  const [priorities, reviewRows, rows] = await Promise.all([
+  const plannedTaskIds = db
+    .select({ taskId: dailyPlanItems.taskId })
+    .from(dailyPlanItems)
+    .innerJoin(dailyPlans, eq(dailyPlanItems.dailyPlanId, dailyPlans.id))
+    .where(and(eq(dailyPlans.userId, userId), eq(dailyPlans.date, dateIso)));
+
+  const [priorities, weeklyRows, rows] = await Promise.all([
     loadTaskPriorities(userId),
     db
-      .select({ id: weeklyReviews.id })
-      .from(weeklyReviews)
+      .select({ taskId: weeklyPriorities.taskId })
+      .from(weeklyPriorities)
+      .innerJoin(
+        weeklyReviews,
+        eq(weeklyPriorities.weeklyReviewId, weeklyReviews.id),
+      )
       .where(
         and(
           eq(weeklyReviews.userId, userId),
-          eq(weeklyReviews.weekStartDate, weekStart),
+          eq(weeklyReviews.weekStartDate, weekStartIso()),
         ),
       ),
     db
@@ -218,25 +218,11 @@ export async function loadEligibleForPlan(
         and(
           eq(tasks.userId, userId),
           ne(tasks.status, "done"),
-          excludeTaskIds.length
-            ? not(inArray(tasks.id, excludeTaskIds))
-            : undefined,
+          notInArray(tasks.id, plannedTaskIds),
         ),
       ),
   ]);
-  const [review] = reviewRows;
-
-  const weekPrioIds = new Set(
-    review
-      ? (
-          await db
-            .select({ id: weeklyPriorities.taskId })
-            .from(weeklyPriorities)
-            .where(eq(weeklyPriorities.weeklyReviewId, review.id))
-        ).map((r) => r.id)
-      : [],
-  );
-
+  const weekPrioIds = new Set(weeklyRows.map((r) => r.taskId));
   return rows
     .map((r) => ({
       task: toTask(

@@ -18,12 +18,15 @@ function toResult(result: unknown): AutosaveResult {
 }
 
 export function AutosaveTextarea({
+  draftKey,
   initialValue,
   onSave,
   onValueChange,
   placeholder,
   rows = 8,
 }: {
+  // Names the field for the saved-draft registry — see `useAutosave`.
+  draftKey: string;
   initialValue: string;
   onSave: (value: string) => Promise<unknown>;
   // Lets a parent mirror the text it isn't storing — the notes card renders the
@@ -33,7 +36,7 @@ export function AutosaveTextarea({
   rows?: number;
 }) {
   const { value, setValue, flush, error, pending, dirty, unreachable } =
-    useAutosave(initialValue, async (next) => toResult(await onSave(next)));
+    useAutosave(draftKey, initialValue, async (next) => toResult(await onSave(next)));
 
   return (
     <div>

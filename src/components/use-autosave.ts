@@ -7,6 +7,58 @@ const SAVE_RETRY_MS = 5000;
 
 export type AutosaveResult = { ok: true } | { ok: false; error: string };
 
+/*
+ * Text saved this session, keyed by field, with the server value the edit
+ * started from.
+ *
+ * Autosave targets deliberately don't revalidate, so the page payload the
+ * router holds (Back/Forward, and the client cache — see `staleTimes` in
+ * next.config.ts) keeps the pre-edit text. A field remounted from that payload
+ * would show the old text, and the next keystroke would save it over the newer
+ * one. Module scope outlives remounts and client navigations, and a full
+ * reload — the one thing that clears it — also fetches fresh text.
+ */
+const savedDrafts = new Map<string, { base: string; saved: string }>();
+
+/**
+ * The text a field keyed `key` should open with, given the server's value.
+ *
+ * Still the value an earlier edit started from → the payload predates that
+ * edit, so the saved text wins. Anything else → the server has caught up (or
+ * the text was changed elsewhere since), so it wins and the entry is dropped.
+ */
+export function resolveDraft(
+  key: string,
+  serverValue: string,
+): { base: string; text: string } {
+  const entry = savedDrafts.get(key);
+  if (entry && serverValue === entry.base) {
+    return { base: entry.base, text: entry.saved };
+  }
+  savedDrafts.delete(key);
+  return { base: serverValue, text: serverValue };
+}
+
+export function recordDraft(key: string, base: string, saved: string): void {
+  savedDrafts.set(key, { base, saved });
+}
+
+/**
+ * Seed for a text field saved without revalidation, plus the hook to record
+ * each successful save. `useAutosave` uses it; a field with its own save
+ * cadence (e.g. save-on-blur) can use it directly.
+ */
+export function useSavedDraft(
+  key: string,
+  serverValue: string,
+): { initial: string; recordSaved: (text: string) => void } {
+  const [{ base, text }] = useState(() => resolveDraft(key, serverValue));
+  return {
+    initial: text,
+    recordSaved: (saved) => recordDraft(key, base, saved),
+  };
+}
+
 export type Autosave = {
   value: string;
   setValue: (next: string) => void;
@@ -32,15 +84,20 @@ export type Autosave = {
  *   type or blur.
  * - `save` is called through a ref so a debounced fire always runs the latest
  *   closure, not one captured a keystroke ago.
+ *
+ * `key` names the field (e.g. `task-notes:<id>`) so a remount opens on the
+ * last saved text rather than a stale server value — see `savedDrafts`.
  */
 export function useAutosave(
+  key: string,
   initialValue: string,
   save: (value: string) => Promise<AutosaveResult>,
 ): Autosave {
-  const [value, setValue] = useState(initialValue);
+  const { initial, recordSaved } = useSavedDraft(key, initialValue);
+  const [value, setValue] = useState(initial);
   // State, not a ref: `dirty` is read during render, and a completed save has
   // to re-run the debounce effect so text typed mid-flight still gets saved.
-  const [savedValue, setSavedValue] = useState(initialValue);
+  const [savedValue, setSavedValue] = useState(initial);
   const [error, setError] = useState<string | null>(null);
   const [unreachable, setUnreachable] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -83,6 +140,7 @@ export function useAutosave(
       }
       setError(null);
       setSavedValue(next);
+      recordSaved(next);
     });
   };
 

@@ -1,9 +1,9 @@
 "use server";
 
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { dailyPlanItems, tasks } from "@/lib/db/schema";
+import { dailyPlanItems, dailyPlans, tasks } from "@/lib/db/schema";
 import { requireUserId } from "@/lib/server/session";
 import { ownsTask } from "@/lib/server/ownership";
 import {
@@ -12,8 +12,9 @@ import {
 } from "@/lib/server/priority-cap";
 import { loadEligibleForPlan } from "@/lib/server/today";
 import { loadContactOptions, type ContactOption } from "@/lib/server/people";
+import { loadProjectOptions } from "@/lib/server/projects";
 import {
-  loadTasksData,
+  loadTaskForEdit,
   loadTaskTagOptions,
   type TagOption,
   type TasksViewTask,
@@ -29,8 +30,10 @@ async function addToPlanForDate(
   dateIso: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const userId = await requireUserId();
-  await assertOwnsTask(userId, taskId);
-  const planId = await ensureDailyPlan(userId, dateIso);
+  const [, planId] = await Promise.all([
+    assertOwnsTask(userId, taskId),
+    ensureDailyPlan(userId, dateIso),
+  ]);
   const slot = await claimDailyPlanSlot(planId);
   if (!slot.ok) return slot;
   await db
@@ -44,29 +47,28 @@ async function addToPlanForDate(
 
 async function loadEligibleForPlanDate(dateIso: string) {
   const userId = await requireUserId();
-  const planId = await ensureDailyPlan(userId, dateIso);
-  const planned = await db
-    .select({ taskId: dailyPlanItems.taskId })
-    .from(dailyPlanItems)
-    .where(eq(dailyPlanItems.dailyPlanId, planId));
-  return loadEligibleForPlan(
-    userId,
-    planned.map((item) => item.taskId),
-  );
+  return loadEligibleForPlan(userId, dateIso);
 }
 
+// One statement: scoping to the user's own plan for the date is the ownership
+// check, and removing from a plan that doesn't exist yet is a no-op rather than
+// a reason to create one.
 async function removeFromPlanForDate(taskId: string, dateIso: string) {
   const userId = await requireUserId();
-  await assertOwnsTask(userId, taskId);
-  const planId = await ensureDailyPlan(userId, dateIso);
-  await db
-    .delete(dailyPlanItems)
-    .where(
-      and(
-        eq(dailyPlanItems.dailyPlanId, planId),
-        eq(dailyPlanItems.taskId, taskId),
+  await db.delete(dailyPlanItems).where(
+    and(
+      eq(dailyPlanItems.taskId, taskId),
+      inArray(
+        dailyPlanItems.dailyPlanId,
+        db
+          .select({ id: dailyPlans.id })
+          .from(dailyPlans)
+          .where(
+            and(eq(dailyPlans.userId, userId), eq(dailyPlans.date, dateIso)),
+          ),
       ),
-    );
+    ),
+  );
   revalidatePath("/today");
   revalidatePath("/tasks");
 }
@@ -108,16 +110,18 @@ export async function loadTaskEditData(
   taskId: string,
 ): Promise<TaskEditData | null> {
   const userId = await requireUserId();
-  const [data, contacts, tagOptions] = await Promise.all([
-    loadTasksData(userId),
+  const [task, projectOptions, contacts, tagOptions] = await Promise.all([
+    loadTaskForEdit(userId, taskId),
+    loadProjectOptions(userId),
     loadContactOptions(userId),
     loadTaskTagOptions(userId),
   ]);
-  const task = data.projects.flatMap((p) => p.tasks).find((t) => t.id === taskId);
   if (!task) return null;
-  const projects = data.projects
-    .map((p) => ({ id: p.id, name: p.name }))
-    .filter((p): p is { id: string; name: string } => p.id !== null);
+  // Archived projects stay in the list (suffixed, sorted last) so assigning
+  // one still reactivates it; only the Inbox pseudo-option is dropped.
+  const projects = projectOptions.filter(
+    (p): p is { id: string; name: string } => p.id !== null,
+  );
   return { task, projects, people: contacts.people, tagOptions };
 }
 

@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { Pencil } from "lucide-react";
 import { AutosaveTextarea } from "@/components/autosave-textarea";
+import { useSavedDraft } from "@/components/use-autosave";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { NoteBody } from "@/components/note-body";
 import { deleteNote, updateNoteBody } from "@/app/(app)/notes/actions";
@@ -16,7 +17,11 @@ export function NoteCard({
   note: NoteRow;
   onTagClick: (name: string) => void;
 }) {
-  const [body, setBody] = useState(note.body);
+  const draftKey = `note:${note.id}`;
+  // The rendered body, not just the editor, has to open on the last saved
+  // text: the list isn't revalidated by edits, so `note.body` can be stale.
+  const { initial } = useSavedDraft(draftKey, note.body);
+  const [body, setBody] = useState(initial);
   const [editing, setEditing] = useState(false);
   // Once opened, the editor stays mounted (hidden when collapsed) so a save
   // still in flight — or one that failed — keeps its state. Unmounting it on
@@ -42,6 +47,7 @@ export function NoteCard({
       {everEdited && (
         <div className={editing ? undefined : "hidden"}>
           <AutosaveTextarea
+            draftKey={draftKey}
             initialValue={note.body}
             onValueChange={setBody}
             onSave={(value) => updateNoteBody({ id: note.id, body: value })}
