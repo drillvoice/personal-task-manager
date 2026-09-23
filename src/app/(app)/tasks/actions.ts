@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { people, tags, taskAssignees, taskTags, tasks } from "@/lib/db/schema";
 import { requireUserId } from "@/lib/server/session";
 import { extractDueDate } from "@/lib/server/parse-due-date";
+import { ownsTask } from "@/lib/server/ownership";
 import { reactivateArchivedProject } from "@/lib/server/reactivate-project";
 
 const nullableUuid = z
@@ -73,13 +74,13 @@ export async function createTask(input: CreateTaskInput): Promise<
     ? { title: parsed.data.title, dueDate: parsed.data.dueDate }
     : extractDueDate(parsed.data.title);
   const uniqueAssignees = [...new Set(parsed.data.assigneeIds)];
-  if (!(await ownedPersonIds(userId, uniqueAssignees))) {
-    return { ok: false, error: "Unknown assignee" };
-  }
   const uniqueTags = [...new Set(parsed.data.tagIds)];
-  if (!(await ownedTaskTagIds(userId, uniqueTags))) {
-    return { ok: false, error: "Unknown tag" };
-  }
+  const [assigneesOk, tagsOk] = await Promise.all([
+    ownedPersonIds(userId, uniqueAssignees),
+    ownedTaskTagIds(userId, uniqueTags),
+  ]);
+  if (!assigneesOk) return { ok: false, error: "Unknown assignee" };
+  if (!tagsOk) return { ok: false, error: "Unknown tag" };
   // Pre-generated id lets the task and its junction rows land in one batch
   // (a single implicit transaction over neon-http), so a mid-write failure
   // can't leave a task missing its tags or assignees.
@@ -142,41 +143,46 @@ export async function updateTask(
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid" };
   }
+  const taskId = parsed.data.id;
   const uniqueAssignees = [...new Set(parsed.data.assigneeIds)];
-  if (!(await ownedPersonIds(userId, uniqueAssignees))) {
-    return { ok: false, error: "Unknown assignee" };
-  }
   const uniqueTags = [...new Set(parsed.data.tagIds)];
-  if (!(await ownedTaskTagIds(userId, uniqueTags))) {
-    return { ok: false, error: "Unknown tag" };
-  }
-  const [updated] = await db
-    .update(tasks)
-    .set({
-      title: parsed.data.title,
-      projectId: parsed.data.projectId,
-      dueDate: parsed.data.dueDate,
-      ...(parsed.data.notes !== undefined ? { notes: parsed.data.notes } : {}),
-    })
-    .where(and(eq(tasks.id, parsed.data.id), eq(tasks.userId, userId)))
-    .returning({ id: tasks.id });
-  if (!updated) return { ok: false, error: "Task not found" };
+  // Every check up front in one parallel round, so the write itself can be a
+  // single batch: this runs on each field change in the task detail panel.
+  const [owned, assigneesOk, tagsOk] = await Promise.all([
+    ownsTask(userId, taskId),
+    ownedPersonIds(userId, uniqueAssignees),
+    ownedTaskTagIds(userId, uniqueTags),
+  ]);
+  if (!owned) return { ok: false, error: "Task not found" };
+  if (!assigneesOk) return { ok: false, error: "Unknown assignee" };
+  if (!tagsOk) return { ok: false, error: "Unknown tag" };
   // Delete + re-insert must be atomic — a failure in between would strip the
   // task's tags (including its priority). db.batch runs as one transaction.
   await db.batch([
-    db.delete(taskAssignees).where(eq(taskAssignees.taskId, updated.id)),
-    db.delete(taskTags).where(eq(taskTags.taskId, updated.id)),
+    db
+      .update(tasks)
+      .set({
+        title: parsed.data.title,
+        projectId: parsed.data.projectId,
+        dueDate: parsed.data.dueDate,
+        ...(parsed.data.notes !== undefined
+          ? { notes: parsed.data.notes }
+          : {}),
+      })
+      .where(and(eq(tasks.id, taskId), eq(tasks.userId, userId))),
+    db.delete(taskAssignees).where(eq(taskAssignees.taskId, taskId)),
+    db.delete(taskTags).where(eq(taskTags.taskId, taskId)),
     ...(uniqueAssignees.length > 0
       ? [
           db.insert(taskAssignees).values(
-            uniqueAssignees.map((personId) => ({ taskId: updated.id, personId })),
+            uniqueAssignees.map((personId) => ({ taskId, personId })),
           ),
         ]
       : []),
     ...(uniqueTags.length > 0
       ? [
           db.insert(taskTags).values(
-            uniqueTags.map((tagId) => ({ taskId: updated.id, tagId })),
+            uniqueTags.map((tagId) => ({ taskId, tagId })),
           ),
         ]
       : []),

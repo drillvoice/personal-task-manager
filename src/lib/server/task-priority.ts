@@ -1,8 +1,8 @@
 import "server-only";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { tags, taskTags } from "@/lib/db/schema";
-import { priorityFromTagNames } from "@/lib/priority";
+import { PRIORITY_TAG_NAMES, priorityFromTagNames } from "@/lib/priority";
 import type { Priority } from "@/lib/types";
 
 /**
@@ -12,30 +12,30 @@ import type { Priority } from "@/lib/types";
  * Used by views (Today, Review) that don't already fetch each task's full
  * tag list. Views that do (Tasks, Meetings) derive priority directly from
  * that list instead — see `priorityFromTagNames`.
+ *
+ * One joined query rather than tags-then-task_tags: over the HTTP driver each
+ * statement is its own request, and this sits on the Today and Review render
+ * paths.
  */
 export async function loadTaskPriorities(
   userId: string,
 ): Promise<Map<string, Priority>> {
-  const userTags = await db
-    .select({ id: tags.id, name: tags.name })
-    .from(tags)
-    .where(and(eq(tags.userId, userId), eq(tags.kind, "task")));
-
-  const priorityByTagId = new Map<string, Priority>();
-  for (const t of userTags) {
-    const p = priorityFromTagNames([t.name]);
-    if (p !== null) priorityByTagId.set(t.id, p);
-  }
-  if (priorityByTagId.size === 0) return new Map();
-
   const rows = await db
-    .select({ taskId: taskTags.taskId, tagId: taskTags.tagId })
+    .select({ taskId: taskTags.taskId, name: tags.name })
     .from(taskTags)
-    .where(inArray(taskTags.tagId, [...priorityByTagId.keys()]));
+    .innerJoin(tags, eq(taskTags.tagId, tags.id))
+    .where(
+      and(
+        eq(tags.userId, userId),
+        eq(tags.kind, "task"),
+        inArray(sql`lower(${tags.name})`, PRIORITY_TAG_NAMES),
+      ),
+    );
 
   const result = new Map<string, Priority>();
   for (const r of rows) {
-    const p = priorityByTagId.get(r.tagId)!;
+    const p = priorityFromTagNames([r.name]);
+    if (p === null) continue;
     const existing = result.get(r.taskId);
     if (existing === undefined || p < existing) result.set(r.taskId, p);
   }

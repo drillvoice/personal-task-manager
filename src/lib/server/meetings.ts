@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, isNotNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   meetingAttendees,
@@ -65,9 +65,10 @@ export async function loadMeetingsData(userId: string): Promise<{
       .innerJoin(meetings, eq(meetingTags.meetingId, meetings.id))
       .where(eq(meetings.userId, userId)),
     db
-      .select({ meetingId: tasks.meetingId })
+      .select({ meetingId: tasks.meetingId, taskCount: count() })
       .from(tasks)
-      .where(eq(tasks.userId, userId)),
+      .where(and(eq(tasks.userId, userId), isNotNull(tasks.meetingId)))
+      .groupBy(tasks.meetingId),
   ]);
 
   const attendeesByMeeting = new Map<string, { id: string; name: string }[]>();
@@ -87,14 +88,9 @@ export async function loadMeetingsData(userId: string): Promise<{
     tagsByMeeting.set(t.meetingId, list);
   }
 
-  const taskCountByMeeting = new Map<string, number>();
-  for (const t of taskRows) {
-    if (!t.meetingId) continue;
-    taskCountByMeeting.set(
-      t.meetingId,
-      (taskCountByMeeting.get(t.meetingId) ?? 0) + 1,
-    );
-  }
+  const taskCountByMeeting = new Map(
+    taskRows.map((r) => [r.meetingId, r.taskCount]),
+  );
 
   return {
     meetings: meetingRows.map((m) => ({
