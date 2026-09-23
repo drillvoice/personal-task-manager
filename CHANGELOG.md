@@ -6,6 +6,18 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
 ## [Unreleased]
 
 ### Added
+- **A `/api/health` endpoint for a keep-warm pinger.** It runs a trivial
+  database query so an external pinger (setup in `initial-setup.md` §10) can
+  keep the Vercel function and the Neon database awake during the day. That
+  removes the delay when the app is first opened after a break.
+- **Task capture clears instantly.** Quick capture, the review's capture line,
+  and the add-a-task line on project cards (Tasks view and review) now clear
+  as soon as you press Enter and stay focused, so the next task can be typed
+  straight away instead of waiting for the save. If a save fails, the text
+  comes back with a "Not saved" message (previously the project-card and
+  review inputs failed silently).
+- **Deleting a task from its inline editor removes the row immediately.** If
+  the delete fails, the row comes back with its editor open and the error.
 - **A project can be archived straight from the weekly review.** Each project
   card in *Review projects* now carries an archive icon in its top right; the
   first click arms an `Archive project?` / `Keep` confirm, and confirming takes

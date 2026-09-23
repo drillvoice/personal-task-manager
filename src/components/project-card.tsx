@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { ChevronDown, ChevronRight, Plus } from "lucide-react";
 import { TaskRow } from "@/components/task-row";
-import { quickAddTask } from "@/app/(app)/review/actions";
+import { useQuickAdd } from "@/components/use-quick-add";
 import type { ProjectSelectOption as ProjectOption } from "@/lib/server/projects";
 import type { ContactOption } from "@/lib/server/people";
 import type {
@@ -34,18 +34,8 @@ export function ProjectCard({
   onSelectTask?: (id: string) => void;
 }) {
   const [open, setOpen] = useState(defaultOpen);
-  const [action, setAction] = useState("");
-  const [pending, startTransition] = useTransition();
+  const quickAdd = useQuickAdd(project.id);
   const activeCount = project.tasks.filter((t) => t.status !== "done").length;
-
-  const submitAction = () => {
-    const title = action.trim();
-    if (!title) return;
-    startTransition(async () => {
-      const res = await quickAddTask({ title, projectId: project.id });
-      if (res.ok) setAction("");
-    });
-  };
 
   return (
     <div
@@ -91,19 +81,23 @@ export function ProjectCard({
 
             <Plus className="text-ink-soft" size={14} />
             <input
-              value={action}
-              onChange={(e) => setAction(e.target.value)}
+              value={quickAdd.value}
+              onChange={(e) => quickAdd.setValue(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
-                  submitAction();
+                  quickAdd.submit();
                 }
               }}
-              disabled={pending}
               placeholder="Add a task… (#tag, or a due date like 'in 3 days')"
               className="flex-1 bg-transparent text-[13px] outline-none text-ink"
             />
           </div>
+          {quickAdd.error && (
+            <p className="font-mono mt-1 text-[11px] text-danger">
+              Not saved — {quickAdd.error}
+            </p>
+          )}
         </div>
       )}
     </div>
