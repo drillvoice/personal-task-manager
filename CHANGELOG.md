@@ -14,11 +14,19 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
   *Show archived*, and adding a task to one still reactivates it.
 
 ### Fixed
-- **Reopening a task no longer shows (and then saves over) its old notes.** On
-  the Tasks view, notes typed into the detail panel autosave without
-  refreshing the page, so clicking away and back to the same task reopened the
-  panel on the pre-edit text — and the next keystroke saved that stale text
-  over the newer notes. The view now remembers notes saved during the visit.
+- **Reopened text fields no longer show (and then save over) older text.**
+  Notes, journal, meeting notes, task notes, the review reflection and review
+  project notes save without refreshing the page, so a field that reopened
+  from the page's earlier data — reselecting a task on the Tasks view, or
+  coming back with the browser's Back button — showed the pre-edit text, and
+  the next keystroke saved that over the newer version. Fields now remember
+  what was saved this session and open on it until the server catches up.
+- **An open review page can't quietly start a new review.** Ticking a *Get
+  clear* box, typing a reflection or project note, picking a priority or
+  pressing *Finish* on a review that had already been filed (in another tab,
+  or a page reached via Back) created a fresh review, or wrote into whichever
+  review was open. Those edits now apply only to the review on screen, and
+  show "Not saved — this review has already been filed" otherwise.
 - **The Today task editor lists archived projects again.** It built its
   project picker from the Tasks view's groups, which exclude archived
   projects, so a task couldn't be moved into one (and reactivate it) from
@@ -36,6 +44,11 @@ SemVer discipline — see `CLAUDE.md` and the spec §8.
   previously it could only be set through quick capture's `#p1`.
 
 ### Changed
+- **Switching back to a tab you just visited is instant.** Pages stay in the
+  browser's router cache for 30 seconds instead of being re-rendered on every
+  visit. Any change you make clears that cache, so what you see after an edit
+  is always current; a change made on another device can take up to 30
+  seconds to appear on a tab you'd just looked at.
 - **Fewer database round-trips on the hottest paths.** Each query over Neon's
   HTTP driver is its own request, so chains of dependent queries were the main
   source of click latency. Opening a task from Today now loads just that task

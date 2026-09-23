@@ -189,6 +189,16 @@ paths — `createTask` and `updateTask` in `src/app/(app)/tasks/actions.ts` and
 projects must stay in the task project-pickers (sorted last, suffixed
 `(archived)`): remove them there and the reactivation path becomes unreachable.
 
+**Autosave fields go through `useAutosave` (or `useSavedDraft`) with a key.**
+Autosave server actions deliberately skip `revalidatePath`, so the page payload
+the router holds keeps the pre-edit text — and `next.config.ts` sets
+`staleTimes.dynamic: 30`, so revisiting a tab reuses that payload. A field
+seeded straight from a server prop would reopen on stale text, and the next
+keystroke would save it over the newer one. `AutosaveTextarea` requires a
+`draftKey` (`task-notes:<id>`, `journal:<date>`, …) for this reason; a
+hand-rolled save-on-blur field uses `useSavedDraft` (see `ReviewProjectCard`).
+Any *other* write action must call `revalidatePath`, which purges the cache.
+
 **Notes have no tags — `#word` is plain text.** The Notes module (`notes`
 table, one `body` column) deliberately has no tag junction and no `tags` rows.
 A `#polling` in a note is found because search covers the whole body, and
